@@ -1,0 +1,43 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: #0d0d0d;
+  color: #eaeaea;
+  font-family: "Inter", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column; /* 🔥 This fixes it */
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.container {
+  max-width: 720px;
+  width: 100%;
+  padding: 2rem;
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  letter-spacing: -0.5px;
+}
+
+p {
+  font-size: 1.2rem;
+  opacity: 0.85;
+  margin-bottom: 1rem;
+}
+
+footer {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  opacity: 0.6;
+}

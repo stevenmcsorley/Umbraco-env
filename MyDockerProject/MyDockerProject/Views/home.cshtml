@@ -1,0 +1,19 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<Umbraco.Cms.Web.Common.PublishedModels.Home>
+
+@{
+    Layout = "Layouts/Main.cshtml";
+    ViewData["Title"] = Model.Name;
+}
+
+<section class="flex flex-col items-center justify-center py-24 text-center">
+<div class="p-10 text-white bg-fuchsia-500">Test box</div>
+    <h1 class="mb-6 text-5xl font-extrabold tracking-tight">@Model.Name</h1>
+
+    <div class="max-w-3xl prose prose-lg text-left text-gray-700">
+        @Html.Raw(Model.BodyText)
+    </div>
+
+    <a href="/contact" class="inline-block px-6 py-3 mt-10 text-white transition bg-black rounded-lg hover:bg-gray-800">
+        Get in Touch
+    </a>
+</section>
