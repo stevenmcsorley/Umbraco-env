@@ -1,0 +1,57 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    string title = ViewData["FeaturesTitle"]?.ToString() ?? "Features";
+    var items = ViewData["FeaturesItems"] as System.Collections.IEnumerable ?? new List<object>();
+}
+
+<section class="py-12">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">@title</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var itemObj in items)
+            {
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    @{
+                        string icon = "";
+                        string itemTitle = "";
+                        string itemDesc = "";
+                        
+                        // Handle anonymous objects using reflection
+                        if (itemObj != null)
+                        {
+                            var itemType = itemObj.GetType();
+                            try
+                            {
+                                var iconProp = itemType.GetProperty("icon");
+                                var titleProp = itemType.GetProperty("title");
+                                var descProp = itemType.GetProperty("description");
+                                
+                                icon = iconProp?.GetValue(itemObj)?.ToString() ?? "";
+                                itemTitle = titleProp?.GetValue(itemObj)?.ToString() ?? "";
+                                itemDesc = descProp?.GetValue(itemObj)?.ToString() ?? "";
+                            }
+                            catch
+                            {
+                                // If reflection fails, try as dictionary
+                                var dict = itemObj as System.Collections.Generic.IDictionary<string, object>;
+                                if (dict != null)
+                                {
+                                    icon = dict.ContainsKey("icon") ? dict["icon"]?.ToString() ?? "" : "";
+                                    itemTitle = dict.ContainsKey("title") ? dict["title"]?.ToString() ?? "" : "";
+                                    itemDesc = dict.ContainsKey("description") ? dict["description"]?.ToString() ?? "" : "";
+                                }
+                            }
+                        }
+                    }
+                    @if (!string.IsNullOrEmpty(icon))
+                    {
+                        <div class="text-4xl mb-4">@Html.Raw(icon)</div>
+                    }
+                    <h3 class="text-xl font-bold mb-2">@itemTitle</h3>
+                    <p class="text-gray-600">@itemDesc</p>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+

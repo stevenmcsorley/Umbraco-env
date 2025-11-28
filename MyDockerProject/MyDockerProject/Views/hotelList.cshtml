@@ -1,0 +1,61 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    // Choose layout: Main, HolyGrail, Sidebar, Centered, FullWidth
+    Layout = ViewData["Layout"] as string ?? "Layouts/Main.cshtml";
+    ViewData["Title"] = "Hotels";
+    ViewData["SiteName"] = "Hotel Booking Site";
+    
+    // Set Hero data via ViewData
+    ViewData["HeroHeading"] = "Our Hotels";
+    ViewData["HeroTagline"] = "Discover luxury accommodations around the world";
+    ViewData["HeroBackgroundColor"] = "bg-blue-900";
+    ViewData["HeroTextColor"] = "text-white";
+}
+
+@await Html.PartialAsync("Partials/Hero", (object)null)
+
+<section class="container mx-auto px-4 py-8">
+    <div id="hotels-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="col-span-full text-center py-12">
+            <p class="text-gray-600 mb-4">Loading hotels...</p>
+        </div>
+    </div>
+</section>
+
+<script>
+    fetch('/api/hotels')
+        .then(response => response.json())
+        .then(hotels => {
+            const container = document.getElementById('hotels-container');
+            if (hotels.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <p class="text-gray-600 mb-4">No hotels available at the moment.</p>
+                        <p class="text-sm text-gray-500">Please create content types and seed data in Umbraco backoffice.</p>
+                        <a href="/api/seed/create-demo-hotel" class="text-blue-600 hover:underline">Or create demo hotel via API</a>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = hotels.map(hotel => `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                        <div class="p-6">
+                            <h2 class="text-2xl font-bold mb-2">${hotel.name || 'Unnamed Hotel'}</h2>
+                            ${hotel.description ? `<p class="text-gray-600 mb-4 line-clamp-3">${hotel.description}</p>` : ''}
+                            ${hotel.city ? `<p class="text-sm text-gray-500 mb-4">📍 ${hotel.city}${hotel.country ? ', ' + hotel.country : ''}</p>` : ''}
+                            <a href="/hotels/${hotel.id}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading hotels:', error);
+            document.getElementById('hotels-container').innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <p class="text-red-600">Error loading hotels. Please try again later.</p>
+                </div>
+            `;
+        });
+</script>

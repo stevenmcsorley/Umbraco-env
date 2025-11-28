@@ -1,0 +1,44 @@
+@model dynamic
+@{
+    var images = Model?.images as System.Collections.IEnumerable ?? new List<string>();
+    var title = Model?.title ?? "Gallery";
+}
+
+<section class="py-12 bg-gray-50">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">@title</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="gallery-container">
+            @foreach (var image in images)
+            {
+                <div class="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer" onclick="openLightbox('@image')">
+                    <img src="@image" alt="Gallery image" class="w-full h-64 object-cover" />
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Lightbox Modal -->
+<div id="lightbox-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center" onclick="closeLightbox()">
+    <div class="max-w-4xl max-h-full p-4">
+        <img id="lightbox-image" src="" alt="Lightbox" class="max-w-full max-h-full rounded-lg" />
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300">&times;</button>
+    </div>
+</div>
+
+<script>
+    function openLightbox(imageSrc) {
+        document.getElementById('lightbox-image').src = imageSrc;
+        document.getElementById('lightbox-modal').classList.remove('hidden');
+    }
+    
+    function closeLightbox() {
+        document.getElementById('lightbox-modal').classList.add('hidden');
+    }
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeLightbox();
+    });
+</script>
+

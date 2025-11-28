@@ -1,0 +1,44 @@
+@model dynamic
+@{
+    var title = Model?.title ?? "Events";
+    var items = Model?.items as System.Collections.IEnumerable ?? new List<dynamic>();
+}
+
+<section class="py-12 bg-gray-50">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">@title</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var evt in items)
+            {
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    @if (!string.IsNullOrEmpty(evt.image))
+                    {
+                        <img src="@evt.image" alt="@(evt.name ?? "")" class="w-full h-48 object-cover" />
+                    }
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">@(evt.name ?? "")</h3>
+                        @if (!string.IsNullOrEmpty(evt.description))
+                        {
+                            <p class="text-gray-600 mb-4">@evt.description</p>
+                        }
+                        @if (!string.IsNullOrEmpty(evt.eventDate))
+                        {
+                            <p class="text-sm text-gray-500 mb-2">📅 @evt.eventDate</p>
+                        }
+                        @if (evt.price != null)
+                        {
+                            <p class="text-xl font-bold text-blue-600 mb-4">£@evt.price</p>
+                        }
+                        @if (!string.IsNullOrEmpty(evt.link))
+                        {
+                            <a href="@evt.link" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                Learn More
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+

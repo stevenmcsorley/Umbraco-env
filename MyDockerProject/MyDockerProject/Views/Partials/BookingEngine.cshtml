@@ -1,0 +1,44 @@
+@model dynamic
+@{
+    var productId = Model?.productId ?? "";
+    var hotelId = Model?.hotelId ?? "";
+    var apiBaseUrl = Model?.apiBaseUrl ?? "/engine";
+}
+
+<!-- Booking Engine Container - React Component will mount here -->
+<div id="booking-engine-root" 
+     data-product-id="@productId"
+     data-hotel-id="@hotelId"
+     data-api-base-url="@apiBaseUrl"
+     class="my-8">
+    <div class="text-center py-12 bg-gray-50 rounded-lg">
+        <p class="text-gray-600">Loading booking engine...</p>
+    </div>
+</div>
+
+<!-- Load React Booking Engine -->
+<script src="http://localhost:5173/booking-engine.js"></script>
+<script>
+    // Auto-initialize booking engine when script loads
+    if (window.initBookingEngine) {
+        window.initBookingEngine({
+            containerId: 'booking-engine-root',
+            productId: '@productId',
+            hotelId: '@hotelId',
+            apiBaseUrl: '@apiBaseUrl'
+        });
+    } else {
+        // Wait for script to load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.initBookingEngine) {
+                window.initBookingEngine({
+                    containerId: 'booking-engine-root',
+                    productId: '@productId',
+                    hotelId: '@hotelId',
+                    apiBaseUrl: '@apiBaseUrl'
+                });
+            }
+        });
+    }
+</script>
+

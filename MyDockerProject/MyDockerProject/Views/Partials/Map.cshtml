@@ -1,0 +1,58 @@
+@model dynamic
+@{
+    var address = Model?.address ?? "";
+    var latitude = Model?.latitude ?? "";
+    var longitude = Model?.longitude ?? "";
+    var height = Model?.height ?? "400px";
+    var mapId = "map-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+}
+
+<section class="py-12">
+    <div class="container mx-auto px-4">
+        <div id="@mapId" style="height: @height; width: 100%;" class="rounded-lg overflow-hidden shadow-md"></div>
+    </div>
+</section>
+
+<script>
+    (function() {
+        const mapId = '@mapId';
+        const lat = '@latitude';
+        const lng = '@longitude';
+        const address = '@address';
+        
+        // Simple embed map using OpenStreetMap/Leaflet or Google Maps embed
+        // For production, you'd use proper map library (Leaflet, Google Maps, Mapbox)
+        const mapContainer = document.getElementById(mapId);
+        
+        if (lat && lng) {
+            // Use coordinates
+            mapContainer.innerHTML = `
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0" 
+                    style="border:0" 
+                    src="https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(lng) - 0.01},${parseFloat(lat) - 0.01},${parseFloat(lng) + 0.01},${parseFloat(lat) + 0.01}&layer=mapnik&marker=${lat},${lng}"
+                    allowfullscreen>
+                </iframe>
+            `;
+        } else if (address) {
+            // Use address (would need geocoding in production)
+            mapContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full bg-gray-100 text-gray-600">
+                    <div class="text-center">
+                        <p class="text-lg mb-2">📍 @address</p>
+                        <p class="text-sm">Map integration requires coordinates or geocoding service</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            mapContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full bg-gray-100 text-gray-600">
+                    <p>Map requires address or coordinates</p>
+                </div>
+            `;
+        }
+    })();
+</script>
+
