@@ -1,0 +1,23 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    string heading = ViewData["HeroHeading"]?.ToString() ?? "";
+    string tagline = ViewData["HeroTagline"]?.ToString() ?? "";
+    string image = ViewData["HeroImage"]?.ToString() ?? "";
+    string backgroundColor = ViewData["HeroBackgroundColor"]?.ToString() ?? "bg-gray-900";
+    string textColor = ViewData["HeroTextColor"]?.ToString() ?? "text-white";
+}
+
+<section class="@backgroundColor @textColor py-20">
+    <div class="container mx-auto px-4 text-center">
+        @if (!string.IsNullOrEmpty(image))
+        {
+            <img src="@image" alt="@heading" class="mx-auto mb-8 max-w-4xl rounded-lg shadow-2xl" />
+        }
+        <h1 class="text-5xl font-bold mb-4">@heading</h1>
+        @if (!string.IsNullOrEmpty(tagline))
+        {
+            <p class="text-xl opacity-90">@tagline</p>
+        }
+    </div>
+</section>
+

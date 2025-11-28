@@ -59,6 +59,33 @@ services:
         - path: ./MyDockerProject/umbraco/models
           action: rebuild
 
+  booking_engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+    networks:
+      - umbnet
+    restart: always
+    depends_on:
+      - umb_database
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    networks:
+      - umbnet
+    restart: always
+    depends_on:
+      - mydockerproject
+      - booking_engine
+
 # These volumes are all made as bind mounts, meaning that they are bound to the host machine's file system.
 # This is to better facilitate local development in the IDE, so the views, models, etc... are available in the IDE.
 # This can be changed by removing the driver and driver_opts from the volumes.

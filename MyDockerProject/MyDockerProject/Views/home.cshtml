@@ -2,18 +2,53 @@
 
 @{
     Layout = "Layouts/Main.cshtml";
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = Model.Name ?? "Home";
 }
 
-<section class="flex flex-col items-center justify-center py-24 text-center">
-<div class="p-10 text-white bg-fuchsia-500">Test box</div>
-    <h1 class="mb-6 text-5xl font-extrabold tracking-tight">@Model.Name</h1>
+@{
+    // Hero section - use Umbraco properties if they exist, otherwise defaults
+    ViewData["HeroHeading"] = Model.Value<string>("heroHeading") ?? Model.Name ?? "Welcome";
+    ViewData["HeroTagline"] = Model.Value<string>("heroTagline") ?? (Model.BodyText != null ? Model.BodyText.ToString() : "Your journey starts here");
+    ViewData["HeroImage"] = Model.Value<Umbraco.Cms.Core.Models.PublishedContent.IPublishedContent>("heroImage")?.Url() ?? "";
+    ViewData["HeroBackgroundColor"] = "bg-gradient-to-r from-blue-600 to-blue-800";
+    ViewData["HeroTextColor"] = "text-white";
+}
+@await Html.PartialAsync("Partials/Hero", (object)null)
 
-    <div class="max-w-3xl prose prose-lg text-left text-gray-700">
-        @Html.Raw(Model.BodyText)
+<section class="container mx-auto px-4 py-16">
+    <div class="text-center mb-12">
+        @{
+            var mainHeading = Model.Value<string>("mainHeading") ?? "Discover Our Hotels";
+            var mainDescription = Model.Value<string>("mainDescription") ?? "Experience luxury accommodations around the world";
+            var mainButtonText = Model.Value<string>("mainButtonText") ?? "View All Hotels";
+            var mainButtonLink = Model.Value<string>("mainButtonLink") ?? "/hotels";
+        }
+        <h2 class="text-4xl font-bold mb-4">@mainHeading</h2>
+        <p class="text-xl text-gray-600 mb-8">@mainDescription</p>
+        <a href="@mainButtonLink" class="inline-block px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
+            @mainButtonText
+        </a>
     </div>
 
-    <a href="/contact" class="inline-block px-6 py-3 mt-10 text-white transition bg-black rounded-lg hover:bg-gray-800">
-        Get in Touch
-    </a>
+    @if (Model.BodyText != null)
+    {
+        <div class="max-w-3xl mx-auto prose prose-lg text-gray-700">
+            @Html.Raw(Model.BodyText)
+        </div>
+    }
 </section>
+
+@{
+    // Features section - use Umbraco property if exists, otherwise defaults
+    var featuresTitle = Model.Value<string>("featuresTitle") ?? "Why Choose Us";
+    ViewData["FeaturesTitle"] = featuresTitle;
+    
+    // For now, use defaults. Later can be managed via Block List or JSON property
+    ViewData["FeaturesItems"] = new[]
+    {
+        new { icon = "🏨", title = "Luxury Hotels", description = "World-class accommodations" },
+        new { icon = "🌍", title = "Global Locations", description = "Hotels in prime destinations" },
+        new { icon = "⭐", title = "Exceptional Service", description = "Dedicated to your comfort" }
+    };
+}
+@await Html.PartialAsync("Partials/Features", (object)null)
