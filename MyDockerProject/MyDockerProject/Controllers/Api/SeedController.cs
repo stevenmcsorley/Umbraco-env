@@ -161,6 +161,76 @@ public class SeedController : ControllerBase
         }
     }
 
+    [HttpPost("add-room-properties")]
+    public IActionResult AddRoomProperties()
+    {
+        try
+        {
+            var propertyService = new Services.DocumentTypePropertyService(
+                _contentTypeService,
+                _dataTypeService,
+                _shortStringHelper);
+            
+            propertyService.AddRoomProperties();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Room properties added successfully to 'content' group"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                stackTrace = ex.StackTrace,
+                innerException = ex.InnerException?.Message
+            });
+        }
+    }
+
+    [HttpGet("check-room-document-type")]
+    public IActionResult CheckRoomDocumentType()
+    {
+        try
+        {
+            var roomType = _contentTypeService.Get("room");
+            
+            if (roomType == null)
+            {
+                return Ok(new
+                {
+                    exists = false,
+                    message = "Room document type does not exist. Create it via: POST /api/seed/create-document-types",
+                    isElement = false,
+                    alias = "room"
+                });
+            }
+
+            return Ok(new
+            {
+                exists = true,
+                alias = roomType.Alias,
+                name = roomType.Name,
+                isElement = roomType.IsElement,
+                allowedAsRoot = roomType.AllowedAsRoot,
+                parentId = roomType.ParentId,
+                propertyCount = roomType.PropertyTypes.Count(),
+                properties = roomType.PropertyTypes.Select(pt => new { alias = pt.Alias, name = pt.Name }).ToList()
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                error = ex.Message,
+                details = ex.ToString()
+            });
+        }
+    }
+
     [HttpGet("check-hotel-properties")]
     public IActionResult CheckHotelProperties()
     {
@@ -225,6 +295,45 @@ public class SeedController : ControllerBase
         {
             return StatusCode(500, new
             {
+                error = ex.Message,
+                details = ex.ToString()
+            });
+        }
+    }
+
+    [HttpPost("add-layout-property")]
+    public IActionResult AddLayoutProperty([FromQuery] string? documentTypeAlias = null)
+    {
+        try
+        {
+            var propertyService = new Services.DocumentTypePropertyService(_contentTypeService, _dataTypeService, _shortStringHelper);
+            
+            if (!string.IsNullOrEmpty(documentTypeAlias))
+            {
+                propertyService.AddLayoutPropertyToDocumentType(documentTypeAlias);
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Layout property added to '{documentTypeAlias}' document type",
+                    note = "If using Textstring, convert to Dropdown in Settings → Data Types and add values: Main, HolyGrail, Sidebar, Centered, FullWidth"
+                });
+            }
+            else
+            {
+                propertyService.AddLayoutPropertyToAllDocumentTypes();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Layout property added to all document types (hotel, room, offer, home)",
+                    note = "IMPORTANT: To enable dropdown with options, go to Settings → Data Types → Find the data type used for 'Layout' property → Configure it as Dropdown and add these values: Main, HolyGrail, Sidebar, Centered, FullWidth"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
                 error = ex.Message,
                 details = ex.ToString()
             });

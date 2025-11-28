@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Services;
+using MyDockerProject.Helpers;
 
 namespace MyDockerProject.Controllers;
 
@@ -26,9 +27,18 @@ public class HotelController : Controller
 
     public IActionResult HotelDetails(string id, string layout = "Main")
     {
+        // id can be either a GUID or a slug
         ViewBag.HotelId = id;
+        ViewBag.HotelSlug = id; // For consistency with other views
         ViewData["Layout"] = $"Layouts/{layout}.cshtml";
         return View("hotel");
+    }
+
+    public IActionResult HotelRooms(string hotelId, string layout = "Main")
+    {
+        ViewBag.HotelId = hotelId;
+        ViewData["Layout"] = $"Layouts/{layout}.cshtml";
+        return View("hotelRooms");
     }
 
     public IActionResult Room(string hotelId, string roomId, string layout = "Main")

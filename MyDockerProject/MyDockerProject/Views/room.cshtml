@@ -1,23 +1,31 @@
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @using Umbraco.Cms.Core.Models.PublishedContent
 @{
-    // Choose layout: Main, HolyGrail, Sidebar, Centered, FullWidth
-    Layout = ViewData["Layout"] as string ?? "Layouts/Main.cshtml";
+    var layoutFromContent = Model?.Value<string>("layout");
+    var layoutName = !string.IsNullOrEmpty(layoutFromContent) ? layoutFromContent : ViewData["Layout"] as string;
+    
+    var layoutPath = layoutName switch
+    {
+        "HolyGrail" => "Layouts/HolyGrail.cshtml",
+        "Sidebar" => "Layouts/Sidebar.cshtml",
+        "Centered" => "Layouts/Centered.cshtml",
+        "FullWidth" => "Layouts/FullWidth.cshtml",
+        _ => "Layouts/Main.cshtml"
+    };
+    
+    Layout = layoutPath;
     ViewData["Title"] = Model?.Name ?? "Room Details";
-    ViewData["SiteName"] = "Hotel Booking Site";
     
-    // Get IDs from Model (Umbraco) or route/ViewBag (custom route)
     var roomId = Model?.Key.ToString() ?? ViewBag.RoomId as string ?? Context.Request.RouteValues["roomId"]?.ToString();
-    
-    // For hotel ID, try parent (if Room is child of Hotel) or route
     var hotelId = (Model?.Parent as IPublishedContent)?.Key.ToString() 
                   ?? ViewBag.HotelId as string 
                   ?? Context.Request.RouteValues["hotelId"]?.ToString();
 }
 
 <div id="room-page-content">
-    <div class="text-center py-12">
-        <p class="text-gray-600">Loading room details...</p>
+    <div class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <p class="text-gray-600 mt-4 text-lg font-light">Loading room details...</p>
     </div>
 </div>
 
@@ -30,14 +38,16 @@
         fetch(`/api/hotels/${hotelId}/rooms`).then(r => r.json())
     ])
     .then(([hotel, rooms]) => {
-        const room = rooms.find(r => r.id === roomId);
+        const room = rooms.find(r => r.id === roomId || r.slug === roomId);
         const container = document.getElementById('room-page-content');
+        const hotelSlug = hotel.slug || hotel.id;
+        const roomSlug = room?.slug || room?.id;
         
         if (!room) {
             container.innerHTML = `
-                <div class="text-center py-12">
-                    <h1 class="text-3xl font-bold mb-4">Room Not Found</h1>
-                    <a href="/hotels/${hotelId}" class="text-blue-600 hover:underline">← Back to Hotel</a>
+                <div class="text-center py-20">
+                    <h1 class="text-4xl font-serif text-gray-900 mb-4 tracking-tight">Room Not Found</h1>
+                    <a href="/hotels/${hotelSlug}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
                 </div>
             `;
             return;
@@ -45,65 +55,212 @@
         
         let html = '';
         
-        // Back link
+        // Hero Section with Image
+        const roomHeroImageUrl = Array.isArray(room.heroImage) ? room.heroImage[0] : room.heroImage;
         html += `
-            <div class="container mx-auto px-4 py-4">
-                <a href="/hotels/${hotelId}" class="text-blue-600 hover:underline">← Back to ${hotel.name || 'Hotel'}</a>
-            </div>
-        `;
-        
-        // Hero Section for Room
-        html += `
-            <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
-                <div class="container mx-auto px-4">
-                    <h1 class="text-4xl font-bold mb-4">${room.name || 'Room'}</h1>
-                    ${room.description ? `<p class="text-xl opacity-90 mb-6">${room.description}</p>` : ''}
+            <section class="relative h-[85vh] min-h-[700px] overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+                    ${roomHeroImageUrl ? `<img src="${roomHeroImageUrl}" alt="${room.name}" class="w-full h-full object-cover opacity-40" />` : ''}
+                    <div class="absolute inset-0 bg-black/50"></div>
                 </div>
-            </div>
-        `;
-        
-        // Room Details Section
-        html += `
-            <section class="py-12">
-                <div class="container mx-auto px-4">
-                    <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            ${room.priceFrom ? `
-                                <div class="text-center">
-                                    <p class="text-sm text-gray-500 mb-2">Price from</p>
-                                    <p class="text-3xl font-bold text-blue-600">£${room.priceFrom} <span class="text-lg">per night</span></p>
-                                </div>
-                            ` : ''}
-                            ${room.maxOccupancy ? `
-                                <div class="text-center">
-                                    <p class="text-sm text-gray-500 mb-2">Max Occupancy</p>
-                                    <p class="text-2xl font-bold">${room.maxOccupancy} <span class="text-lg text-gray-500">guests</span></p>
-                                </div>
-                            ` : ''}
-                            ${room.roomType ? `
-                                <div class="text-center">
-                                    <p class="text-sm text-gray-500 mb-2">Room Type</p>
-                                    <p class="text-xl font-semibold">${room.roomType}</p>
-                                </div>
-                            ` : ''}
-                        </div>
+                <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 h-full flex items-center py-20">
+                    <div class="text-white max-w-3xl">
+                        <h1 class="text-5xl md:text-6xl lg:text-7xl font-serif mb-8 tracking-tight">${room.name || 'Room'}</h1>
+                        ${room.description ? `<p class="text-xl md:text-2xl mb-6 opacity-90 font-light leading-relaxed">${room.description}</p>` : ''}
                     </div>
                 </div>
             </section>
         `;
         
-        // Booking Engine Section
+        // Room Overview Section - Image on top, content below
+        const overviewImageUrl = (room.roomImages && room.roomImages.length > 0) 
+            ? room.roomImages[0] 
+            : (room.heroImage || null);
+        
         html += `
-            <section class="py-12 bg-gray-50">
-                <div class="container mx-auto px-4">
-                    <h2 class="text-3xl font-bold mb-8 text-center">Book This Room</h2>
-                    <div id="booking-engine-root" 
-                         data-product-id="${roomId}"
-                         data-hotel-id="${hotelId}"
-                         data-api-base-url="/engine"
-                         class="max-w-4xl mx-auto">
-                        <div class="text-center py-12 bg-white rounded-lg shadow-md">
-                            <p class="text-gray-600">Loading booking engine...</p>
+            <section class="py-20 lg:py-28 bg-white">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    ${overviewImageUrl ? `
+                    <div class="mb-12">
+                        <div class="aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden">
+                            <img src="${overviewImageUrl}" alt="${room.name}" class="w-full h-full object-cover" />
+                        </div>
+                    </div>
+                    ` : ''}
+                    <div class="max-w-4xl">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-6 tracking-tight">${room.name || 'Room'}</h2>
+                        ${room.description ? `<p class="text-lg text-gray-600 mb-8 font-light leading-relaxed">${room.description}</p>` : ''}
+                        <div class="flex flex-wrap gap-6 mb-8 text-xs font-light text-gray-500 uppercase tracking-widest">
+                            ${room.maxOccupancy ? `<span>${room.maxOccupancy} GUESTS</span>` : ''}
+                            ${room.roomType ? `<span>${room.roomType.toUpperCase()}</span>` : ''}
+                            ${room.size ? `<span>${room.size}</span>` : ''}
+                            ${room.bedType ? `<span>${room.bedType.toUpperCase()}</span>` : ''}
+                        </div>
+                        ${room.priceFrom ? `
+                            <div class="mb-8">
+                                <p class="text-sm text-gray-500 mb-2 font-light uppercase tracking-widest">PRICE FROM</p>
+                                <p class="text-4xl font-serif text-gray-900">£${room.priceFrom} <span class="text-lg text-gray-500 font-light">per night</span></p>
+                            </div>
+                        ` : ''}
+                        <a href="#booking" class="bg-gray-900 text-white px-10 py-4 text-xs font-light tracking-widest uppercase hover:bg-gray-800 transition-colors inline-block">
+                            Check Availability
+                        </a>
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        // Gallery Section - Show all room images, including hero image if different
+        const allRoomImages = [];
+        if (room.heroImage && !room.roomImages?.includes(room.heroImage)) {
+            allRoomImages.push(room.heroImage);
+        }
+        if (room.roomImages && room.roomImages.length > 0) {
+            room.roomImages.forEach(img => {
+                if (!allRoomImages.includes(img)) {
+                    allRoomImages.push(img);
+                }
+            });
+        }
+        
+        if (allRoomImages.length > 0) {
+            html += `
+                <section class="py-20 lg:py-28 bg-gray-50">
+                    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+                            <div class="lg:col-span-1">
+                                <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-8 tracking-tight">Gallery</h2>
+                            </div>
+                            <div class="lg:col-span-3">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    ${allRoomImages.map((img, idx) => `
+                                        <div class="aspect-[4/3] overflow-hidden rounded-xl cursor-pointer group" onclick="if(typeof window.openLightbox === 'function') window.openLightbox('${img}');">
+                                            <img src="${img}" alt="${room.name} - Image ${idx + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                        </div>
+                                    `).join('')}
+                                    ${allRoomImages.length < 3 ? `
+                                        <div class="aspect-[4/3] bg-gray-200 rounded-xl flex items-center justify-center">
+                                            <span class="text-gray-400 text-sm font-light">More images</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+        
+        // The Highlights Section
+        if (room.features) {
+            const features = room.features.split('\n').filter(f => f.trim());
+            if (features.length > 0) {
+                const highlightsImageUrl = (allRoomImages.length > 1) 
+                    ? allRoomImages[1] 
+                    : (allRoomImages.length > 0 ? allRoomImages[0] : null);
+                
+                html += `
+                    <section class="py-20 lg:py-28 bg-white">
+                        <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                            <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight">The Highlights</h2>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                                ${highlightsImageUrl ? `
+                                <div class="aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden">
+                                    <img src="${highlightsImageUrl}" alt="${room.name}" class="w-full h-full object-cover" />
+                                </div>
+                                ` : `
+                                <div class="aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden">
+                                    <div class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                                </div>
+                                `}
+                                <div>
+                                    <ul class="space-y-4 text-gray-700 font-light">
+                                        ${features.map(f => `<li class="flex items-start"><span class="mr-3 text-gray-400">•</span><span>${f.trim()}</span></li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                `;
+            }
+        }
+        
+        // The Details Section (3 columns: Furnishings, Hotel Services, Specifications)
+        const hasDetails = room.furnishings || room.hotelServices || room.specifications;
+        if (hasDetails) {
+            html += `
+                <section class="py-20 lg:py-28 bg-white">
+                    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight text-center">The Details</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+            `;
+            
+            // Furnishings Column
+            if (room.furnishings) {
+                const furnishings = room.furnishings.split('\n').filter(f => f.trim());
+                html += `
+                    <div>
+                        <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">Furnishings</h3>
+                        <ul class="space-y-3 text-gray-700 font-light text-sm">
+                            ${furnishings.map(f => `<li class="flex items-start"><span class="mr-2 text-gray-400">•</span><span>${f.trim()}</span></li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Hotel Services Column
+            if (room.hotelServices) {
+                const services = room.hotelServices.split('\n').filter(s => s.trim());
+                html += `
+                    <div>
+                        <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">Hotel Services</h3>
+                        <ul class="space-y-3 text-gray-700 font-light text-sm">
+                            ${services.map(s => `<li class="flex items-start"><span class="mr-2 text-gray-400">•</span><span>${s.trim()}</span></li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Specifications Column
+            if (room.specifications) {
+                const specs = room.specifications.split('\n').filter(s => s.trim());
+                html += `
+                    <div>
+                        <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-6">Specifications</h3>
+                        <ul class="space-y-3 text-gray-700 font-light text-sm">
+                            ${specs.map(s => `<li class="flex items-start"><span class="mr-2 text-gray-400">•</span><span>${s.trim()}</span></li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            html += `
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+        
+        // Reserve Section
+        html += `
+            <section class="py-20 lg:py-28 bg-gray-900 text-white" id="booking">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <h2 class="text-4xl md:text-5xl font-serif mb-6 tracking-tight">Reserve Your Stay</h2>
+                            <p class="text-lg mb-8 opacity-90 font-light leading-relaxed">Contact our Reservations team to book your stay or check availability.</p>
+                            ${hotel.phone ? `<p class="text-xl mb-2 font-light">${hotel.phone}</p>` : ''}
+                            ${hotel.email ? `<p class="text-lg mb-8 opacity-80 font-light">${hotel.email}</p>` : ''}
+                        </div>
+                        <div class="bg-white rounded-xl p-8">
+                            <div id="booking-engine-root" 
+                                 data-product-id="${roomId}"
+                                 data-hotel-id="${hotelId}"
+                                 data-api-base-url="/engine">
+                                <div class="text-center py-12">
+                                    <p class="text-gray-600 font-light">Loading booking engine...</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -111,6 +268,47 @@
         `;
         
         container.innerHTML = html;
+        
+        // Initialize lightbox if not already initialized
+        if (typeof window.openLightbox === 'undefined') {
+            window.closeLightbox = function(event) {
+                if (event) event.stopPropagation();
+                const modal = document.getElementById('lightbox-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+            };
+            
+            window.openLightbox = function(imageSrc) {
+                let modal = document.getElementById('lightbox-modal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'lightbox-modal';
+                    modal.className = 'hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center';
+                    modal.onclick = window.closeLightbox;
+                    modal.innerHTML = `
+                        <div class="max-w-4xl max-h-full p-4 relative" onclick="event.stopPropagation()">
+                            <img id="lightbox-image" src="" alt="Lightbox" class="max-w-full max-h-full rounded-lg shadow-2xl" />
+                            <button onclick="window.closeLightbox(event)" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 font-bold bg-black/50 rounded-full w-10 h-10 flex items-center justify-center transition-colors">&times;</button>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+                const img = document.getElementById('lightbox-image');
+                if (img) {
+                    img.src = imageSrc;
+                    modal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                }
+            };
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    window.closeLightbox();
+                }
+            });
+        }
         
         // Load React Booking Engine
         const script = document.createElement('script');
@@ -126,20 +324,27 @@
             }
         };
         script.onerror = () => {
-            document.getElementById('booking-engine-root').innerHTML = `
-                <div class="text-center py-12 bg-white rounded-lg shadow-md">
-                    <p class="text-red-600 mb-4">Booking engine failed to load.</p>
-                    <p class="text-sm text-gray-500">Make sure the React booking engine is running on port 5173</p>
-                </div>
-            `;
+            const bookingRoot = document.getElementById('booking-engine-root');
+            if (bookingRoot) {
+                bookingRoot.innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-gray-600 mb-4 font-light">Booking engine will be available soon.</p>
+                        <p class="text-sm text-gray-500 font-light">Please contact us directly to make a reservation.</p>
+                    </div>
+                `;
+            }
         };
         document.head.appendChild(script);
     })
     .catch(error => {
         console.error('Error loading room:', error);
+        // Try to get hotel slug from the URL or use hotelId as fallback
+        const urlParts = window.location.pathname.split('/');
+        const hotelSlugFromUrl = urlParts.length > 2 ? urlParts[2] : hotelId;
         document.getElementById('room-page-content').innerHTML = `
-            <div class="text-center py-12">
-                <p class="text-red-600">Error loading room details. Please try again later.</p>
+            <div class="text-center py-20">
+                <p class="text-red-600 mb-4">Error loading room details. Please try again later.</p>
+                <a href="/hotels/${hotelSlugFromUrl}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
             </div>
         `;
     });

@@ -126,8 +126,15 @@ public class DocumentTypeService
         var textareaDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextArea");
         var integerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.Integer");
         var decimalDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.Decimal");
+        var mediaPickerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.MediaPicker3");
         
-        if (textstringDataType == null || textareaDataType == null || integerDataType == null || decimalDataType == null)
+        // If Decimal doesn't exist, use Textstring as fallback (user can change to Decimal later)
+        if (decimalDataType == null)
+        {
+            decimalDataType = textstringDataType;
+        }
+        
+        if (textstringDataType == null || textareaDataType == null || integerDataType == null)
         {
             throw new Exception("Required data types not found. Please create data types in Umbraco backoffice first.");
         }
@@ -172,6 +179,37 @@ public class DocumentTypeService
             SortOrder = 5
         });
 
+        // Add image properties
+        if (mediaPickerDataType != null)
+        {
+            roomType.AddPropertyType(new PropertyType(_shortStringHelper, mediaPickerDataType, "heroImage")
+            {
+                Name = "Hero Image",
+                SortOrder = 6
+            });
+
+            roomType.AddPropertyType(new PropertyType(_shortStringHelper, mediaPickerDataType, "roomImages")
+            {
+                Name = "Room Images",
+                SortOrder = 7
+            });
+        }
+        else
+        {
+            // Fallback to textstring if MediaPicker not available
+            roomType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "heroImage")
+            {
+                Name = "Hero Image",
+                SortOrder = 6
+            });
+
+            roomType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "roomImages")
+            {
+                Name = "Room Images",
+                SortOrder = 7
+            });
+        }
+
         _contentTypeService.Save(roomType);
     }
 
@@ -195,7 +233,13 @@ public class DocumentTypeService
         var decimalDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.Decimal");
         var dateTimeDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.DateTime");
         
-        if (textstringDataType == null || textareaDataType == null || decimalDataType == null || dateTimeDataType == null)
+        // Use Textstring as fallback for Decimal if it doesn't exist
+        if (decimalDataType == null)
+        {
+            decimalDataType = textstringDataType;
+        }
+        
+        if (textstringDataType == null || textareaDataType == null || dateTimeDataType == null)
         {
             throw new Exception("Required data types not found. Please create data types in Umbraco backoffice first.");
         }

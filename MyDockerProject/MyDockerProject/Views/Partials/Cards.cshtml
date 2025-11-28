@@ -1,39 +1,88 @@
-@model dynamic
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
-    var title = Model?.title ?? "";
-    var items = Model?.items as System.Collections.IEnumerable ?? new List<dynamic>();
-    var columns = Model?.columns ?? 3;
+    // Get from ViewData first, then try Model
+    var title = ViewData["CardsTitle"]?.ToString() 
+                ?? ViewData["title"]?.ToString()
+                ?? (Model != null ? (Model.GetType().GetProperty("title")?.GetValue(Model)?.ToString()) : null)
+                ?? "";
+    
+    var items = ViewData["CardsItems"] as System.Collections.IEnumerable 
+                ?? ViewData["items"] as System.Collections.IEnumerable
+                ?? (Model != null ? (Model.GetType().GetProperty("items")?.GetValue(Model) as System.Collections.IEnumerable) : null)
+                ?? new List<object>();
+    
+    var columnsObj = ViewData["CardsColumns"] ?? ViewData["columns"] ?? (Model != null ? Model.GetType().GetProperty("columns")?.GetValue(Model) : null);
+    var columns = columnsObj != null ? Convert.ToInt32(columnsObj) : 3;
     var gridClass = columns == 2 ? "md:grid-cols-2" : columns == 4 ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-2 lg:grid-cols-3";
 }
 
 @if (!string.IsNullOrEmpty(title))
 {
-    <h2 class="text-3xl font-bold mb-8 text-center">@title</h2>
+    <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 text-center tracking-tight">@title</h2>
 }
 
-<div class="grid grid-cols-1 @gridClass gap-6">
-    @foreach (var item in items)
+<div class="grid grid-cols-1 @gridClass gap-8">
+    @foreach (var itemObj in items)
     {
-        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            @if (!string.IsNullOrEmpty(item.image))
+        // Safely extract properties using reflection
+        string itemImage = "";
+        string itemTitle = "";
+        string itemDescription = "";
+        string itemLink = "";
+        
+        if (itemObj != null)
+        {
+            var itemType = itemObj.GetType();
+            try
             {
-                <img src="@item.image" alt="@(item.title ?? "")" class="w-full h-48 object-cover" />
+                var imageProp = itemType.GetProperty("image");
+                var titleProp = itemType.GetProperty("title");
+                var descProp = itemType.GetProperty("description");
+                var linkProp = itemType.GetProperty("link");
+                
+                itemImage = imageProp?.GetValue(itemObj)?.ToString() ?? "";
+                itemTitle = titleProp?.GetValue(itemObj)?.ToString() ?? "";
+                itemDescription = descProp?.GetValue(itemObj)?.ToString() ?? "";
+                itemLink = linkProp?.GetValue(itemObj)?.ToString() ?? "";
             }
-            <div class="p-6">
-                @if (!string.IsNullOrEmpty(item.title))
+            catch
+            {
+                // If reflection fails, try as dictionary
+                var dict = itemObj as System.Collections.Generic.IDictionary<string, object>;
+                if (dict != null)
                 {
-                    <h3 class="text-xl font-bold mb-2">@item.title</h3>
+                    itemImage = dict.ContainsKey("image") ? dict["image"]?.ToString() ?? "" : "";
+                    itemTitle = dict.ContainsKey("title") ? dict["title"]?.ToString() ?? "" : "";
+                    itemDescription = dict.ContainsKey("description") ? dict["description"]?.ToString() ?? "" : "";
+                    itemLink = dict.ContainsKey("link") ? dict["link"]?.ToString() ?? "" : "";
                 }
-                @if (!string.IsNullOrEmpty(item.description))
-                {
-                    <p class="text-gray-600 mb-4">@item.description</p>
-                }
-                @if (!string.IsNullOrEmpty(item.link))
-                {
-                    <a href="@item.link" class="text-blue-600 hover:underline font-semibold">Learn More →</a>
-                }
-            </div>
+            }
+        }
+        
+        <div class="group">
+            @if (!string.IsNullOrEmpty(itemImage))
+            {
+                <div class="relative overflow-hidden aspect-[4/3] mb-6">
+                    <img src="@itemImage" alt="@itemTitle" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(itemTitle))
+            {
+                <h3 class="text-xl font-serif text-gray-900 mb-3 tracking-tight">@itemTitle</h3>
+            }
+            @if (!string.IsNullOrEmpty(itemDescription))
+            {
+                <p class="text-gray-600 mb-6 leading-relaxed font-light text-sm">@itemDescription</p>
+            }
+            @if (!string.IsNullOrEmpty(itemLink))
+            {
+                <a href="@itemLink" class="text-gray-900 text-xs font-light tracking-widest uppercase hover:opacity-70 transition-opacity inline-flex items-center">
+                    Learn More
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            }
         </div>
     }
 </div>
-

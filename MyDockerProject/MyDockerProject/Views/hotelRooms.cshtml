@@ -1,0 +1,123 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    // Get layout from content property, ViewData, or default to Main
+    var layoutFromContent = Model?.Value<string>("layout");
+    var layoutName = !string.IsNullOrEmpty(layoutFromContent) ? layoutFromContent : ViewData["Layout"] as string;
+    
+    var layoutPath = layoutName switch
+    {
+        "HolyGrail" => "Layouts/HolyGrail.cshtml",
+        "Sidebar" => "Layouts/Sidebar.cshtml",
+        "Centered" => "Layouts/Centered.cshtml",
+        "FullWidth" => "Layouts/FullWidth.cshtml",
+        _ => "Layouts/Main.cshtml"
+    };
+    
+    Layout = layoutPath;
+    ViewData["Title"] = "Rooms & Suites";
+    
+    // Get hotel ID from route
+    var hotelId = Context.Request.RouteValues["hotelId"]?.ToString() 
+                  ?? ViewBag.HotelId as string 
+                  ?? Model?.Key.ToString();
+}
+
+@{
+    ViewData["HeroHeading"] = "Rooms & Suites";
+    ViewData["HeroTagline"] = "Discover our exceptional accommodations";
+    ViewData["HeroBackgroundColor"] = "bg-gray-900";
+    ViewData["HeroTextColor"] = "text-white";
+}
+@await Html.PartialAsync("Partials/Hero", (object)null)
+
+<section class="py-20 lg:py-28 bg-white">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+        <div id="rooms-container" class="space-y-16">
+            <div class="text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                <p class="text-gray-600 mt-4 text-lg font-light">Loading rooms...</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    const hotelId = '@hotelId';
+    
+    Promise.all([
+        fetch(`/api/hotels/${hotelId}`).then(r => r.json()),
+        fetch(`/api/hotels/${hotelId}/rooms`).then(r => r.json())
+    ])
+    .then(([hotel, rooms]) => {
+        const container = document.getElementById('rooms-container');
+        const hotelSlug = hotel.slug || hotel.id;
+        
+        if (!rooms || rooms.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <p class="text-gray-600 text-lg mb-4 font-light">No rooms available for this hotel.</p>
+                    <a href="/hotels/${hotelSlug}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        // Introduction
+        html += `
+            <div class="mb-16">
+                <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-4 tracking-tight">Rooms & Suites</h2>
+                <p class="text-gray-600 text-lg font-light max-w-3xl">Experience unparalleled luxury in our thoughtfully designed accommodations, each offering unique character and exceptional comfort.</p>
+            </div>
+        `;
+        
+        // Rooms Grid
+        html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">';
+        
+        rooms.forEach((room, index) => {
+            const isEven = index % 2 === 0;
+            const roomImageUrl = Array.isArray(room.heroImage) ? room.heroImage[0] : (room.heroImage || (Array.isArray(room.roomImages) && room.roomImages.length > 0 ? room.roomImages[0] : null));
+            html += `
+                <div class="group">
+                    <div class="aspect-[4/3] overflow-hidden mb-6">
+                        ${roomImageUrl ? `
+                        <img src="${roomImageUrl}" alt="${room.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                        ` : `
+                        <div class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                            <span class="text-gray-400 text-sm font-light">Room Image</span>
+                        </div>
+                        `}
+                    </div>
+                    <h3 class="text-2xl font-serif text-gray-900 mb-3 tracking-tight">${room.name || 'Room'}</h3>
+                    ${room.description ? `<p class="text-gray-600 mb-6 leading-relaxed font-light text-sm">${room.description}</p>` : ''}
+                    <div class="flex flex-wrap gap-4 mb-6 text-xs font-light text-gray-500 uppercase tracking-wide">
+                        ${room.maxOccupancy ? `<span>${room.maxOccupancy} Guests</span>` : ''}
+                        ${room.roomType ? `<span>${room.roomType}</span>` : ''}
+                        ${room.size ? `<span>${room.size} m²</span>` : ''}
+                    </div>
+                    <div class="flex items-center justify-between pt-6 border-t border-gray-100">
+                        ${room.priceFrom ? `<span class="text-2xl font-serif text-gray-900">From £${room.priceFrom}</span>` : ''}
+                        <a href="/hotels/${hotelSlug}/rooms/${room.slug || room.id}" class="bg-gray-900 text-white px-8 py-3 text-xs font-light tracking-widest uppercase hover:bg-gray-800 transition-colors">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        
+        container.innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Error loading rooms:', error);
+        document.getElementById('rooms-container').innerHTML = `
+            <div class="text-center py-12">
+                <p class="text-red-600 mb-4">Error loading rooms. Please try again later.</p>
+                <a href="/hotels/${hotelId}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
+            </div>
+        `;
+    });
+</script>
+

@@ -550,7 +550,8 @@ public class PartialElementTypeService
         {
             var roomsType = (ContentType)rooms;
             AddPropertySafely(roomsType, "title", "Title", textstring, sortOrder: 1);
-            if (blockList != null) AddPropertySafely(roomsType, "roomItems", "Room Items", blockList, sortOrder: 2);
+            if (mediaPicker != null) AddPropertySafely(roomsType, "image", "Image", mediaPicker, sortOrder: 2);
+            if (blockList != null) AddPropertySafely(roomsType, "roomItems", "Room Items", blockList, sortOrder: 3);
             _contentTypeService.Save(roomsType);
         }
         

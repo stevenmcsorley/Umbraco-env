@@ -36,6 +36,11 @@ app.UseUmbraco()
             defaults: new { controller = "Hotel", action = "HotelDetails" });
 
         u.EndpointRouteBuilder.MapControllerRoute(
+            name: "hotel-rooms",
+            pattern: "hotels/{hotelId}/rooms",
+            defaults: new { controller = "Hotel", action = "HotelRooms" });
+
+        u.EndpointRouteBuilder.MapControllerRoute(
             name: "room",
             pattern: "hotels/{hotelId}/rooms/{roomId}",
             defaults: new { controller = "Hotel", action = "Room" });

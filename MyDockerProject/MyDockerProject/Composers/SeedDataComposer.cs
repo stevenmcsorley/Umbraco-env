@@ -27,10 +27,11 @@ public class SeedDataComponent : Umbraco.Cms.Core.Composing.IAsyncComponent
 
     public async Task InitializeAsync(bool isAfterRuntime, CancellationToken cancellationToken)
     {
-        // Wait a bit for Umbraco to be ready
-        await Task.Delay(5000, cancellationToken);
-        var seedService = new Services.SeedDataService(_contentService, _contentTypeService);
-        seedService.SeedExampleHotel();
+        // Disable auto-seeding on startup - use API endpoint instead
+        // This prevents errors if document types/properties don't exist yet
+        // await Task.Delay(5000, cancellationToken);
+        // var seedService = new Services.SeedDataService(_contentService, _contentTypeService);
+        // seedService.SeedExampleHotel();
     }
 
     public Task TerminateAsync(bool isBeforeRuntime, CancellationToken cancellationToken)

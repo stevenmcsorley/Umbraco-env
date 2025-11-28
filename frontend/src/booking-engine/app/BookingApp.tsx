@@ -1,0 +1,59 @@
+import { useEffect } from 'react';
+import { useBookingStore } from './state/bookingStore';
+import { PageContainer } from '../components/layout/PageContainer';
+import { PageSection } from '../components/layout/PageSection';
+import { CalendarSelector } from '../components/booking/CalendarSelector';
+import { AvailabilityPanel } from '../components/booking/AvailabilityPanel';
+import { BookingForm } from '../components/booking/BookingForm';
+import { ConfirmationScreen } from '../components/booking/ConfirmationScreen';
+import { AnalyticsManager } from '../../services/analytics';
+import type { DesignTokens } from '../constants/tokens';
+
+export interface BookingAppProps {
+  hotelId?: string;
+  tokens?: Partial<DesignTokens>;
+  apiBaseUrl?: string;
+  defaultProductId?: string;
+}
+
+export const BookingApp = ({
+  hotelId,
+  tokens: _tokens = {},
+  apiBaseUrl: _apiBaseUrl = '/engine',
+  defaultProductId
+}: BookingAppProps) => {
+  const { selectedProductId, setSelectedProductId, confirmation } = useBookingStore();
+
+  useEffect(() => {
+    if (defaultProductId && !selectedProductId) {
+      setSelectedProductId(defaultProductId);
+      AnalyticsManager.trackBookingStart(hotelId || '', defaultProductId);
+    }
+  }, [defaultProductId, selectedProductId, hotelId, setSelectedProductId]);
+
+  if (confirmation) {
+    return (
+      <PageContainer>
+        <ConfirmationScreen />
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer>
+      <PageSection>
+        <h1 className="text-2xl font-bold mb-4">Book Your Stay</h1>
+        <CalendarSelector />
+      </PageSection>
+
+      <PageSection>
+        <AvailabilityPanel />
+      </PageSection>
+
+      <PageSection>
+        <BookingForm />
+      </PageSection>
+    </PageContainer>
+  );
+};
+
