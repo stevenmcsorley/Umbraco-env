@@ -45,7 +45,90 @@ public class SeedController : ControllerBase
             return Ok(new
             {
                 success = true,
-                message = "Document types created successfully: Hotel, Room, Offer"
+                message = "Document types created successfully: Hotel, Room, Offer, Event"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                details = ex.ToString()
+            });
+        }
+    }
+
+    [HttpPost("create-offer-document-type")]
+    public IActionResult CreateOfferDocumentType()
+    {
+        try
+        {
+            var docTypeService = new Services.DocumentTypeService(
+                _contentTypeService,
+                _dataTypeService,
+                _shortStringHelper);
+            
+            docTypeService.CreateOfferDocumentType();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Offer document type created successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                details = ex.ToString()
+            });
+        }
+    }
+
+    [HttpPost("create-event-document-type")]
+    public IActionResult CreateEventDocumentTypeEndpoint()
+    {
+        try
+        {
+            var docTypeService = new Services.DocumentTypeService(
+                _contentTypeService,
+                _dataTypeService,
+                _shortStringHelper);
+            
+            docTypeService.CreateEventDocumentType();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Event document type created successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                details = ex.ToString()
+            });
+        }
+    }
+
+    [HttpPost("seed-offers-events")]
+    public IActionResult SeedOffersAndEvents()
+    {
+        try
+        {
+            var seedService = new Services.SeedDataService(_contentService, _contentTypeService);
+            seedService.AddOffersAndEventsToExistingHotels();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Offers and events added to all existing hotels successfully"
             });
         }
         catch (Exception ex)
@@ -177,6 +260,66 @@ public class SeedController : ControllerBase
             {
                 success = true,
                 message = "Room properties added successfully to 'content' group"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                stackTrace = ex.StackTrace,
+                innerException = ex.InnerException?.Message
+            });
+        }
+    }
+
+    [HttpPost("add-event-properties")]
+    public IActionResult AddEventProperties()
+    {
+        try
+        {
+            var propertyService = new Services.DocumentTypePropertyService(
+                _contentTypeService,
+                _dataTypeService,
+                _shortStringHelper);
+            
+            propertyService.AddEventProperties();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Event properties added successfully to 'content' group"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                stackTrace = ex.StackTrace,
+                innerException = ex.InnerException?.Message
+            });
+        }
+    }
+
+    [HttpPost("add-offer-properties")]
+    public IActionResult AddOfferProperties()
+    {
+        try
+        {
+            var propertyService = new Services.DocumentTypePropertyService(
+                _contentTypeService,
+                _dataTypeService,
+                _shortStringHelper);
+            
+            propertyService.AddOfferProperties();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Offer properties added successfully to 'content' group"
             });
         }
         catch (Exception ex)
@@ -328,6 +471,31 @@ public class SeedController : ControllerBase
                     note = "IMPORTANT: To enable dropdown with options, go to Settings → Data Types → Find the data type used for 'Layout' property → Configure it as Dropdown and add these values: Main, HolyGrail, Sidebar, Centered, FullWidth"
                 });
             }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                details = ex.ToString()
+            });
+        }
+    }
+
+    [HttpPost("add-offers-events-to-hotels")]
+    public IActionResult AddOffersAndEventsToHotels()
+    {
+        try
+        {
+            var seedService = new Services.SeedDataService(_contentService, _contentTypeService);
+            seedService.AddOffersAndEventsToExistingHotels();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Offers and events added to all existing hotels successfully"
+            });
         }
         catch (Exception ex)
         {

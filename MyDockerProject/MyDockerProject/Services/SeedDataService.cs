@@ -280,6 +280,165 @@ public class SeedDataService
                     _contentService.Save(offer);
                 }
             }
+
+            // Create events for each hotel
+            var eventType = _contentTypeService.Get("event");
+            if (eventType != null)
+            {
+                var events = new[]
+                {
+                    new { 
+                        Name = "Wine Tasting Evening", 
+                        Description = "Join us for an exclusive wine tasting event featuring local and international selections. Includes canapés and expert sommelier guidance.", 
+                        EventDate = DateTime.Today.AddDays(14), 
+                        Location = "Hotel Restaurant", 
+                        Price = 75.00m 
+                    },
+                    new { 
+                        Name = "Live Jazz Night", 
+                        Description = "Enjoy an evening of smooth jazz performances in our elegant lounge. Complimentary welcome drink included.", 
+                        EventDate = DateTime.Today.AddDays(21), 
+                        Location = "Rooftop Bar", 
+                        Price = 45.00m 
+                    },
+                    new { 
+                        Name = "Cooking Masterclass", 
+                        Description = "Learn from our award-winning chef in an interactive cooking masterclass. Includes lunch and recipe cards to take home.", 
+                        EventDate = DateTime.Today.AddDays(28), 
+                        Location = "Chef's Kitchen", 
+                        Price = 120.00m 
+                    },
+                    new { 
+                        Name = "Wellness Workshop", 
+                        Description = "A relaxing wellness workshop focusing on mindfulness and meditation. Includes spa access and healthy refreshments.", 
+                        EventDate = DateTime.Today.AddDays(35), 
+                        Location = "Spa & Wellness Center", 
+                        Price = 65.00m 
+                    }
+                };
+
+                foreach (var eventData in events)
+                {
+                    // Ensure unique event name by appending hotel name if needed
+                    var eventName = eventData.Name;
+                    var existingEvents = _contentService.GetPagedChildren(hotel.Id, 0, 100, out _, null)
+                        .Where(e => e.ContentType.Alias == "event" && e.Name == eventName);
+                    if (existingEvents.Any())
+                    {
+                        eventName = $"{eventData.Name} - {hotelData.Name}";
+                    }
+                    var evt = _contentService.Create(eventName, hotel.Key, "event");
+                    var eventPropertyAliases = eventType.PropertyTypes.Select(pt => pt.Alias).ToHashSet();
+                    
+                    if (eventPropertyAliases.Contains("eventName")) evt.SetValue("eventName", eventData.Name);
+                    if (eventPropertyAliases.Contains("description")) evt.SetValue("description", eventData.Description);
+                    if (eventPropertyAliases.Contains("eventDate")) evt.SetValue("eventDate", eventData.EventDate);
+                    if (eventPropertyAliases.Contains("location")) evt.SetValue("location", eventData.Location);
+                    if (eventPropertyAliases.Contains("price")) evt.SetValue("price", eventData.Price);
+                    
+                    _contentService.Save(evt);
+                }
+            }
+        }
+    }
+
+    public void AddOffersAndEventsToExistingHotels()
+    {
+        var hotelType = _contentTypeService.Get("hotel");
+        if (hotelType == null) return;
+
+        var offerType = _contentTypeService.Get("offer");
+        var eventType = _contentTypeService.Get("event");
+
+        var hotels = _contentService.GetPagedOfType(hotelType.Id, 0, int.MaxValue, out _, null);
+
+        foreach (var hotel in hotels)
+        {
+            // Add offers if offer type exists
+            if (offerType != null)
+            {
+                var offers = new[]
+                {
+                    new { Name = "Early Bird Special", Description = "Book 30 days in advance and save 20% on your stay", Discount = 20.00m, ValidFrom = DateTime.Today, ValidTo = DateTime.Today.AddMonths(6), MinAdvanceBookingDays = 30, MinNights = 0 },
+                    new { Name = "Weekend Getaway", Description = "Special weekend rates with complimentary breakfast and spa access", Discount = 15.00m, ValidFrom = DateTime.Today, ValidTo = DateTime.Today.AddMonths(3), MinAdvanceBookingDays = 0, MinNights = 0 },
+                    new { Name = "Long Stay Discount", Description = "Stay 5+ nights and get 25% off plus free airport transfers", Discount = 25.00m, ValidFrom = DateTime.Today, ValidTo = DateTime.Today.AddMonths(12), MinAdvanceBookingDays = 0, MinNights = 5 }
+                };
+
+                foreach (var offerData in offers)
+                {
+                    var offerName = offerData.Name;
+                    var existingOffers = _contentService.GetPagedChildren(hotel.Id, 0, 100, out _, null)
+                        .Where(o => o.ContentType.Alias == "offer" && o.Name == offerName);
+                    if (existingOffers.Any())
+                    {
+                        continue; // Skip if already exists
+                    }
+
+                    var offer = _contentService.Create(offerName, hotel.Key, "offer");
+                    var offerPropertyAliases = offerType.PropertyTypes.Select(pt => pt.Alias).ToHashSet();
+                    
+                    if (offerPropertyAliases.Contains("offerName")) offer.SetValue("offerName", offerData.Name);
+                    if (offerPropertyAliases.Contains("description")) offer.SetValue("description", offerData.Description);
+                    if (offerPropertyAliases.Contains("discount")) offer.SetValue("discount", offerData.Discount);
+                    if (offerPropertyAliases.Contains("validFrom")) offer.SetValue("validFrom", offerData.ValidFrom);
+                    if (offerPropertyAliases.Contains("validTo")) offer.SetValue("validTo", offerData.ValidTo);
+                    if (offerPropertyAliases.Contains("minAdvanceBookingDays")) offer.SetValue("minAdvanceBookingDays", offerData.MinAdvanceBookingDays);
+                    if (offerPropertyAliases.Contains("minNights")) offer.SetValue("minNights", offerData.MinNights);
+                    
+                    _contentService.Save(offer);
+                }
+            }
+
+            // Add events if event type exists
+            if (eventType != null)
+            {
+                var events = new[]
+                {
+                    new { 
+                        Name = "Wine Tasting Evening", 
+                        Description = "Join us for an exclusive wine tasting event featuring local and international selections. Includes canapés and expert sommelier guidance.", 
+                        EventDate = DateTime.Today.AddDays(14), 
+                        Location = "Hotel Restaurant", 
+                        Price = 75.00m 
+                    },
+                    new { 
+                        Name = "Live Jazz Night", 
+                        Description = "Enjoy an evening of smooth jazz performances in our elegant lounge. Complimentary welcome drink included.", 
+                        EventDate = DateTime.Today.AddDays(21), 
+                        Location = "Rooftop Bar", 
+                        Price = 45.00m 
+                    },
+                    new { 
+                        Name = "Cooking Masterclass", 
+                        Description = "Learn from our award-winning chef in an interactive cooking masterclass. Includes lunch and recipe cards to take home.", 
+                        EventDate = DateTime.Today.AddDays(28), 
+                        Location = "Chef's Kitchen", 
+                        Price = 120.00m 
+                    }
+                };
+
+                foreach (var eventData in events)
+                {
+                    var eventName = eventData.Name;
+                    var existingEvents = _contentService.GetPagedChildren(hotel.Id, 0, 100, out _, null)
+                        .Where(e => e.ContentType.Alias == "event" && e.Name == eventName);
+                    if (existingEvents.Any())
+                    {
+                        continue; // Skip if already exists
+                    }
+
+                    var evt = _contentService.Create(eventName, hotel.Key, "event");
+                    var eventPropertyAliases = eventType.PropertyTypes.Select(pt => pt.Alias).ToHashSet();
+                    
+                    if (eventPropertyAliases.Contains("eventName")) evt.SetValue("eventName", eventData.Name);
+                    if (eventPropertyAliases.Contains("description")) evt.SetValue("description", eventData.Description);
+                    if (eventPropertyAliases.Contains("eventDate")) evt.SetValue("eventDate", eventData.EventDate);
+                    if (eventPropertyAliases.Contains("location")) evt.SetValue("location", eventData.Location);
+                    if (eventPropertyAliases.Contains("price")) evt.SetValue("price", eventData.Price);
+                    
+                    _contentService.Save(evt);
+                }
+            }
         }
     }
 }

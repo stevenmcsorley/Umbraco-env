@@ -547,15 +547,99 @@ public class HotelsController : ControllerBase
         var offers = _contentService.GetPagedChildren(hotel.Id, 0, int.MaxValue, out _)
             .Where(c => c.ContentType.Alias == "offer");
 
-        var result = offers.Select(o => new
+        var hotelName = hotel.GetValue<string>("hotelName") ?? hotel.Name;
+        var hotelSlug = UrlHelper.ToSlug(hotelName);
+
+        var result = offers.Select(o =>
         {
-            id = o.Key,
-            name = o.GetValue<string>("offerName") ?? o.Name,
-            description = o.GetValue<string>("description"),
-            discount = o.GetValue<decimal?>("discount"),
-            validFrom = o.GetValue<DateTime?>("validFrom"),
-            validTo = o.GetValue<DateTime?>("validTo"),
-            url = $"/{UrlHelper.ToSlug(o.Name)}"
+            object? offerImageValue = null;
+            var offerImageProp = o.Properties.FirstOrDefault(p => p.Alias == "image");
+            if (offerImageProp != null)
+            {
+                offerImageValue = offerImageProp.GetValue();
+            }
+            
+            var offerName = o.GetValue<string>("offerName") ?? o.Name;
+            var offerSlug = UrlHelper.ToSlug(offerName);
+            
+            return new
+            {
+                id = o.Key,
+                name = offerName,
+                slug = offerSlug,
+                description = o.GetValue<string>("description"),
+                discount = o.GetValue<decimal?>("discount"),
+                validFrom = o.GetValue<DateTime?>("validFrom"),
+                validTo = o.GetValue<DateTime?>("validTo"),
+                minNights = o.GetValue<int?>("minNights") ?? 0,
+                minAdvanceBookingDays = o.GetValue<int?>("minAdvanceBookingDays") ?? 0,
+                image = GetMediaUrl(offerImageValue),
+                url = $"/hotels/{hotelSlug}/offers/{offerSlug}"
+            };
+        }).ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("{identifier}/events")]
+    public IActionResult GetEvents(string identifier)
+    {
+        IContent? hotel = null;
+        
+        // Try to find by GUID first
+        if (Guid.TryParse(identifier, out var guid))
+        {
+            hotel = _contentService.GetById(guid);
+        }
+        
+        // If not found by GUID, try to find by slug
+        if (hotel == null || hotel.ContentType.Alias != "hotel")
+        {
+            var contentType = _contentTypeService.Get("hotel");
+            if (contentType != null)
+            {
+                var hotels = _contentService.GetPagedOfType(contentType.Id, 0, int.MaxValue, out _, null);
+                hotel = hotels.FirstOrDefault(h =>
+                {
+                    var hotelName = h.GetValue<string>("hotelName") ?? h.Name;
+                    var slug = UrlHelper.ToSlug(hotelName);
+                    return slug.Equals(identifier, StringComparison.OrdinalIgnoreCase);
+                });
+            }
+        }
+        
+        if (hotel == null || hotel.ContentType.Alias != "hotel")
+        {
+            return NotFound();
+        }
+
+        var hotelName = hotel.GetValue<string>("hotelName") ?? hotel.Name;
+        var hotelSlug = UrlHelper.ToSlug(hotelName);
+        
+        var events = _contentService.GetPagedChildren(hotel.Id, 0, int.MaxValue, out _)
+            .Where(c => c.ContentType.Alias == "event");
+
+        var result = events.Select(e =>
+        {
+            object? eventImageValue = null;
+            var eventImageProp = e.Properties.FirstOrDefault(p => p.Alias == "heroImage" || p.Alias == "eventImage");
+            if (eventImageProp != null)
+            {
+                eventImageValue = eventImageProp.GetValue();
+            }
+            
+            return new
+            {
+                id = e.Key,
+                name = e.GetValue<string>("eventName") ?? e.Name,
+                slug = UrlHelper.ToSlug(e.GetValue<string>("eventName") ?? e.Name),
+                description = e.GetValue<string>("description"),
+                eventDate = e.GetValue<DateTime?>("eventDate"),
+                price = e.GetValue<decimal?>("price"),
+                location = e.GetValue<string>("location"),
+                image = GetMediaUrl(eventImageValue),
+                url = $"/hotels/{hotelSlug}/events/{UrlHelper.ToSlug(e.GetValue<string>("eventName") ?? e.Name)}"
+            };
         }).ToList();
 
         return Ok(result);

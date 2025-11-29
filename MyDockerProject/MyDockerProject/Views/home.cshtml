@@ -72,47 +72,176 @@
 }
 @await Html.PartialAsync("Partials/Features", (object)null)
 
-@{
-    // Gallery section - showcase hotel images
-    ViewData["GalleryTitle"] = "Our Beautiful Hotels";
-    ViewData["GalleryImages"] = new[]
-    {
-        "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
-        "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800",
-        "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800",
-        "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=800",
-        "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800",
-        "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=800"
-    };
-}
-@await Html.PartialAsync("Partials/Gallery", (object)null)
+<!-- Our Beautiful Hotels Section - Dynamically loaded -->
+<section class="py-20 lg:py-28 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+        <div class="mb-16">
+            <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-4 tracking-tight">Our Beautiful Hotels</h2>
+            <p class="text-gray-600 text-lg font-light">Explore our beautiful properties</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="hotels-gallery-container">
+            <div class="col-span-full text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400"></div>
+                <p class="text-gray-600 mt-4 text-lg font-light">Loading hotels...</p>
+            </div>
+        </div>
+    </div>
+</section>
 
-@{
-    // Cards section - featured destinations
-    ViewData["CardsTitle"] = "Featured Destinations";
-    ViewData["CardsItems"] = new[]
-    {
-        new { title = "London", description = "Experience British elegance in the heart of the capital", image = "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600", link = "/hotels" },
-        new { title = "Paris", description = "French sophistication meets modern luxury", image = "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600", link = "/hotels" },
-        new { title = "New York", description = "Urban luxury with panoramic city views", image = "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600", link = "/hotels" },
-        new { title = "Tokyo", description = "Traditional elegance meets cutting-edge design", image = "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600", link = "/hotels" },
-        new { title = "Dubai", description = "Ultra-modern beachfront luxury", image = "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600", link = "/hotels" },
-        new { title = "Santorini", description = "Breathtaking sunsets and Aegean views", image = "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=600", link = "/hotels" }
-    };
-}
+<script>
+    // Fetch hotels and display in gallery format
+    fetch('/api/hotels')
+        .then(response => response.json())
+        .then(hotels => {
+            const container = document.getElementById('hotels-gallery-container');
+            
+            if (!hotels || hotels.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <p class="text-gray-600 text-lg font-light">No hotels available at the moment.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Collect all hotel images (heroImage and galleryImages)
+            const allImages = [];
+            hotels.forEach(hotel => {
+                // Add hero image if available
+                if (hotel.heroImage) {
+                    allImages.push({
+                        url: hotel.heroImage,
+                        hotelName: hotel.name,
+                        hotelSlug: hotel.slug || hotel.id
+                    });
+                }
+                // Add gallery images if available
+                if (hotel.galleryImages && Array.isArray(hotel.galleryImages)) {
+                    hotel.galleryImages.forEach(imgUrl => {
+                        allImages.push({
+                            url: imgUrl,
+                            hotelName: hotel.name,
+                            hotelSlug: hotel.slug || hotel.id
+                        });
+                    });
+                }
+            });
+            
+            // Limit to 6 images for the gallery
+            const displayImages = allImages.slice(0, 6);
+            
+            if (displayImages.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <p class="text-gray-600 text-lg font-light">Hotel images coming soon.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = displayImages.map(img => `
+                <div class="relative overflow-hidden aspect-[4/3] cursor-pointer group rounded-xl" onclick="if(typeof window.openLightbox === 'function') window.openLightbox('${img.url}');">
+                    <img src="${img.url}" alt="${img.hotelName || 'Hotel'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
+                    <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p class="text-white text-sm font-light">${img.hotelName || 'Hotel'}</p>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error loading hotels for gallery:', error);
+            document.getElementById('hotels-gallery-container').innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <p class="text-gray-600 text-lg font-light">Unable to load hotel images.</p>
+                </div>
+            `;
+        });
+</script>
+
+<!-- Featured Destinations Section - Dynamically linked to hotels -->
 <section class="py-20 lg:py-28 bg-white">
     <div class="max-w-7xl mx-auto px-6 lg:px-12">
         <div class="mb-16">
             <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-4 tracking-tight">Featured Destinations</h2>
             <p class="text-gray-600 text-lg font-light">Explore our most sought-after locations</p>
         </div>
-        @{
-            // Don't render title in Cards partial since we already have it above
-            ViewData["CardsTitle"] = "";
-        }
-        @await Html.PartialAsync("Partials/Cards", (object)null)
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="destinations-container">
+            <div class="col-span-full text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400"></div>
+                <p class="text-gray-600 mt-4 text-lg font-light">Loading destinations...</p>
+            </div>
+        </div>
     </div>
 </section>
+
+<script>
+    // Featured destinations with city-to-hotel mapping
+    const featuredDestinations = [
+        { city: "London", description: "Experience British elegance in the heart of the capital", image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600" },
+        { city: "Paris", description: "French sophistication meets modern luxury", image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600" },
+        { city: "New York", description: "Urban luxury with panoramic city views", image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600" },
+        { city: "Tokyo", description: "Traditional elegance meets cutting-edge design", image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600" },
+        { city: "Dubai", description: "Ultra-modern beachfront luxury", image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600" },
+        { city: "Santorini", description: "Breathtaking sunsets and Aegean views", image: "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=600" }
+    ];
+    
+    // Fetch hotels and match them to destinations
+    fetch('/api/hotels')
+        .then(response => response.json())
+        .then(hotels => {
+            const container = document.getElementById('destinations-container');
+            
+            // Create a map of city to hotel (case-insensitive)
+            const cityToHotelMap = new Map();
+            hotels.forEach(hotel => {
+                if (hotel.city) {
+                    const cityKey = hotel.city.toLowerCase();
+                    // Use hotel image if available, otherwise keep the destination image
+                    if (!cityToHotelMap.has(cityKey)) {
+                        cityToHotelMap.set(cityKey, {
+                            hotel: hotel,
+                            image: hotel.heroImage || hotel.galleryImages?.[0] || null
+                        });
+                    }
+                }
+            });
+            
+            // Render destinations with hotel links
+            container.innerHTML = featuredDestinations.map(dest => {
+                const cityKey = dest.city.toLowerCase();
+                const hotelMatch = cityToHotelMap.get(cityKey);
+                
+                // Use hotel image if available, otherwise use destination image
+                const displayImage = hotelMatch?.image || dest.image;
+                const hotelLink = hotelMatch ? `/hotels/${hotelMatch.hotel.slug || hotelMatch.hotel.id}` : '/hotels';
+                
+                return `
+                    <div class="group">
+                        <div class="relative overflow-hidden aspect-[4/3] mb-6 rounded-xl">
+                            <img src="${displayImage}" alt="${dest.city}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                        </div>
+                        <h3 class="text-xl font-serif text-gray-900 mb-3 tracking-tight">${dest.city}</h3>
+                        <p class="text-gray-600 mb-6 leading-relaxed font-light text-sm">${dest.description}</p>
+                        <a href="${hotelLink}" class="text-gray-900 text-xs font-light tracking-widest uppercase hover:opacity-70 transition-opacity inline-flex items-center">
+                            Learn More
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                `;
+            }).join('');
+        })
+        .catch(error => {
+            console.error('Error loading destinations:', error);
+            document.getElementById('destinations-container').innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <p class="text-gray-600 text-lg font-light">Unable to load destinations.</p>
+                </div>
+            `;
+        });
+</script>
 
 @{
     // Testimonials section

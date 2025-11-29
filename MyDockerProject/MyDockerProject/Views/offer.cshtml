@@ -1,0 +1,181 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@{
+    var layoutFromContent = Model?.Value<string>("layout");
+    var layoutName = !string.IsNullOrEmpty(layoutFromContent) ? layoutFromContent : ViewData["Layout"] as string;
+    
+    var layoutPath = layoutName switch
+    {
+        "HolyGrail" => "Layouts/HolyGrail.cshtml",
+        "Sidebar" => "Layouts/Sidebar.cshtml",
+        "Centered" => "Layouts/Centered.cshtml",
+        "FullWidth" => "Layouts/FullWidth.cshtml",
+        _ => "Layouts/Main.cshtml"
+    };
+    
+    Layout = layoutPath;
+    ViewData["Title"] = Model?.Name ?? "Offer Details";
+    
+    var offerId = Model?.Key.ToString() 
+                  ?? ViewBag.OfferId as string 
+                  ?? ViewBag.OfferSlug as string
+                  ?? Context.Request.RouteValues["offerSlug"]?.ToString();
+    var hotelId = (Model?.Parent as IPublishedContent)?.Key.ToString() 
+                  ?? ViewBag.HotelId as string 
+                  ?? ViewBag.HotelSlug as string
+                  ?? Context.Request.RouteValues["hotelSlug"]?.ToString();
+}
+
+<div id="offer-page-content">
+    <div class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <p class="text-gray-600 mt-4 text-lg font-light">Loading offer details...</p>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const hotelId = '@(hotelId ?? "")';
+        const offerId = '@(offerId ?? "")';
+        const container = document.getElementById('offer-page-content');
+        
+        console.log('Offer page - hotelId:', hotelId, 'offerId:', offerId);
+        
+        if (!container) {
+            console.error('Container not found');
+            return;
+        }
+    
+    if (!hotelId || hotelId.trim() === '' || !offerId || offerId.trim() === '') {
+        container.innerHTML = `
+            <div class="text-center py-20">
+                <p class="text-red-600 mb-4">Invalid hotel or offer identifier.</p>
+                <p class="text-gray-600 text-sm mb-4">Hotel: ${hotelId || 'missing'}, Offer: ${offerId || 'missing'}</p>
+                <a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotels</a>
+            </div>
+        `;
+        return;
+    }
+    
+    Promise.all([
+        fetch(`/api/hotels/${encodeURIComponent(hotelId)}`).then(r => {
+            if (!r.ok) {
+                console.error('Failed to fetch hotel:', r.status, r.statusText);
+                throw new Error(`Failed to fetch hotel: ${r.status}`);
+            }
+            return r.json();
+        }),
+        fetch(`/api/hotels/${encodeURIComponent(hotelId)}/offers`).then(r => {
+            if (!r.ok) {
+                console.error('Failed to fetch offers:', r.status, r.statusText);
+                throw new Error(`Failed to fetch offers: ${r.status}`);
+            }
+            return r.json();
+        })
+    ])
+    .then(([hotel, offers]) => {
+        console.log('Hotel data:', hotel);
+        console.log('Offers data:', offers);
+        console.log('Looking for offerId:', offerId);
+        
+        if (!hotel) {
+            throw new Error('Hotel not found');
+        }
+        
+        if (!offers || !Array.isArray(offers)) {
+            throw new Error('Offers data is invalid');
+        }
+        
+        // Try to find offer by ID (GUID) first, then by slug
+        const offer = offers.find(o => {
+            if (!o) return false;
+            const offerIdLower = offerId.toLowerCase();
+            return o.id?.toLowerCase() === offerIdLower || 
+                   o.slug?.toLowerCase() === offerIdLower ||
+                   o.id === offerId ||
+                   o.slug === offerId;
+        });
+        
+        console.log('Found offer:', offer);
+        const hotelSlug = hotel.slug || hotel.id;
+        const offerSlug = offer?.slug || offer?.id;
+        
+        if (!offer) {
+            container.innerHTML = `
+                <div class="text-center py-20">
+                    <h1 class="text-4xl font-serif text-gray-900 mb-4 tracking-tight">Offer Not Found</h1>
+                    <a href="/hotels/${hotelSlug}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        // Hero Section - matching room/event page style
+        const offerImageUrl = offer.image;
+        html += `
+            <section class="relative h-[85vh] min-h-[700px] overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+                    ${offerImageUrl ? `<img src="${offerImageUrl}" alt="${offer.name}" class="w-full h-full object-cover opacity-40" />` : ''}
+                    <div class="absolute inset-0 bg-black/50"></div>
+                </div>
+                <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 h-full flex items-center py-20">
+                    <div class="text-white max-w-3xl">
+                        <h1 class="text-5xl md:text-6xl lg:text-7xl font-serif mb-8 tracking-tight">${offer.name || 'Special Offer'}</h1>
+                        ${offer.description ? `<p class="text-xl md:text-2xl mb-6 opacity-90 font-light leading-relaxed">${offer.description.substring(0, 200)}${offer.description.length > 200 ? '...' : ''}</p>` : ''}
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        // Offer Details Section - matching room/event page style
+        html += `
+            <section class="py-20 lg:py-28 bg-white">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    ${offerImageUrl ? `
+                    <div class="mb-12">
+                        <div class="aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden">
+                            <img src="${offerImageUrl}" alt="${offer.name}" class="w-full h-full object-cover" />
+                        </div>
+                    </div>
+                    ` : ''}
+                    <div class="max-w-4xl">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-6 tracking-tight">${offer.name || 'Special Offer'}</h2>
+                        ${offer.description ? `<p class="text-lg text-gray-600 mb-8 font-light leading-relaxed">${offer.description}</p>` : ''}
+                        <div class="flex flex-wrap gap-6 mb-8 text-xs font-light text-gray-500 uppercase tracking-widest">
+                            ${offer.discount ? `<span>${offer.discount}% DISCOUNT</span>` : ''}
+                            ${offer.validFrom && offer.validTo ? `
+                                <span>VALID: ${new Date(offer.validFrom).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${new Date(offer.validTo).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            ` : ''}
+                        </div>
+                        ${offer.discount ? `
+                            <div class="mb-8">
+                                <p class="text-sm text-gray-500 mb-2 font-light uppercase tracking-widest">SAVE UP TO</p>
+                                <p class="text-4xl font-serif text-gray-900">${offer.discount}% <span class="text-lg text-gray-500 font-light">off your stay</span></p>
+                            </div>
+                        ` : ''}
+                        <a href="/hotels/${hotelSlug}/rooms" class="bg-gray-900 text-white px-10 py-4 text-xs font-light tracking-widest uppercase hover:bg-gray-800 transition-colors inline-block">
+                            View Available Rooms
+                        </a>
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        container.innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Error loading offer:', error);
+        container.innerHTML = `
+            <div class="text-center py-20">
+                <p class="text-red-600 mb-4 font-semibold">Error loading offer details.</p>
+                <p class="text-gray-600 text-sm mb-4">${error.message || 'Unknown error'}</p>
+                <p class="text-gray-500 text-xs mb-4">Hotel: ${hotelId || 'N/A'}, Offer: ${offerId || 'N/A'}</p>
+                <a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotels</a>
+            </div>
+        `;
+    });
+    })();
+</script>
+

@@ -7,7 +7,8 @@ export class BookingAdapter {
       from: typeof request.from === 'string' ? request.from : request.from.toISOString(),
       to: typeof request.to === 'string' ? request.to : request.to.toISOString(),
       guestDetails: request.guestDetails,
-      quantity: request.quantity || 1
+      quantity: request.quantity || 1,
+      addOns: request.addOns || []
     };
   }
 
@@ -19,7 +20,10 @@ export class BookingAdapter {
       to: new Date(data.to),
       guestDetails: data.guestDetails,
       status: data.status,
-      createdAt: new Date(data.createdAt)
+      createdAt: new Date(data.createdAt),
+      totalPrice: data.totalPrice,
+      currency: data.currency || 'GBP',
+      addOns: data.addOns || []
     };
   }
 }

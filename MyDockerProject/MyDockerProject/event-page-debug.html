@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Event Details - Luxury Hotels</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/css/output.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            letter-spacing: -0.01em;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-white text-gray-900 flex flex-col antialiased">
+<header class="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+        <div class="flex justify-between items-center py-5">
+            <a href="/" class="text-2xl font-serif text-gray-900 tracking-tight hover:opacity-80 transition-opacity">
+                LUXURY HOTELS
+            </a>
+            <nav class="hidden md:flex space-x-10 items-center">
+                <a href="/hotels" class="text-sm text-gray-700 hover:text-gray-900 font-light tracking-wide uppercase transition-colors">Hotels</a>
+                <a href="/hotels" class="bg-gray-900 text-white px-8 py-2.5 text-xs font-light tracking-widest uppercase hover:bg-gray-800 transition-colors">
+                    Book Now
+                </a>
+            </nav>
+            <button class="md:hidden text-gray-700 hover:text-gray-900" onclick="toggleMobileMenu()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-gray-100 mt-4 pt-4">
+            <nav class="flex flex-col space-y-3">
+                <a href="/hotels" class="text-sm text-gray-700 hover:text-gray-900 py-2 uppercase tracking-wide">Hotels</a>
+            </nav>
+        </div>
+    </div>
+</header>
+    <main class="flex-grow">
+        
+<div id="event-page-content">
+    <div class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <p class="text-gray-600 mt-4 text-lg font-light">Loading event details...</p>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const hotelId = 'chteau-de-paris';
+        const eventId = 'live-jazz-night';
+        const container = document.getElementById('event-page-content');
+        
+        console.log('Event page - hotelId:', hotelId, 'eventId:', eventId);
+        
+        if (!container) {
+            console.error('Container not found');
+            return;
+        }
+    
+    if (!hotelId || hotelId.trim() === '' || !eventId || eventId.trim() === '') {
+        container.innerHTML = `
+            <div class="text-center py-20">
+                <p class="text-red-600 mb-4">Invalid hotel or event identifier.</p>
+                <p class="text-gray-600 text-sm mb-4">Hotel: ${hotelId || 'missing'}, Event: ${eventId || 'missing'}</p>
+                <a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotels</a>
+            </div>
+        `;
+        return;
+    }
+    
+    Promise.all([
+        fetch(`/api/hotels/${encodeURIComponent(hotelId)}`).then(r => {
+            if (!r.ok) {
+                console.error('Failed to fetch hotel:', r.status, r.statusText);
+                throw new Error(`Failed to fetch hotel: ${r.status}`);
+            }
+            return r.json();
+        }),
+        fetch(`/api/hotels/${encodeURIComponent(hotelId)}/events`).then(r => {
+            if (!r.ok) {
+                console.error('Failed to fetch events:', r.status, r.statusText);
+                throw new Error(`Failed to fetch events: ${r.status}`);
+            }
+            return r.json();
+        })
+    ])
+    .then(([hotel, events]) => {
+        console.log('Hotel data:', hotel);
+        console.log('Events data:', events);
+        console.log('Looking for eventId:', eventId);
+        
+        if (!hotel) {
+            throw new Error('Hotel not found');
+        }
+        
+        if (!events || !Array.isArray(events)) {
+            throw new Error('Events data is invalid');
+        }
+        
+        // Try to find event by ID (GUID) first, then by slug
+        const event = events.find((e: any) => {
+            if (!e) return false;
+            const eventIdLower = eventId.toLowerCase();
+            return e.id?.toLowerCase() === eventIdLower || 
+                   e.slug?.toLowerCase() === eventIdLower ||
+                   e.id === eventId ||
+                   e.slug === eventId;
+        });
+        
+        console.log('Found event:', event);
+        const hotelSlug = hotel.slug || hotel.id;
+        const eventSlug = event?.slug || event?.id;
+        
+        if (!event) {
+            container.innerHTML = `
+                <div class="text-center py-20">
+                    <h1 class="text-4xl font-serif text-gray-900 mb-4 tracking-tight">Event Not Found</h1>
+                    <a href="/hotels/${hotelSlug}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        // Hero Section
+        const eventImageUrl = event.image;
+        html += `
+            <section class="relative h-[85vh] min-h-[700px] overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+                    ${eventImageUrl ? `<img src="${eventImageUrl}" alt="${event.name}" class="w-full h-full object-cover opacity-40" />` : ''}
+                </div>
+                <div class="relative z-10 flex items-center justify-center h-full">
+                    <div class="text-center px-6">
+                        <h1 class="text-5xl md:text-7xl font-serif text-white mb-6 tracking-tight">${event.name || 'Event'}</h1>
+                        ${event.location ? `<p class="text-xl text-gray-200 font-light">${event.location}</p>` : ''}
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        // Event Details Section
+        html += `
+            <section class="py-20 lg:py-28 bg-white">
+                <div class="max-w-4xl mx-auto px-6 lg:px-12">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                        <div class="lg:col-span-2">
+                            ${event.description ? `
+                                <div class="prose prose-lg max-w-none mb-8">
+                                    <p class="text-gray-700 font-light leading-relaxed">${event.description}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="lg:col-span-1">
+                            <div class="bg-gray-50 rounded-xl p-8 sticky top-24">
+                                ${event.eventDate ? `
+                                    <div class="mb-6">
+                                        <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-2">Event Date</h3>
+                                        <p class="text-xl font-serif text-gray-900">${new Date(event.eventDate).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                    </div>
+                                ` : ''}
+                                ${event.price ? `
+                                    <div class="mb-6">
+                                        <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-2">Price</h3>
+                                        <p class="text-3xl font-serif text-gray-900">£${parseFloat(event.price).toFixed(2)}</p>
+                                    </div>
+                                ` : ''}
+                                ${event.location ? `
+                                    <div class="mb-6">
+                                        <h3 class="text-sm font-light tracking-widest uppercase text-gray-500 mb-2">Location</h3>
+                                        <p class="text-gray-700 font-light">${event.location}</p>
+                                    </div>
+                                ` : ''}
+                                <div id="booking-engine-root" 
+                                     data-product-id="${event.id}" 
+                                     data-hotel-id="${hotel.id}"
+                                     data-api-base-url="/engine">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        container.innerHTML = html;
+        
+        // Load React Booking Engine
+        (function() {
+            function initializeBookingEngine() {
+                const bookingRoot = document.getElementById('booking-engine-root');
+                if (!bookingRoot) return;
+                
+                const productId = bookingRoot.getAttribute('data-product-id');
+                const hotelIdAttr = bookingRoot.getAttribute('data-hotel-id');
+                
+                if (!productId || !hotelIdAttr) {
+                    bookingRoot.innerHTML = `
+                        <div class="text-center py-12 bg-red-50 rounded-lg">
+                            <p class="text-red-600 mb-2 font-semibold">Failed to initialize booking engine.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                window.initBookingEngine({
+                    containerId: 'booking-engine-root',
+                    productId: productId,
+                    hotelId: hotelIdAttr,
+                    apiBaseUrl: '/engine'
+                });
+            }
+            
+            const script = document.createElement('script');
+            script.src = '/scripts/booking-engine.js?v=' + Date.now();
+            script.onload = function() {
+                setTimeout(initializeBookingEngine, 50);
+            };
+            script.onerror = function() {
+                const bookingRoot = document.getElementById('booking-engine-root');
+                if (bookingRoot) {
+                    bookingRoot.innerHTML = `
+                        <div class="text-center py-12 bg-red-50 rounded-lg">
+                            <p class="text-red-600 mb-2 font-semibold">Failed to load booking engine.</p>
+                        </div>
+                    `;
+                }
+            };
+            document.head.appendChild(script);
+        })();
+    })
+    .catch(error => {
+        console.error('Error loading event:', error);
+        container.innerHTML = `
+            <div class="text-center py-20">
+                <p class="text-red-600 mb-4 font-semibold">Error loading event details.</p>
+                <p class="text-gray-600 text-sm mb-4">${error.message || 'Unknown error'}</p>
+                <p class="text-gray-500 text-xs mb-4">Hotel: ${hotelId || 'N/A'}, Event: ${eventId || 'N/A'}</p>
+                <a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotels</a>
+            </div>
+        `;
+    })();
+</script>
+
+
+    </main>
+
+    <footer class="bg-gray-900 text-white mt-24">
+        <div class="max-w-7xl mx-auto px-6 lg:px-12 py-16">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+                <div>
+                    <h3 class="text-lg font-serif mb-6 text-white">LUXURY HOTELS</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed font-light">Experience world-class accommodations in the most beautiful destinations.</p>
+                </div>
+                <div>
+                    <h4 class="text-xs font-light tracking-widest uppercase mb-6 text-gray-300">Quick Links</h4>
+                    <ul class="space-y-3 text-gray-400 text-sm font-light">
+                        <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
+                        <li><a href="/hotels" class="hover:text-white transition-colors">Hotels</a></li>
+                        <li><a href="/hotels" class="hover:text-white transition-colors">Book Now</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-light tracking-widest uppercase mb-6 text-gray-300">Destinations</h4>
+                    <ul class="space-y-3 text-gray-400 text-sm font-light">
+                        <li><a href="/hotels" class="hover:text-white transition-colors">London</a></li>
+                        <li><a href="/hotels" class="hover:text-white transition-colors">Paris</a></li>
+                        <li><a href="/hotels" class="hover:text-white transition-colors">New York</a></li>
+                        <li><a href="/hotels" class="hover:text-white transition-colors">Tokyo</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-light tracking-widest uppercase mb-6 text-gray-300">Contact</h4>
+                    <ul class="space-y-3 text-gray-400 text-sm font-light">
+                        <li>+1 (555) 123-4567</li>
+                        <li>info@luxuryhotels.com</li>
+                        <li>24/7 Support</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500 text-xs font-light tracking-wide">
+                <p>&copy; 2025 Luxury Hotels. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+<script>
+    function toggleMobileMenu() {
+        document.getElementById('mobile-menu').classList.toggle('hidden');
+    }
+</script>
+</body>
+</html>
+

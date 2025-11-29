@@ -1,44 +1,76 @@
-@model dynamic
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
-    var title = Model?.title ?? "Special Offers";
-    var items = Model?.items as System.Collections.IEnumerable ?? new List<dynamic>();
+    var title = ViewData["OffersTitle"]?.ToString() ?? ViewData["title"]?.ToString() ?? "Special Offers";
+    var items = ViewData["OffersItems"] as System.Collections.IEnumerable 
+                ?? ViewData["items"] as System.Collections.IEnumerable
+                ?? (Model != null ? (Model.GetType().GetProperty("items")?.GetValue(Model) as System.Collections.IEnumerable) : null)
+                ?? new List<object>();
 }
 
-<section class="py-12 bg-gray-50">
-    <div class="container mx-auto px-4">
-        <h2 class="text-3xl font-bold mb-8 text-center">@title</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach (var offer in items)
-            {
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    @if (!string.IsNullOrEmpty(offer.image))
+@if (items != null && items.Cast<object>().Any())
+{
+    <section class="py-20 lg:py-28 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6 lg:px-12">
+            <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight text-center">@title</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                @foreach (var offerObj in items)
+                {
+                    // Safely extract properties using reflection
+                    string offerName = "";
+                    string offerDescription = "";
+                    decimal? offerDiscount = null;
+                    DateTime? offerValidFrom = null;
+                    DateTime? offerValidTo = null;
+                    string offerImage = "";
+                    string offerLink = "";
+                    
+                    if (offerObj != null)
                     {
-                        <img src="@offer.image" alt="@(offer.name ?? "")" class="w-full h-48 object-cover" />
+                        var offerType = offerObj.GetType();
+                        try
+                        {
+                            offerName = offerType.GetProperty("name")?.GetValue(offerObj)?.ToString() ?? "";
+                            offerDescription = offerType.GetProperty("description")?.GetValue(offerObj)?.ToString() ?? "";
+                            offerDiscount = offerType.GetProperty("discount")?.GetValue(offerObj) as decimal?;
+                            offerValidFrom = offerType.GetProperty("validFrom")?.GetValue(offerObj) as DateTime?;
+                            offerValidTo = offerType.GetProperty("validTo")?.GetValue(offerObj) as DateTime?;
+                            offerImage = offerType.GetProperty("image")?.GetValue(offerObj)?.ToString() ?? "";
+                            // Prioritize 'url' over 'link' to use API-generated URLs with hotel slug
+                            offerLink = offerType.GetProperty("url")?.GetValue(offerObj)?.ToString() ?? offerType.GetProperty("link")?.GetValue(offerObj)?.ToString() ?? "";
+                        }
+                        catch { }
                     }
-                    <div class="p-6">
-                        <h3 class="text-xl font-bold mb-2">@(offer.name ?? "")</h3>
-                        @if (!string.IsNullOrEmpty(offer.description))
+                    
+                    <div class="bg-white rounded-xl shadow-sm p-8 hover:shadow-md transition-shadow">
+                        @if (!string.IsNullOrEmpty(offerImage))
                         {
-                            <p class="text-gray-600 mb-4">@offer.description</p>
+                            <div class="aspect-[4/3] overflow-hidden mb-6 rounded-xl">
+                                <img src="@offerImage" alt="@offerName" class="w-full h-full object-cover" />
+                            </div>
                         }
-                        @if (offer.discount != null)
+                        <h3 class="text-xl font-serif text-gray-900 mb-4 tracking-tight">@offerName</h3>
+                        @if (!string.IsNullOrEmpty(offerDescription))
                         {
-                            <p class="text-3xl font-bold text-green-600 mb-2">@offer.discount% Off</p>
+                            <p class="text-gray-600 mb-6 font-light text-sm leading-relaxed">@offerDescription</p>
                         }
-                        @if (!string.IsNullOrEmpty(offer.validFrom) && !string.IsNullOrEmpty(offer.validTo))
+                        @if (offerDiscount.HasValue)
                         {
-                            <p class="text-sm text-gray-500">Valid: @offer.validFrom - @offer.validTo</p>
+                            <p class="text-3xl font-serif text-gray-900 mb-4">@offerDiscount% Off</p>
                         }
-                        @if (!string.IsNullOrEmpty(offer.link))
+                        @if (offerValidFrom.HasValue && offerValidTo.HasValue)
                         {
-                            <a href="@offer.link" class="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                                Learn More
+                            <p class="text-xs text-gray-500 font-light uppercase tracking-wide">Valid: @offerValidFrom.Value.ToString("MMM dd, yyyy") - @offerValidTo.Value.ToString("MMM dd, yyyy")</p>
+                        }
+                        @if (!string.IsNullOrEmpty(offerLink))
+                        {
+                            <a href="@offerLink" class="inline-block mt-6 text-gray-900 text-xs font-light tracking-widest uppercase hover:opacity-70 transition-opacity">
+                                Learn More →
                             </a>
                         }
                     </div>
-                </div>
-            }
+                }
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+}
 

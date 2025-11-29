@@ -386,4 +386,205 @@ public class DocumentTypePropertyService
             }
         }
     }
+    
+    public void AddEventProperties()
+    {
+        var eventType = _contentTypeService.Get("event");
+        if (eventType == null)
+        {
+            throw new Exception("Event document type does not exist. Please create it first.");
+        }
+
+        var allDataTypes = _dataTypeService.GetAll().ToList();
+        var textstringDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextBox");
+        var textareaDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextArea");
+        var decimalDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.Decimal");
+        var dateTimeDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.DateTime");
+        var mediaPickerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.MediaPicker3");
+
+        // Use Textstring as fallback for Decimal if it doesn't exist
+        if (decimalDataType == null)
+        {
+            decimalDataType = textstringDataType;
+        }
+
+        if (textstringDataType == null || textareaDataType == null || dateTimeDataType == null)
+        {
+            throw new Exception("Required data types not found.");
+        }
+
+        // Ensure content group exists
+        const string groupAlias = "content";
+        const string groupName = "Content";
+        
+        var contentType = (ContentType)eventType;
+        var contentGroup = contentType.PropertyGroups.FirstOrDefault(g => g.Alias == groupAlias || g.Alias == "Content");
+        if (contentGroup == null)
+        {
+            contentType.AddPropertyGroup(groupName, groupAlias);
+            _contentTypeService.Save(contentType);
+            var reloaded = _contentTypeService.Get("event");
+            if (reloaded != null)
+            {
+                contentType = (ContentType)reloaded;
+                contentGroup = contentType.PropertyGroups.FirstOrDefault(g => g.Alias == groupAlias || g.Alias == "Content");
+            }
+        }
+
+        if (contentGroup == null)
+        {
+            throw new Exception($"Property group '{groupName}' not found for Event document type.");
+        }
+
+        // Define Event properties
+        var eventProperties = new[]
+        {
+            new { Alias = "eventName", Name = "Event Name", DataType = textstringDataType, Mandatory = true, SortOrder = 1 },
+            new { Alias = "description", Name = "Description", DataType = textareaDataType, Mandatory = false, SortOrder = 2 },
+            new { Alias = "eventDate", Name = "Event Date", DataType = dateTimeDataType, Mandatory = false, SortOrder = 3 },
+            new { Alias = "location", Name = "Location", DataType = textstringDataType, Mandatory = false, SortOrder = 4 },
+            new { Alias = "price", Name = "Price", DataType = decimalDataType, Mandatory = false, SortOrder = 5 },
+            new { Alias = "heroImage", Name = "Hero Image", DataType = mediaPickerDataType ?? textstringDataType, Mandatory = false, SortOrder = 6 },
+            new { Alias = "eventImage", Name = "Event Image", DataType = mediaPickerDataType ?? textstringDataType, Mandatory = false, SortOrder = 7 }
+        };
+
+        bool hasChanges = false;
+
+        foreach (var prop in eventProperties)
+        {
+            var existingProperty = contentType.PropertyTypes.FirstOrDefault(pt => pt.Alias == prop.Alias);
+            var isInGroup = contentGroup.PropertyTypes.Any(pt => pt.Alias == prop.Alias);
+
+            if (!isInGroup)
+            {
+                if (existingProperty != null)
+                {
+                    var propertyType = existingProperty as PropertyType;
+                    if (propertyType != null && !contentGroup.PropertyTypes.Any(pt => pt.Alias == prop.Alias))
+                    {
+                        contentGroup.PropertyTypes.Add(propertyType);
+                        hasChanges = true;
+                    }
+                }
+                else
+                {
+                    var propertyType = new PropertyType(_shortStringHelper, prop.DataType, prop.Alias)
+                    {
+                        Name = prop.Name,
+                        Mandatory = prop.Mandatory,
+                        SortOrder = prop.SortOrder
+                    };
+                    
+                    contentType.AddPropertyType(propertyType);
+                    contentGroup.PropertyTypes.Add(propertyType);
+                    hasChanges = true;
+                }
+            }
+        }
+
+        if (hasChanges)
+        {
+            _contentTypeService.Save(contentType);
+        }
+    }
+
+    public void AddOfferProperties()
+    {
+        var offerType = _contentTypeService.Get("offer");
+        if (offerType == null)
+        {
+            throw new Exception("Offer document type does not exist. Please create it first.");
+        }
+
+        var allDataTypes = _dataTypeService.GetAll().ToList();
+        var textstringDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextBox");
+        var textareaDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextArea");
+        var decimalDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.Decimal");
+        var dateTimeDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.DateTime");
+        var mediaPickerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.MediaPicker3");
+
+        // Use Textstring as fallback for Decimal if it doesn't exist
+        if (decimalDataType == null)
+        {
+            decimalDataType = textstringDataType;
+        }
+
+        if (textstringDataType == null || textareaDataType == null || dateTimeDataType == null)
+        {
+            throw new Exception("Required data types not found.");
+        }
+
+        // Ensure content group exists
+        const string groupAlias = "content";
+        const string groupName = "Content";
+        
+        var contentType = (ContentType)offerType;
+        var contentGroup = contentType.PropertyGroups.FirstOrDefault(g => g.Alias == groupAlias || g.Alias == "Content");
+        if (contentGroup == null)
+        {
+            contentType.AddPropertyGroup(groupName, groupAlias);
+            _contentTypeService.Save(contentType);
+            var reloaded = _contentTypeService.Get("offer");
+            if (reloaded != null)
+            {
+                contentType = (ContentType)reloaded;
+                contentGroup = contentType.PropertyGroups.FirstOrDefault(g => g.Alias == groupAlias || g.Alias == "Content");
+            }
+        }
+
+        if (contentGroup == null)
+        {
+            throw new Exception($"Property group '{groupName}' not found for Offer document type.");
+        }
+
+        // Define Offer properties
+        var offerProperties = new[]
+        {
+            new { Alias = "offerName", Name = "Offer Name", DataType = textstringDataType, Mandatory = true, SortOrder = 1 },
+            new { Alias = "description", Name = "Description", DataType = textareaDataType, Mandatory = false, SortOrder = 2 },
+            new { Alias = "discount", Name = "Discount", DataType = decimalDataType, Mandatory = false, SortOrder = 3 },
+            new { Alias = "validFrom", Name = "Valid From", DataType = dateTimeDataType, Mandatory = false, SortOrder = 4 },
+            new { Alias = "validTo", Name = "Valid To", DataType = dateTimeDataType, Mandatory = false, SortOrder = 5 },
+            new { Alias = "image", Name = "Image", DataType = mediaPickerDataType ?? textstringDataType, Mandatory = false, SortOrder = 6 }
+        };
+
+        bool hasChanges = false;
+
+        foreach (var prop in offerProperties)
+        {
+            var existingProperty = contentType.PropertyTypes.FirstOrDefault(pt => pt.Alias == prop.Alias);
+            var isInGroup = contentGroup.PropertyTypes.Any(pt => pt.Alias == prop.Alias);
+
+            if (!isInGroup)
+            {
+                if (existingProperty != null)
+                {
+                    var propertyType = existingProperty as PropertyType;
+                    if (propertyType != null && !contentGroup.PropertyTypes.Any(pt => pt.Alias == prop.Alias))
+                    {
+                        contentGroup.PropertyTypes.Add(propertyType);
+                        hasChanges = true;
+                    }
+                }
+                else
+                {
+                    var propertyType = new PropertyType(_shortStringHelper, prop.DataType, prop.Alias)
+                    {
+                        Name = prop.Name,
+                        Mandatory = prop.Mandatory,
+                        SortOrder = prop.SortOrder
+                    };
+                    
+                    contentType.AddPropertyType(propertyType);
+                    contentGroup.PropertyTypes.Add(propertyType);
+                    hasChanges = true;
+                }
+            }
+        }
+
+        if (hasChanges)
+        {
+            _contentTypeService.Save(contentType);
+        }
+    }
 }

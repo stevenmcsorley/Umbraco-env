@@ -232,6 +232,7 @@ public class DocumentTypeService
         var textareaDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextArea");
         var decimalDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.Decimal");
         var dateTimeDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.DateTime");
+        var mediaPickerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.MediaPicker3");
         
         // Use Textstring as fallback for Decimal if it doesn't exist
         if (decimalDataType == null)
@@ -284,7 +285,123 @@ public class DocumentTypeService
             SortOrder = 5
         });
 
+        // Add image property
+        if (mediaPickerDataType != null)
+        {
+            offerType.AddPropertyType(new PropertyType(_shortStringHelper, mediaPickerDataType, "image")
+            {
+                Name = "Image",
+                SortOrder = 6
+            });
+        }
+
         _contentTypeService.Save(offerType);
+    }
+
+    public void CreateEventDocumentType()
+    {
+        var existing = _contentTypeService.Get("event");
+        if (existing != null)
+        {
+            return;
+        }
+
+        var hotelType = _contentTypeService.Get("hotel");
+        if (hotelType == null)
+        {
+            throw new Exception("Hotel document type must be created first");
+        }
+
+        var allDataTypes = _dataTypeService.GetAll();
+        var textstringDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextBox");
+        var textareaDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextArea");
+        var decimalDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.Decimal");
+        var dateTimeDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.DateTime");
+        var mediaPickerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.MediaPicker3");
+        
+        // Use Textstring as fallback for Decimal if it doesn't exist
+        if (decimalDataType == null)
+        {
+            decimalDataType = textstringDataType;
+        }
+        
+        if (textstringDataType == null || textareaDataType == null || dateTimeDataType == null)
+        {
+            throw new Exception("Required data types not found. Please create data types in Umbraco backoffice first.");
+        }
+
+        var eventType = new ContentType(_shortStringHelper, hotelType.Id)
+        {
+            Name = "Event",
+            Alias = "event",
+            Icon = "icon-calendar",
+            AllowedAsRoot = false,
+            IsElement = false
+        };
+
+        eventType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "eventName")
+        {
+            Name = "Event Name",
+            Mandatory = true,
+            SortOrder = 1
+        });
+
+        eventType.AddPropertyType(new PropertyType(_shortStringHelper, textareaDataType, "description")
+        {
+            Name = "Description",
+            SortOrder = 2
+        });
+
+        eventType.AddPropertyType(new PropertyType(_shortStringHelper, dateTimeDataType, "eventDate")
+        {
+            Name = "Event Date",
+            SortOrder = 3
+        });
+
+        eventType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "location")
+        {
+            Name = "Location",
+            SortOrder = 4
+        });
+
+        eventType.AddPropertyType(new PropertyType(_shortStringHelper, decimalDataType, "price")
+        {
+            Name = "Price",
+            SortOrder = 5
+        });
+
+        // Add image properties
+        if (mediaPickerDataType != null)
+        {
+            eventType.AddPropertyType(new PropertyType(_shortStringHelper, mediaPickerDataType, "heroImage")
+            {
+                Name = "Hero Image",
+                SortOrder = 6
+            });
+
+            eventType.AddPropertyType(new PropertyType(_shortStringHelper, mediaPickerDataType, "eventImage")
+            {
+                Name = "Event Image",
+                SortOrder = 7
+            });
+        }
+        else
+        {
+            // Fallback to textstring if MediaPicker not available
+            eventType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "heroImage")
+            {
+                Name = "Hero Image",
+                SortOrder = 6
+            });
+
+            eventType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "eventImage")
+            {
+                Name = "Event Image",
+                SortOrder = 7
+            });
+        }
+
+        _contentTypeService.Save(eventType);
     }
 
     public void CreateAllDocumentTypes()
@@ -292,6 +409,7 @@ public class DocumentTypeService
         CreateHotelDocumentType();
         CreateRoomDocumentType();
         CreateOfferDocumentType();
+        CreateEventDocumentType();
     }
 
 }

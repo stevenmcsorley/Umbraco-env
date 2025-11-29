@@ -4,17 +4,30 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Build React frontend
+FROM node:20-alpine AS frontend-build
+WORKDIR /src/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ .
+RUN npm run build
+
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["MyDockerProject/MyDockerProject.csproj", "MyDockerProject/"]
-RUN dotnet restore "MyDockerProject/MyDockerProject.csproj"
-COPY . .
-WORKDIR "/src/MyDockerProject"
+COPY ["MyDockerProject/MyDockerProject/MyDockerProject.csproj", "MyDockerProject/MyDockerProject/"]
+RUN dotnet restore "MyDockerProject/MyDockerProject/MyDockerProject.csproj"
+COPY MyDockerProject/MyDockerProject/ MyDockerProject/MyDockerProject/
+# Copy built React app from frontend-build stage to wwwroot
+COPY --from=frontend-build /src/frontend/dist/booking-engine.iife.js MyDockerProject/MyDockerProject/wwwroot/scripts/booking-engine.js
+WORKDIR "/src/MyDockerProject/MyDockerProject"
 RUN dotnet build "MyDockerProject.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
+WORKDIR "/src/MyDockerProject/MyDockerProject"
+# Ensure booking-engine.js exists before publish (wwwroot is copied automatically)
+RUN test -f wwwroot/scripts/booking-engine.js || (echo "ERROR: booking-engine.js not found!" && exit 1)
 RUN dotnet publish "MyDockerProject.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final

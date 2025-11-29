@@ -17,28 +17,51 @@
 </div>
 
 <!-- Load React Booking Engine -->
-<script src="http://localhost:5173/booking-engine.js"></script>
 <script>
-    // Auto-initialize booking engine when script loads
-    if (window.initBookingEngine) {
-        window.initBookingEngine({
-            containerId: 'booking-engine-root',
-            productId: '@productId',
-            hotelId: '@hotelId',
-            apiBaseUrl: '@apiBaseUrl'
-        });
-    } else {
-        // Wait for script to load
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.initBookingEngine) {
+    (function() {
+        // Function to initialize booking engine
+        function initializeBookingEngine() {
+            if (typeof window.initBookingEngine === 'function') {
+                console.log('Initializing booking engine...', {
+                    containerId: 'booking-engine-root',
+                    productId: '@productId',
+                    hotelId: '@hotelId',
+                    apiBaseUrl: '@apiBaseUrl'
+                });
+                
                 window.initBookingEngine({
                     containerId: 'booking-engine-root',
                     productId: '@productId',
                     hotelId: '@hotelId',
                     apiBaseUrl: '@apiBaseUrl'
                 });
+            } else {
+                console.warn('initBookingEngine not found, retrying...');
+                setTimeout(initializeBookingEngine, 100);
             }
-        });
-    }
+        }
+        
+        // Load script
+        const script = document.createElement('script');
+        script.src = '/scripts/booking-engine.js';
+        script.onload = function() {
+            console.log('Booking engine script loaded');
+            // Wait a bit for the function to be available
+            setTimeout(initializeBookingEngine, 50);
+        };
+        script.onerror = function() {
+            console.error('Failed to load booking engine script');
+            document.getElementById('booking-engine-root').innerHTML = 
+                '<div class="text-center py-12 bg-red-50 rounded-lg"><p class="text-red-600">Failed to load booking engine. Please refresh the page.</p></div>';
+        };
+        document.head.appendChild(script);
+        
+        // Fallback: try to initialize after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeBookingEngine);
+        } else {
+            setTimeout(initializeBookingEngine, 100);
+        }
+    })();
 </script>
 

@@ -85,6 +85,8 @@ export interface Offer {
   discount?: number;
   validFrom?: string;
   validTo?: string;
+  minNights?: number;
+  minAdvanceBookingDays?: number;
   url?: string;
 }
 

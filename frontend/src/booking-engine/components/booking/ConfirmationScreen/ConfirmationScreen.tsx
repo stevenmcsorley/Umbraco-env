@@ -2,6 +2,7 @@ import { useBookingStore } from '../../../app/state/bookingStore';
 import { TEST_IDS } from '../../../constants/testids';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
+import { formatPrice } from '../../../utils/priceUtils';
 
 export interface ConfirmationScreenProps {
   className?: string;
@@ -38,6 +39,23 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         <p>
           <strong>Status:</strong> {confirmation.status}
         </p>
+        {confirmation.totalPrice !== undefined && (
+          <p className="text-xl font-bold mt-4">
+            <strong>Total:</strong> {formatPrice(confirmation.totalPrice, confirmation.currency || 'GBP')}
+          </p>
+        )}
+        {confirmation.addOns && confirmation.addOns.length > 0 && (
+          <div className="mt-4">
+            <strong>Add-ons:</strong>
+            <ul className="list-disc list-inside mt-2">
+              {confirmation.addOns.map((addOn) => (
+                <li key={addOn.addOnId}>
+                  {addOn.name} (x{addOn.quantity}) - {formatPrice(addOn.price, confirmation.currency || 'GBP')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
       <Button onClick={reset}>Book Another</Button>
     </Card>

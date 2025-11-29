@@ -16,9 +16,15 @@
     Layout = layoutPath;
     ViewData["Title"] = Model?.Name ?? "Room Details";
     
-    var roomId = Model?.Key.ToString() ?? ViewBag.RoomId as string ?? Context.Request.RouteValues["roomId"]?.ToString();
+    var roomId = Model?.Key.ToString() 
+                  ?? ViewBag.RoomId as string 
+                  ?? ViewBag.RoomSlug as string
+                  ?? Context.Request.RouteValues["roomSlug"]?.ToString()
+                  ?? Context.Request.RouteValues["roomId"]?.ToString();
     var hotelId = (Model?.Parent as IPublishedContent)?.Key.ToString() 
                   ?? ViewBag.HotelId as string 
+                  ?? ViewBag.HotelSlug as string
+                  ?? Context.Request.RouteValues["hotelSlug"]?.ToString()
                   ?? Context.Request.RouteValues["hotelId"]?.ToString();
 }
 
@@ -32,14 +38,40 @@
 <script>
     const hotelId = '@hotelId';
     const roomId = '@roomId';
+    const container = document.getElementById('room-page-content');
+    
+    // Validate IDs before making API calls
+    if (!hotelId || hotelId.trim() === '' || !roomId || roomId.trim() === '') {
+        console.error('Missing hotelId or roomId:', { hotelId, roomId });
+        container.innerHTML = `
+            <div class="text-center py-20">
+                <p class="text-red-600 mb-4">Invalid hotel or room identifier. Please check the URL.</p>
+                <a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotels</a>
+            </div>
+        `;
+        throw new Error('Missing hotelId or roomId');
+    }
     
     Promise.all([
-        fetch(`/api/hotels/${hotelId}`).then(r => r.json()),
-        fetch(`/api/hotels/${hotelId}/rooms`).then(r => r.json())
+        fetch(`/api/hotels/${encodeURIComponent(hotelId)}`).then(r => {
+            if (!r.ok) {
+                throw new Error(`Failed to fetch hotel: ${r.status} ${r.statusText}`);
+            }
+            return r.json();
+        }),
+        fetch(`/api/hotels/${encodeURIComponent(hotelId)}/rooms`).then(r => {
+            if (!r.ok) {
+                throw new Error(`Failed to fetch rooms: ${r.status} ${r.statusText}`);
+            }
+            return r.json();
+        })
     ])
     .then(([hotel, rooms]) => {
+        if (!hotel) {
+            throw new Error('Hotel not found');
+        }
+        
         const room = rooms.find(r => r.id === roomId || r.slug === roomId);
-        const container = document.getElementById('room-page-content');
         const hotelSlug = hotel.slug || hotel.id;
         const roomSlug = room?.slug || room?.id;
         
@@ -47,11 +79,16 @@
             container.innerHTML = `
                 <div class="text-center py-20">
                     <h1 class="text-4xl font-serif text-gray-900 mb-4 tracking-tight">Room Not Found</h1>
+                    <p class="text-gray-600 mb-4">Room ID: ${roomId}</p>
                     <a href="/hotels/${hotelSlug}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
                 </div>
             `;
             return;
         }
+        
+        // Use GUID IDs for the booking engine (API expects GUIDs)
+        const hotelGuid = hotel.id;
+        const roomGuid = room.id;
         
         let html = '';
         
@@ -254,8 +291,8 @@
                         </div>
                         <div class="bg-white rounded-xl p-8">
                             <div id="booking-engine-root" 
-                                 data-product-id="${roomId}"
-                                 data-hotel-id="${hotelId}"
+                                 data-product-id="${roomGuid}"
+                                 data-hotel-id="${hotelGuid}"
                                  data-api-base-url="/engine">
                                 <div class="text-center py-12">
                                     <p class="text-gray-600 font-light">Loading booking engine...</p>
@@ -311,40 +348,92 @@
         }
         
         // Load React Booking Engine
-        const script = document.createElement('script');
-        script.src = 'http://localhost:5173/booking-engine.js';
-        script.onload = () => {
-            if (window.initBookingEngine) {
-                window.initBookingEngine({
-                    containerId: 'booking-engine-root',
-                    productId: roomId,
-                    hotelId: hotelId,
-                    apiBaseUrl: '/engine'
-                });
+        (function() {
+            function initializeBookingEngine() {
+                if (typeof window.initBookingEngine === 'function') {
+                    const bookingRoot = document.getElementById('booking-engine-root');
+                    if (!bookingRoot) {
+                        console.error('Booking engine root not found');
+                        return;
+                    }
+                    // Get IDs from data attributes (set from API response)
+                    const productId = bookingRoot.getAttribute('data-product-id') || roomGuid;
+                    const hotelIdAttr = bookingRoot.getAttribute('data-hotel-id') || hotelGuid;
+                    console.log('Initializing booking engine for room:', { productId, hotelId: hotelIdAttr, roomGuid, hotelGuid });
+                    if (!productId || !hotelIdAttr) {
+                        console.error('Missing productId or hotelId for booking engine');
+                        bookingRoot.innerHTML = `
+                            <div class="text-center py-12 bg-red-50 rounded-lg">
+                                <p class="text-red-600 mb-2 font-semibold">Failed to initialize booking engine.</p>
+                                <p class="text-gray-600 text-sm">Missing required identifiers.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    window.initBookingEngine({
+                        containerId: 'booking-engine-root',
+                        productId: productId,
+                        hotelId: hotelIdAttr,
+                        apiBaseUrl: '/engine'
+                    });
+                } else {
+                    console.warn('initBookingEngine not found, retrying...');
+                    setTimeout(initializeBookingEngine, 100);
+                }
             }
-        };
-        script.onerror = () => {
-            const bookingRoot = document.getElementById('booking-engine-root');
-            if (bookingRoot) {
-                bookingRoot.innerHTML = `
-                    <div class="text-center py-12">
-                        <p class="text-gray-600 mb-4 font-light">Booking engine will be available soon.</p>
-                        <p class="text-sm text-gray-500 font-light">Please contact us directly to make a reservation.</p>
-                    </div>
-                `;
-            }
-        };
-        document.head.appendChild(script);
+            
+            const script = document.createElement('script');
+            // Use dev server if environment variable is set, otherwise use built file
+            // Set USE_FRONTEND_DEV=true in docker-compose.yml to enable dev mode
+            const useDevServer = false; // Change to true for dev mode, or set via environment variable
+            script.src = useDevServer 
+                ? 'http://localhost:5173/src/booking-engine-entry.tsx' 
+                : '/scripts/booking-engine.js?v=' + Date.now();
+            script.onload = function() {
+                console.log('Booking engine script loaded at', new Date().toISOString());
+                setTimeout(initializeBookingEngine, 50);
+            };
+            script.onerror = function() {
+                console.error('Failed to load booking engine script');
+                const bookingRoot = document.getElementById('booking-engine-root');
+                if (bookingRoot) {
+                    bookingRoot.innerHTML = `
+                        <div class="text-center py-12 bg-red-50 rounded-lg">
+                            <p class="text-red-600 mb-2 font-semibold">Failed to load booking engine.</p>
+                            <p class="text-gray-600 text-sm mb-4">Please refresh the page or contact us directly.</p>
+                            <a href="mailto:reservations@hotel.com" class="text-blue-600 hover:underline">Contact Reservations</a>
+                        </div>
+                    `;
+                }
+            };
+            document.head.appendChild(script);
+        })();
     })
     .catch(error => {
         console.error('Error loading room:', error);
+        console.error('Error details:', {
+            message: error.message,
+            hotelId: hotelId,
+            roomId: roomId,
+            stack: error.stack
+        });
+        
         // Try to get hotel slug from the URL or use hotelId as fallback
         const urlParts = window.location.pathname.split('/');
         const hotelSlugFromUrl = urlParts.length > 2 ? urlParts[2] : hotelId;
-        document.getElementById('room-page-content').innerHTML = `
+        
+        const errorMessage = error.message || 'Unknown error occurred';
+        const errorDetails = hotelId && roomId 
+            ? `Hotel ID: ${hotelId}, Room ID: ${roomId}` 
+            : 'Missing hotel or room identifier';
+        
+        container.innerHTML = `
             <div class="text-center py-20">
-                <p class="text-red-600 mb-4">Error loading room details. Please try again later.</p>
-                <a href="/hotels/${hotelSlugFromUrl}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
+                <p class="text-red-600 mb-2 font-semibold">Error loading room details.</p>
+                <p class="text-gray-600 mb-2 text-sm">${errorMessage}</p>
+                <p class="text-gray-500 mb-4 text-xs">${errorDetails}</p>
+                <a href="/hotels/${hotelSlugFromUrl || ''}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
+                ${hotelSlugFromUrl ? '' : '<br><a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide mt-2 inline-block">← Back to Hotels</a>'}
             </div>
         `;
     });

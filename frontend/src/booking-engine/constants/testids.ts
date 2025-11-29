@@ -22,6 +22,14 @@ export const TEST_IDS = {
   confirmationScreen: 'booking-confirmation-screen',
   confirmationReference: 'booking-confirmation-reference',
   
+  // Add-ons
+  addOnsSelector: 'booking-addons-selector',
+  addOnCard: (id: string) => `booking-addon-card-${id}`,
+  addOnAdd: (id: string) => `booking-addon-add-${id}`,
+  addOnIncrease: (id: string) => `booking-addon-increase-${id}`,
+  addOnDecrease: (id: string) => `booking-addon-decrease-${id}`,
+  addOnQuantity: (id: string) => `booking-addon-quantity-${id}`,
+  
   // UI Components
   button: (id?: string) => `booking-button${id ? `-${id}` : ''}`,
   input: (id?: string) => `booking-input${id ? `-${id}` : ''}`,

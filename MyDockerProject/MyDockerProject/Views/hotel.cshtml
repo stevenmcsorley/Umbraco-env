@@ -58,12 +58,23 @@
         }).catch(err => {
             console.warn('Error fetching offers:', err);
             return [];
+        }),
+        fetch(`/api/hotels/${hotelId}/events`).then(r => {
+            if (!r.ok) {
+                console.warn('Events API returned error:', r.status);
+                return [];
+            }
+            return r.json();
+        }).catch(err => {
+            console.warn('Error fetching events:', err);
+            return [];
         })
     ])
-    .then(([hotel, rooms, offers]) => {
+    .then(([hotel, rooms, offers, events]) => {
         console.log('Hotel data received:', hotel);
-        console.log('Rooms data received:', rooms);
-        console.log('Offers data received:', offers);
+                    console.log('Rooms data received:', rooms);
+                    console.log('Offers data received:', offers);
+                    console.log('Events data received:', events);
         
         const container = document.getElementById('hotel-page-content');
         
@@ -255,12 +266,73 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             ${offers.map(offer => `
                                 <div class="bg-white rounded-xl shadow-sm p-8 hover:shadow-md transition-shadow">
+                                    ${offer.image ? `
+                                        <div class="aspect-[4/3] overflow-hidden mb-6 rounded-xl">
+                                            <img src="${offer.image}" alt="${offer.name || 'Offer'}" class="w-full h-full object-cover" />
+                                        </div>
+                                    ` : ''}
                                     <h3 class="text-xl font-serif text-gray-900 mb-4 tracking-tight">${offer.name || 'Offer'}</h3>
                                     ${offer.description ? `<p class="text-gray-600 mb-6 font-light text-sm leading-relaxed">${offer.description}</p>` : ''}
                                     ${offer.discount ? `<p class="text-3xl font-serif text-gray-900 mb-4">${offer.discount}% Off</p>` : ''}
                                     ${offer.validFrom && offer.validTo ? `
-                                        <p class="text-xs text-gray-500 font-light uppercase tracking-wide">Valid: ${new Date(offer.validFrom).toLocaleDateString()} - ${new Date(offer.validTo).toLocaleDateString()}</p>
+                                        <p class="text-xs text-gray-500 font-light uppercase tracking-wide">Valid: ${new Date(offer.validFrom).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(offer.validTo).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                                     ` : ''}
+                                    ${offer.url ? `
+                                        <a href="${offer.url}" class="inline-block mt-6 text-gray-900 text-xs font-light tracking-widest uppercase hover:opacity-70 transition-opacity">
+                                            Learn More →
+                                        </a>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+        
+        // Events Section
+        if (events && events.length > 0) {
+            html += `
+                <section class="py-20 lg:py-28 bg-white">
+                    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight text-center">Upcoming Events</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            ${events.map(event => `
+                                <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-gray-100">
+                                    ${event.image ? `
+                                        <div class="aspect-[4/3] overflow-hidden">
+                                            <img src="${event.image}" alt="${event.name || 'Event'}" class="w-full h-full object-cover" />
+                                        </div>
+                                    ` : ''}
+                                    <div class="p-8">
+                                        <h3 class="text-xl font-serif text-gray-900 mb-3 tracking-tight">${event.name || 'Event'}</h3>
+                                        ${event.description ? `<p class="text-gray-600 mb-4 font-light text-sm leading-relaxed">${event.description}</p>` : ''}
+                                        ${event.eventDate ? `
+                                            <p class="text-sm text-gray-500 mb-2 font-light flex items-center">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                ${new Date(event.eventDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </p>
+                                        ` : ''}
+                                        ${event.location ? `
+                                            <p class="text-sm text-gray-500 mb-2 font-light flex items-center">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                </svg>
+                                                ${event.location}
+                                            </p>
+                                        ` : ''}
+                                        ${event.price ? `
+                                            <p class="text-2xl font-serif text-gray-900 mb-4">£${parseFloat(event.price).toFixed(2)}</p>
+                                        ` : ''}
+                                        ${event.url ? `
+                                            <a href="${event.url}" class="inline-block mt-4 text-gray-900 text-xs font-light tracking-widest uppercase hover:opacity-70 transition-opacity">
+                                                Learn More →
+                                            </a>
+                                        ` : ''}
+                                    </div>
                                 </div>
                             `).join('')}
                         </div>

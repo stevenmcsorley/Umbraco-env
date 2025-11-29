@@ -5,7 +5,12 @@ export interface PageContainerProps {
 
 export const PageContainer = ({ className = '', children }: PageContainerProps) => {
   return (
-    <div className={`max-w-4xl mx-auto px-4 py-8 ${className}`}>
+    <div style={{
+      width: '100%',
+      maxWidth: '100%',
+      padding: '32px 24px',
+      boxSizing: 'border-box'
+    }} className={className}>
       {children}
     </div>
   );

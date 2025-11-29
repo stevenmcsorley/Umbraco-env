@@ -20,27 +20,29 @@ Universal, reusable website-building system for Umbraco CMS with React-based Boo
 ## Project Structure
 
 ```
-├── MyDockerProject/              # Umbraco CMS project
-│   ├── Views/
-│   │   ├── Partials/             # Universal Razor components
-│   │   │   ├── Hero.cshtml
-│   │   │   ├── Gallery.cshtml
-│   │   │   ├── FAQ.cshtml
-│   │   │   ├── Features.cshtml
-│   │   │   ├── Cards.cshtml
-│   │   │   └── BookingEngine.cshtml  # Embeds React booking engine
-│   │   ├── hotelList.cshtml      # Hotel list page
-│   │   ├── hotel.cshtml          # Hotel details page
-│   │   └── room.cshtml           # Room page with booking
-│   ├── Controllers/
-│   │   ├── Api/                  # API endpoints
-│   │   └── HotelController.cs    # Page routing
-│   └── Services/                 # Business logic
-├── engine/                        # Booking Engine Backend (Node.js + TypeScript)
-├── frontend/                      # React Booking Engine UI only
-│   └── src/
-│       └── booking-engine/       # React booking engine component
-└── shared/                        # Shared TypeScript types
+├── MyDockerProject/              # Umbraco CMS project (Docker)
+│   ├── engine/                   # Booking Engine Backend (Node.js + TypeScript, Docker)
+│   ├── MyDockerProject/
+│   │   ├── Views/
+│   │   │   ├── Partials/         # Universal Razor components
+│   │   │   │   ├── Hero.cshtml
+│   │   │   │   ├── Gallery.cshtml
+│   │   │   │   ├── FAQ.cshtml
+│   │   │   │   ├── Features.cshtml
+│   │   │   │   ├── Cards.cshtml
+│   │   │   │   └── BookingEngine.cshtml  # Embeds React booking engine
+│   │   │   ├── hotelList.cshtml  # Hotel list page
+│   │   │   ├── hotel.cshtml      # Hotel details page
+│   │   │   └── room.cshtml       # Room page with booking
+│   │   ├── Controllers/
+│   │   │   ├── Api/              # API endpoints
+│   │   │   └── HotelController.cs
+│   │   ├── Services/             # Business logic
+│   │   └── wwwroot/scripts/      # Built React booking engine (booking-engine.js)
+│   └── docker-compose.yml
+├── frontend/                      # React Booking Engine source (build separately)
+│   └── src/booking-engine/       # React booking engine component
+└── docs/                          # Documentation
 ```
 
 ## Prerequisites
@@ -62,16 +64,17 @@ This starts:
 - SQL Server database (port 1433)
 - Umbraco CMS (port 44372)
 - Booking Engine Backend (port 3001)
-- Frontend (serves React booking engine, port 5173)
 
 **All services run in Docker - no local processes needed!**
+
+**Note**: The React booking engine must be built separately and copied to `wwwroot/scripts/` before starting Docker. See [BUILD_BOOKING_ENGINE.md](BUILD_BOOKING_ENGINE.md) for instructions.
 
 ### 2. Access Services
 
 - **Umbraco Backoffice**: https://localhost:44372/umbraco
 - **Umbraco API**: http://localhost:44372/api/hotels
 - **Booking Engine API**: http://localhost:3001/health
-- **React Booking Engine**: http://localhost:5173/booking-engine.js
+- **React Booking Engine**: Served from Umbraco at `/scripts/booking-engine.js`
 
 ### 3. Create Content Types
 
@@ -83,7 +86,7 @@ This starts:
    - **Offer** (alias: `offer`, child of Hotel)
    - **Event** (alias: `event`, child of Hotel) - optional
 
-See `CREATE_DEMO_HOTEL.md` for detailed instructions.
+See [Getting Started Guide](docs/GETTING_STARTED.md) for detailed instructions.
 
 ### 4. Seed Demo Content
 
@@ -191,11 +194,12 @@ Universal components available in `Views/Partials/`:
 
 ### Local Development (Optional)
 
-If you prefer hot-reload:
+For React booking engine development with hot-reload:
 
-1. Start Umbraco + Database: `docker-compose up -d` in `MyDockerProject/`
-2. Start Booking Engine locally: `cd engine && npm start`
-3. Start Frontend (React booking engine): `cd frontend && npm run dev`
+1. Start Umbraco + Database + Booking Engine: `docker-compose up -d` in `MyDockerProject/`
+2. Start React dev server: `cd frontend && npm run dev`
+3. Update CSHTML files to use `http://localhost:5173/booking-engine.js` during development
+4. Remember to build and copy to `wwwroot/scripts/` for production
 
 ### Rebuilding Services
 
@@ -216,7 +220,6 @@ docker-compose logs -f
 # Specific service
 docker-compose logs -f mydockerproject
 docker-compose logs -f booking_engine
-docker-compose logs -f frontend
 ```
 
 ## Universal Components
@@ -235,6 +238,8 @@ Components use vanilla JavaScript for interactivity (lightbox, accordion, etc.) 
 ## Umbraco Site Kit - Programmatic Content Type Creation
 
 The Umbraco Site Kit allows you to programmatically create Document Types and Element Types with their properties via API endpoints, eliminating manual setup in the Umbraco backoffice.
+
+**📖 For complete documentation, see [Umbraco Site Kit Guide](docs/UMBRACO_SITE_KIT.md)**
 
 ### Quick Start - Create Element Types
 
@@ -261,21 +266,15 @@ Each Element Type has properties automatically assigned to the "content" group f
 - `POST /api/seed/create-document-types` - Create Document Types (Hotel, Room, Offer)
 - `POST /api/seed/add-hotel-properties` - Add properties to Hotel Document Type
 
-### Complete Documentation
-
-See **[docs/UMBRACO_SITE_KIT.md](docs/UMBRACO_SITE_KIT.md)** for:
-- Complete API reference
-- How it works (two-phase approach)
-- Usage examples
-- Troubleshooting guide
-- Best practices
+See **[docs/UMBRACO_SITE_KIT.md](docs/UMBRACO_SITE_KIT.md)** for complete API reference, usage examples, troubleshooting, and best practices.
 
 ## Documentation
 
-- **[Umbraco Site Kit Guide](docs/UMBRACO_SITE_KIT.md)** - Complete guide to programmatic Document Type and Element Type creation
-- [Architecture Documentation](docs/architecture.md)
-- [Create Demo Hotel](CREATE_DEMO_HOTEL.md)
-- [Final Architecture](ARCHITECTURE_FINAL.md)
+- **[Getting Started Guide](docs/GETTING_STARTED.md)** - Quick start and setup instructions
+- **[Umbraco Site Kit Guide](docs/UMBRACO_SITE_KIT.md)** ⭐ - Complete guide to programmatic Document Type and Element Type creation (API endpoints, usage examples, troubleshooting)
+- **[Architecture Documentation](docs/architecture.md)** - System architecture overview
+- **[Booking Engine Implementation](BOOKING_ENGINE_IMPLEMENTATION.md)** - Booking engine details and features
+- **[Build Booking Engine](BUILD_BOOKING_ENGINE.md)** - React booking engine build instructions
 
 ## Summary
 

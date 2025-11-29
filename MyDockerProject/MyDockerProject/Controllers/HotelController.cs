@@ -41,12 +41,43 @@ public class HotelController : Controller
         return View("hotelRooms");
     }
 
-    public IActionResult Room(string hotelId, string roomId, string layout = "Main")
+    public IActionResult Room(string hotelSlug, string roomSlug, string layout = "Main")
     {
-        ViewBag.HotelId = hotelId;
-        ViewBag.RoomId = roomId;
+        // hotelSlug and roomSlug can be either GUIDs or slugs
+        ViewBag.HotelId = hotelSlug;
+        ViewBag.RoomId = roomSlug;
+        ViewBag.HotelSlug = hotelSlug;
+        ViewBag.RoomSlug = roomSlug;
         ViewData["Layout"] = $"Layouts/{layout}.cshtml";
         return View("room");
+    }
+
+    [HttpGet]
+    public IActionResult Event(string hotelSlug, string eventSlug, string layout = "Main")
+    {
+        // Log for debugging
+        System.Diagnostics.Debug.WriteLine($"Event route matched - hotelSlug: {hotelSlug}, eventSlug: {eventSlug}");
+        
+        ViewBag.HotelId = hotelSlug;
+        ViewBag.EventId = eventSlug;
+        ViewBag.HotelSlug = hotelSlug;
+        ViewBag.EventSlug = eventSlug;
+        ViewData["Layout"] = $"Layouts/{layout}.cshtml";
+        return View("event");
+    }
+
+    [HttpGet]
+    public IActionResult Offer(string hotelSlug, string offerSlug, string layout = "Main")
+    {
+        // Log for debugging
+        System.Diagnostics.Debug.WriteLine($"Offer route matched - hotelSlug: {hotelSlug}, offerSlug: {offerSlug}");
+        
+        ViewBag.HotelId = hotelSlug;
+        ViewBag.OfferId = offerSlug;
+        ViewBag.HotelSlug = hotelSlug;
+        ViewBag.OfferSlug = offerSlug;
+        ViewData["Layout"] = $"Layouts/{layout}.cshtml";
+        return View("offer");
     }
 }
 

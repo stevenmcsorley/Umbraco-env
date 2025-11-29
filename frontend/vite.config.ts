@@ -1,13 +1,26 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import replace from '@rollup/plugin-replace';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    replace({
+      'process.env': JSON.stringify({}),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+      preventAssignment: true,
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  define: {
+    'process.env': JSON.stringify({}),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    'global': 'globalThis',
   },
   build: {
     lib: {
@@ -25,6 +38,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: '0.0.0.0', // Allow access from Docker network
+    hmr: {
+      host: 'localhost' // HMR host for browser connection
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:44372',
