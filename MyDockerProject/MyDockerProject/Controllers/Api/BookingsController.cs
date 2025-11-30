@@ -16,7 +16,7 @@ public class BookingsController : ControllerBase
     private readonly BookingDbContext _context;
     private readonly IEmailService _emailService;
     private readonly IPaymentService _paymentService;
-    private readonly IUserService _userService;
+    private readonly Services.IUserService _userService;
     private readonly IContentService _contentService;
 
     public BookingsController(
@@ -25,7 +25,7 @@ public class BookingsController : ControllerBase
         BookingDbContext context,
         IEmailService emailService,
         IPaymentService paymentService,
-        IUserService userService,
+        Services.IUserService userService,
         IContentService contentService)
     {
         _bookingService = bookingService;
