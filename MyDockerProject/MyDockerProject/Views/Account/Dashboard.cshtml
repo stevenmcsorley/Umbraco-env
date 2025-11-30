@@ -1,7 +1,7 @@
 @{
     Layout = "~/Views/Layouts/FullWidth.cshtml";
     ViewData["Title"] = "My Account";
-    var bookingsWithDetails = ViewBag.Bookings as List<dynamic> ?? new List<dynamic>();
+    var bookingsWithDetails = ViewBag.Bookings as List<MyDockerProject.Models.BookingWithDetails> ?? new List<MyDockerProject.Models.BookingWithDetails>();
     var user = ViewBag.User as MyDockerProject.Models.User;
 }
 
@@ -51,12 +51,12 @@
     else
     {
         <div class="space-y-4">
-            @foreach (dynamic bookingItem in bookingsWithDetails)
+            @foreach (var bookingItem in bookingsWithDetails)
             {
-                var booking = bookingItem.Booking as MyDockerProject.Models.Booking;
-                var productName = bookingItem.ProductName as string;
-                var hotelName = bookingItem.HotelName as string;
-                var hotelLocation = bookingItem.HotelLocation as string;
+                var booking = bookingItem.Booking;
+                var productName = bookingItem.ProductName;
+                var hotelName = bookingItem.HotelName;
+                var hotelLocation = bookingItem.HotelLocation;
                 var nights = booking.CheckOut.HasValue ? (booking.CheckOut.Value - booking.CheckIn).Days : 0;
                 
                 <div class="bg-white rounded-lg shadow p-6">

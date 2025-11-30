@@ -34,7 +34,7 @@ public class AccountController : Controller
         var bookings = await _userService.GetUserBookingsAsync(userId);
         
         // Fetch product (room/event) and hotel details for each booking
-        var bookingsWithDetails = new List<dynamic>();
+        var bookingsWithDetails = new List<Models.BookingWithDetails>();
         foreach (var booking in bookings)
         {
             string? productName = null;
@@ -68,7 +68,7 @@ public class AccountController : Controller
                 Console.WriteLine($"[AccountController] Error fetching details for booking {booking.Id}: {ex.Message}");
             }
             
-            bookingsWithDetails.Add(new
+            bookingsWithDetails.Add(new Models.BookingWithDetails
             {
                 Booking = booking,
                 ProductName = productName,
