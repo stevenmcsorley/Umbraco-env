@@ -117,7 +117,7 @@ export class BookingService {
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to create booking`);
       }
 
-      const bookingData = await response.json();
+      const bookingData = await response.json() as any;
       console.log('Umbraco booking response:', bookingData);
 
       // Construct guestDetails from request or bookingData
