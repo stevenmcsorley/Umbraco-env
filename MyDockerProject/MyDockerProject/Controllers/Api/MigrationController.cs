@@ -84,13 +84,6 @@ public class MigrationController : ControllerBase
                         END
                     END
                 ");
-                        CREATE UNIQUE INDEX [IX_Bookings_BookingReference] ON [dbo].[Bookings] ([BookingReference]);
-                        CREATE INDEX [IX_Bookings_ProductId_CheckIn] ON [dbo].[Bookings] ([ProductId], [CheckIn], [CheckOut]);
-                        CREATE INDEX [IX_Bookings_GuestEmail] ON [dbo].[Bookings] ([GuestEmail]);
-                        CREATE INDEX [IX_Bookings_CreatedAt] ON [dbo].[Bookings] ([CreatedAt]);
-                        CREATE INDEX [IX_Bookings_UserId] ON [dbo].[Bookings] ([UserId]);
-                    END
-                ");
                 bookingsCreated = 1;
             }
             catch (Exception ex)
