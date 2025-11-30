@@ -78,7 +78,12 @@ export class BookingService {
     // If user is logged in, use userId; otherwise use guestDetails
     // If guestDetails is not provided but userId is, we'll need to fetch user details from Umbraco
     // For now, if userId is provided, we'll use it and let the API handle guest details
-    const guestDetails = request.guestDetails || {};
+    const guestDetails = request.guestDetails || {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: undefined
+    };
     
     // Call Umbraco API to create booking
     const umbracoRequest = {
@@ -112,7 +117,7 @@ export class BookingService {
       console.log('[BookingService] Response status:', response.status, response.statusText);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to create booking' }));
+        const errorData = await response.json().catch(() => ({ error: 'Failed to create booking' })) as any;
         console.error('[BookingService] Booking failed:', errorData);
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to create booking`);
       }
