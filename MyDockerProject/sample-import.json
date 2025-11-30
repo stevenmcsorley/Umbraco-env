@@ -1,0 +1,121 @@
+{
+  "hotels": [
+    {
+      "name": "Grand Hotel London",
+      "slug": "grand-hotel-london",
+      "description": "Experience unparalleled luxury in the heart of London. Our elegant hotel combines classic British charm with modern amenities.",
+      "location": "London, United Kingdom",
+      "address": "123 Park Lane",
+      "city": "London",
+      "country": "United Kingdom",
+      "rooms": [
+        {
+          "name": "Presidential Suite",
+          "slug": "presidential-suite",
+          "description": "Luxurious suite with panoramic city views, private terrace, and butler service.",
+          "maxOccupancy": 4,
+          "bedType": "King",
+          "size": "120 m²",
+          "prices": {
+            "2025-12-19": 800.00,
+            "2025-12-20": 800.00,
+            "2025-12-21": 850.00,
+            "2025-12-22": 850.00,
+            "2025-12-23": 900.00,
+            "2025-12-24": 1000.00,
+            "2025-12-25": 1000.00,
+            "2025-12-26": 900.00
+          },
+          "availability": {
+            "2025-12-19": 2,
+            "2025-12-20": 2,
+            "2025-12-21": 1,
+            "2025-12-22": 1,
+            "2025-12-23": 2,
+            "2025-12-24": 1,
+            "2025-12-25": 1,
+            "2025-12-26": 2
+          }
+        },
+        {
+          "name": "Executive Suite",
+          "slug": "executive-suite",
+          "description": "Spacious suite with separate living area and city views.",
+          "maxOccupancy": 2,
+          "bedType": "King",
+          "size": "80 m²",
+          "prices": {
+            "2025-12-19": 350.00,
+            "2025-12-20": 350.00,
+            "2025-12-21": 400.00,
+            "2025-12-22": 400.00,
+            "2025-12-23": 450.00,
+            "2025-12-24": 500.00,
+            "2025-12-25": 500.00,
+            "2025-12-26": 450.00
+          },
+          "availability": {
+            "2025-12-19": 5,
+            "2025-12-20": 5,
+            "2025-12-21": 4,
+            "2025-12-22": 4,
+            "2025-12-23": 5,
+            "2025-12-24": 3,
+            "2025-12-25": 3,
+            "2025-12-26": 5
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Live Jazz Night",
+          "slug": "live-jazz-night",
+          "description": "An evening of live jazz music featuring local artists.",
+          "eventDate": "2025-12-19T19:00:00Z",
+          "location": "Rooftop Bar",
+          "price": 45.00,
+          "capacity": 50
+        },
+        {
+          "name": "Wine Tasting Evening",
+          "slug": "wine-tasting-evening",
+          "description": "Sample fine wines from around the world with expert sommeliers.",
+          "eventDate": "2025-12-20T18:00:00Z",
+          "location": "Hotel Restaurant",
+          "price": 75.00,
+          "capacity": 30
+        }
+      ],
+      "offers": [
+        {
+          "name": "Weekend Getaway",
+          "slug": "weekend-getaway",
+          "description": "Special weekend rates with complimentary breakfast and spa access",
+          "discount": 15.00,
+          "validFrom": "2025-11-29T00:00:00Z",
+          "validTo": "2026-02-28T00:00:00Z",
+          "requiresWeekend": true
+        },
+        {
+          "name": "Early Bird Special",
+          "slug": "early-bird-special",
+          "description": "Book 30 days in advance and save 20% on your stay",
+          "discount": 20.00,
+          "validFrom": "2025-11-29T00:00:00Z",
+          "validTo": "2026-05-29T00:00:00Z",
+          "advanceBookingDays": 30
+        },
+        {
+          "name": "Long Stay Discount",
+          "slug": "long-stay-discount",
+          "description": "Stay 5+ nights and get 25% off plus free airport transfers",
+          "discount": 25.00,
+          "validFrom": "2025-11-29T00:00:00Z",
+          "validTo": "2026-11-29T00:00:00Z",
+          "minNights": 5
+        }
+      ]
+    }
+  ]
+}
+

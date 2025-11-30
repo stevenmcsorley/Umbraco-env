@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Umbraco.Cms.Web.Common.Controllers;
+using MyDockerProject.Services;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -7,44 +7,111 @@ namespace MyDockerProject.Controllers.Api;
 [Route("api/[controller]")]
 public class ImporterController : ControllerBase
 {
-    private static readonly List<object> _tempStorage = new();
+    private readonly DataImportService _importService;
 
-    [HttpPost]
-    public IActionResult ImportContent([FromBody] ContentJsonRequest request)
+    public ImporterController(DataImportService importService)
+    {
+        _importService = importService;
+    }
+
+    [HttpPost("import")]
+    public async Task<IActionResult> ImportContent([FromBody] ImportRequest request)
     {
         if (request == null || string.IsNullOrEmpty(request.ContentJson))
         {
             return BadRequest(new { error = "ContentJson is required" });
         }
 
-        // Store in temp area for inspection (as per PRD requirement)
-        var importEntry = new
+        try
         {
-            id = Guid.NewGuid(),
-            receivedAt = DateTime.UtcNow,
-            contentJson = request.ContentJson,
-            metadata = request.Metadata
-        };
-
-        _tempStorage.Add(importEntry);
-
-        return Ok(new
+            var result = await _importService.ImportFromJsonAsync(request.ContentJson);
+            
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = result.Message,
+                    hotelsCreated = result.HotelsCreated,
+                    roomsCreated = result.RoomsCreated,
+                    eventsCreated = result.EventsCreated,
+                    offersCreated = result.OffersCreated,
+                    inventoryEntriesCreated = result.InventoryEntriesCreated,
+                    errors = result.Errors
+                });
+            }
+            else
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+            }
+        }
+        catch (Exception ex)
         {
-            success = true,
-            importId = importEntry.id,
-            message = "Content received and stored for inspection. No content nodes created.",
-            storedAt = importEntry.receivedAt
-        });
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                stackTrace = ex.StackTrace
+            });
+        }
     }
-
-    [HttpGet("temp")]
-    public IActionResult GetTempImports()
+    
+    [HttpPost("import-file")]
+    public async Task<IActionResult> ImportFromFile(IFormFile file)
     {
-        return Ok(_tempStorage);
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { error = "File is required" });
+        }
+
+        try
+        {
+            using var reader = new StreamReader(file.OpenReadStream());
+            var jsonContent = await reader.ReadToEndAsync();
+            
+            var result = await _importService.ImportFromJsonAsync(jsonContent);
+            
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = result.Message,
+                    hotelsCreated = result.HotelsCreated,
+                    roomsCreated = result.RoomsCreated,
+                    eventsCreated = result.EventsCreated,
+                    offersCreated = result.OffersCreated,
+                    inventoryEntriesCreated = result.InventoryEntriesCreated,
+                    errors = result.Errors
+                });
+            }
+            else
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message
+            });
+        }
     }
 }
 
-public class ContentJsonRequest
+public class ImportRequest
 {
     public string ContentJson { get; set; } = string.Empty;
     public Dictionary<string, object>? Metadata { get; set; }

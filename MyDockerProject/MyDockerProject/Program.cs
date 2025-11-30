@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using MyDockerProject.Data;
+using MyDockerProject.Services;
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add controllers for custom routes
@@ -5,6 +9,19 @@ builder.Services.AddControllers();
 
 // Add HttpClient for booking engine proxy
 builder.Services.AddHttpClient();
+
+// Add Entity Framework for bookings and inventory
+var connectionString = builder.Configuration.GetConnectionString("umbracoDbDSN");
+if (!string.IsNullOrEmpty(connectionString))
+{
+    builder.Services.AddDbContext<BookingDbContext>(options =>
+        options.UseSqlServer(connectionString));
+    
+    // Register services
+    builder.Services.AddScoped<BookingService>();
+    builder.Services.AddScoped<InventoryService>();
+    builder.Services.AddScoped<DataImportService>();
+}
 
 builder.CreateUmbracoBuilder()
     .AddBackOffice()

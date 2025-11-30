@@ -8,7 +8,7 @@ Universal, reusable website-building system for Umbraco CMS with React-based Boo
 - **Technology**: Razor views, Razor partials/components
 - **Interactivity**: Vanilla JavaScript (no React)
 - **Components**: Hero, Gallery, FAQ, Features, Cards, etc.
-- **Location**: `MyDockerProject/Views/Partials/`
+- **Location**: `MyDockerProject/Views/Partials/` 
 - **Purpose**: Universal, reusable Razor components for any site type (hotels, venues, stadiums, events, etc.)
 
 ### React: ONLY for Booking Engine ✅
@@ -101,7 +101,86 @@ This creates:
 - 4 example rooms
 - 3 example offers
 
-### 5. View Pages
+### 5. Import Data (Bulk Import)
+
+You can bulk import hotels, rooms, events, and offers using the import API:
+
+**Using JSON in request body:**
+```powershell
+$jsonContent = Get-Content -Path "sample-import.json" -Raw
+$body = @{ ContentJson = $jsonContent } | ConvertTo-Json -Depth 10
+Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST -Body $body -ContentType "application/json"
+```
+
+**Using file upload:**
+```powershell
+$filePath = "sample-import.json"
+$form = @{
+    file = Get-Item $filePath
+}
+Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import-file" -Method POST -Form $form
+```
+
+**Import JSON Format:**
+```json
+{
+  "hotels": [
+    {
+      "name": "Hotel Name",
+      "slug": "hotel-slug",
+      "description": "Hotel description",
+      "address": "123 Street",
+      "city": "City",
+      "country": "Country",
+      "rooms": [
+        {
+          "name": "Room Name",
+          "slug": "room-slug",
+          "description": "Room description",
+          "maxOccupancy": 2,
+          "bedType": "King",
+          "size": "50 m²",
+          "prices": {
+            "2025-12-19": 200.00,
+            "2025-12-20": 200.00
+          },
+          "availability": {
+            "2025-12-19": 5,
+            "2025-12-20": 5
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Event Name",
+          "slug": "event-slug",
+          "description": "Event description",
+          "eventDate": "2025-12-19T19:00:00Z",
+          "location": "Event Location",
+          "price": 50.00,
+          "capacity": 100
+        }
+      ],
+      "offers": [
+        {
+          "name": "Offer Name",
+          "slug": "offer-slug",
+          "description": "Offer description",
+          "discount": 15.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-12-31T00:00:00Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+See `sample-import.json` and `test-import-multiple.json` for complete examples.
+
+**Note:** The import creates content as published. If hotels already exist (by name), they will be skipped to avoid duplicates.
+
+### 6. View Pages
 
 - **Hotel List**: http://localhost:44372/hotels
 - **Hotel Details**: http://localhost:44372/hotels/{id}
@@ -181,7 +260,8 @@ Universal components available in `Views/Partials/`:
 - `GET /api/hotels/{id}/rooms` - Get rooms for a hotel
 - `GET /api/hotels/{id}/offers` - Get offers for a hotel
 - `GET /api/hotels/{id}/availability` - Get basic availability structure
-- `POST /api/importer` - Stub importer endpoint (stores ContentJson in temp area)
+- `POST /api/importer/import` - Bulk import hotels, rooms, events, and offers from JSON
+- `POST /api/importer/import-file` - Bulk import from uploaded JSON file
 - `POST /api/seed/create-demo-hotel` - Create demo hotel content
 
 ### Booking Engine APIs
@@ -268,10 +348,44 @@ Each Element Type has properties automatically assigned to the "content" group f
 
 See **[docs/UMBRACO_SITE_KIT.md](docs/UMBRACO_SITE_KIT.md)** for complete API reference, usage examples, troubleshooting, and best practices.
 
+## Data Import System
+
+The system includes a comprehensive data import feature that allows you to bulk import hotels, rooms, events, and offers from JSON files.
+
+**Features:**
+- ✅ Import multiple hotels in a single request
+- ✅ Import rooms with pricing and availability data
+- ✅ Import events with capacity and pricing
+- ✅ Import offers with discount and validity periods
+- ✅ Automatic duplicate detection (skips existing hotels by name)
+- ✅ Creates and publishes content automatically
+- ✅ Detailed import results with success/error reporting
+
+**Sample Files:**
+- `sample-import.json` - Basic example with one hotel
+- `test-import-multiple.json` - Comprehensive example with 4 hotels, multiple rooms, events, and offers
+
+**Import Response:**
+```json
+{
+  "success": true,
+  "message": "Import completed. Created: 4 hotels, 9 rooms, 10 events, 8 offers...",
+  "hotelsCreated": 4,
+  "roomsCreated": 9,
+  "eventsCreated": 10,
+  "offersCreated": 8,
+  "inventoryEntriesCreated": 0,
+  "errors": []
+}
+```
+
+**Note:** Inventory/pricing data requires the Inventory database table to be created. See [Inventory and Import System](docs/INVENTORY_AND_IMPORT_SYSTEM.md) for database setup.
+
 ## Documentation
 
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Quick start and setup instructions
 - **[Umbraco Site Kit Guide](docs/UMBRACO_SITE_KIT.md)** ⭐ - Complete guide to programmatic Document Type and Element Type creation (API endpoints, usage examples, troubleshooting)
+- **[Inventory and Import System](docs/INVENTORY_AND_IMPORT_SYSTEM.md)** - Data import system documentation and database setup
 - **[Architecture Documentation](docs/architecture.md)** - System architecture overview
 - **[Booking Engine Implementation](BOOKING_ENGINE_IMPLEMENTATION.md)** - Booking engine details and features
 - **[Build Booking Engine](BUILD_BOOKING_ENGINE.md)** - React booking engine build instructions
@@ -281,4 +395,5 @@ See **[docs/UMBRACO_SITE_KIT.md](docs/UMBRACO_SITE_KIT.md)** for complete API re
 ✅ **Main Frontend**: Razor components + JavaScript (universal, reusable)
 ✅ **React**: ONLY for booking engine (embeddable)
 ✅ **Integration**: Seamless via Razor partials
+✅ **Data Import**: Bulk import hotels, rooms, events, and offers via JSON
 ✅ **All Services**: Running in Docker

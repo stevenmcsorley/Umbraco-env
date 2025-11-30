@@ -1,0 +1,478 @@
+{
+  "hotels": [
+    {
+      "name": "Seaside Resort Barcelona",
+      "slug": "seaside-resort-barcelona",
+      "description": "A stunning beachfront resort in Barcelona with Mediterranean views, infinity pools, and world-class dining.",
+      "location": "Barcelona, Spain",
+      "address": "Carrer de la Marina, 16-18",
+      "city": "Barcelona",
+      "country": "Spain",
+      "rooms": [
+        {
+          "name": "Ocean View Suite",
+          "slug": "ocean-view-suite",
+          "description": "Spacious suite with private balcony overlooking the Mediterranean Sea.",
+          "maxOccupancy": 3,
+          "bedType": "Queen",
+          "size": "65 m²",
+          "prices": {
+            "2025-12-19": 220.00,
+            "2025-12-20": 220.00,
+            "2025-12-21": 250.00,
+            "2025-12-22": 250.00,
+            "2025-12-23": 280.00,
+            "2025-12-24": 320.00,
+            "2025-12-25": 320.00,
+            "2025-12-26": 280.00
+          },
+          "availability": {
+            "2025-12-19": 8,
+            "2025-12-20": 8,
+            "2025-12-21": 6,
+            "2025-12-22": 6,
+            "2025-12-23": 8,
+            "2025-12-24": 5,
+            "2025-12-25": 5,
+            "2025-12-26": 8
+          }
+        },
+        {
+          "name": "Penthouse with Terrace",
+          "slug": "penthouse-terrace",
+          "description": "Luxurious penthouse with private rooftop terrace and jacuzzi.",
+          "maxOccupancy": 4,
+          "bedType": "King",
+          "size": "150 m²",
+          "prices": {
+            "2025-12-19": 650.00,
+            "2025-12-20": 650.00,
+            "2025-12-21": 700.00,
+            "2025-12-22": 700.00,
+            "2025-12-23": 750.00,
+            "2025-12-24": 850.00,
+            "2025-12-25": 850.00,
+            "2025-12-26": 750.00
+          },
+          "availability": {
+            "2025-12-19": 2,
+            "2025-12-20": 2,
+            "2025-12-21": 1,
+            "2025-12-22": 1,
+            "2025-12-23": 2,
+            "2025-12-24": 1,
+            "2025-12-25": 1,
+            "2025-12-26": 2
+          }
+        },
+        {
+          "name": "Standard Double Room",
+          "slug": "standard-double-barcelona",
+          "description": "Comfortable double room with modern amenities and city views.",
+          "maxOccupancy": 2,
+          "bedType": "Double",
+          "size": "35 m²",
+          "prices": {
+            "2025-12-19": 120.00,
+            "2025-12-20": 120.00,
+            "2025-12-21": 140.00,
+            "2025-12-22": 140.00,
+            "2025-12-23": 160.00,
+            "2025-12-24": 180.00,
+            "2025-12-25": 180.00,
+            "2025-12-26": 160.00
+          },
+          "availability": {
+            "2025-12-19": 15,
+            "2025-12-20": 15,
+            "2025-12-21": 12,
+            "2025-12-22": 12,
+            "2025-12-23": 15,
+            "2025-12-24": 10,
+            "2025-12-25": 10,
+            "2025-12-26": 15
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Flamenco Show",
+          "slug": "flamenco-show-barcelona",
+          "description": "Authentic Spanish flamenco performance with traditional music and dance.",
+          "eventDate": "2025-12-19T20:00:00Z",
+          "location": "Hotel Ballroom",
+          "price": 55.00,
+          "capacity": 80
+        },
+        {
+          "name": "Tapas & Sangria Evening",
+          "slug": "tapas-sangria-evening",
+          "description": "Experience traditional Spanish tapas paired with local wines and sangria.",
+          "eventDate": "2025-12-20T19:00:00Z",
+          "location": "Rooftop Restaurant",
+          "price": 65.00,
+          "capacity": 40
+        },
+        {
+          "name": "Sunset Yoga Session",
+          "slug": "sunset-yoga-barcelona",
+          "description": "Relaxing yoga session on the beach at sunset.",
+          "eventDate": "2025-12-21T17:00:00Z",
+          "location": "Beach Terrace",
+          "price": 25.00,
+          "capacity": 20
+        }
+      ],
+      "offers": [
+        {
+          "name": "Beach Package",
+          "slug": "beach-package-barcelona",
+          "description": "Includes beach access, sun loungers, and welcome drink",
+          "discount": 10.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-03-31T00:00:00Z"
+        },
+        {
+          "name": "Romantic Getaway",
+          "slug": "romantic-getaway-barcelona",
+          "description": "Perfect for couples with champagne and spa treatment included",
+          "discount": 18.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-02-28T00:00:00Z",
+          "minNights": 2
+        }
+      ]
+    },
+    {
+      "name": "Alpine Lodge Switzerland",
+      "slug": "alpine-lodge-switzerland",
+      "description": "A cozy mountain retreat in the Swiss Alps with ski-in/ski-out access and traditional alpine charm.",
+      "location": "Zermatt, Switzerland",
+      "address": "Bahnhofstrasse 55",
+      "city": "Zermatt",
+      "country": "Switzerland",
+      "rooms": [
+        {
+          "name": "Mountain View Chalet",
+          "slug": "mountain-view-chalet",
+          "description": "Traditional Swiss chalet with fireplace and stunning mountain views.",
+          "maxOccupancy": 4,
+          "bedType": "King + Sofa Bed",
+          "size": "85 m²",
+          "prices": {
+            "2025-12-19": 380.00,
+            "2025-12-20": 380.00,
+            "2025-12-21": 420.00,
+            "2025-12-22": 420.00,
+            "2025-12-23": 480.00,
+            "2025-12-24": 550.00,
+            "2025-12-25": 550.00,
+            "2025-12-26": 480.00
+          },
+          "availability": {
+            "2025-12-19": 4,
+            "2025-12-20": 4,
+            "2025-12-21": 3,
+            "2025-12-22": 3,
+            "2025-12-23": 4,
+            "2025-12-24": 2,
+            "2025-12-25": 2,
+            "2025-12-26": 4
+          }
+        },
+        {
+          "name": "Ski Suite",
+          "slug": "ski-suite-zermatt",
+          "description": "Ski-in/ski-out suite with private sauna and ski storage.",
+          "maxOccupancy": 2,
+          "bedType": "King",
+          "size": "55 m²",
+          "prices": {
+            "2025-12-19": 320.00,
+            "2025-12-20": 320.00,
+            "2025-12-21": 360.00,
+            "2025-12-22": 360.00,
+            "2025-12-23": 400.00,
+            "2025-12-24": 450.00,
+            "2025-12-25": 450.00,
+            "2025-12-26": 400.00
+          },
+          "availability": {
+            "2025-12-19": 6,
+            "2025-12-20": 6,
+            "2025-12-21": 5,
+            "2025-12-22": 5,
+            "2025-12-23": 6,
+            "2025-12-24": 4,
+            "2025-12-25": 4,
+            "2025-12-26": 6
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Fondue Evening",
+          "slug": "fondue-evening-zermatt",
+          "description": "Traditional Swiss cheese fondue with wine pairing in a cozy alpine setting.",
+          "eventDate": "2025-12-19T19:00:00Z",
+          "location": "Mountain Restaurant",
+          "price": 75.00,
+          "capacity": 25
+        },
+        {
+          "name": "Ski Lesson Package",
+          "slug": "ski-lesson-package",
+          "description": "Group ski lessons with certified instructors for all levels.",
+          "eventDate": "2025-12-20T09:00:00Z",
+          "location": "Ski Slopes",
+          "price": 120.00,
+          "capacity": 12
+        }
+      ],
+      "offers": [
+        {
+          "name": "Ski Package",
+          "slug": "ski-package-switzerland",
+          "description": "Includes ski passes, equipment rental, and daily breakfast",
+          "discount": 15.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-03-31T00:00:00Z",
+          "minNights": 3
+        },
+        {
+          "name": "Early Winter Special",
+          "slug": "early-winter-special",
+          "description": "Book before December 15th and save on your alpine adventure",
+          "discount": 20.00,
+          "validFrom": "2025-11-01T00:00:00Z",
+          "validTo": "2025-12-15T00:00:00Z",
+          "advanceBookingDays": 14
+        }
+      ]
+    },
+    {
+      "name": "Tropical Paradise Maldives",
+      "slug": "tropical-paradise-maldives",
+      "description": "Luxury overwater bungalows in the crystal-clear waters of the Maldives with world-class diving and spa facilities.",
+      "location": "Malé Atoll, Maldives",
+      "address": "Private Island Resort",
+      "city": "Malé",
+      "country": "Maldives",
+      "rooms": [
+        {
+          "name": "Overwater Villa",
+          "slug": "overwater-villa-maldives",
+          "description": "Stunning overwater villa with glass floor panels and direct lagoon access.",
+          "maxOccupancy": 2,
+          "bedType": "King",
+          "size": "120 m²",
+          "prices": {
+            "2025-12-19": 850.00,
+            "2025-12-20": 850.00,
+            "2025-12-21": 950.00,
+            "2025-12-22": 950.00,
+            "2025-12-23": 1100.00,
+            "2025-12-24": 1300.00,
+            "2025-12-25": 1300.00,
+            "2025-12-26": 1100.00
+          },
+          "availability": {
+            "2025-12-19": 3,
+            "2025-12-20": 3,
+            "2025-12-21": 2,
+            "2025-12-22": 2,
+            "2025-12-23": 3,
+            "2025-12-24": 1,
+            "2025-12-25": 1,
+            "2025-12-26": 3
+          }
+        },
+        {
+          "name": "Beachfront Suite",
+          "slug": "beachfront-suite-maldives",
+          "description": "Luxurious beachfront suite with private pool and direct beach access.",
+          "maxOccupancy": 3,
+          "bedType": "King",
+          "size": "100 m²",
+          "prices": {
+            "2025-12-19": 650.00,
+            "2025-12-20": 650.00,
+            "2025-12-21": 750.00,
+            "2025-12-22": 750.00,
+            "2025-12-23": 850.00,
+            "2025-12-24": 1000.00,
+            "2025-12-25": 1000.00,
+            "2025-12-26": 850.00
+          },
+          "availability": {
+            "2025-12-19": 5,
+            "2025-12-20": 5,
+            "2025-12-21": 4,
+            "2025-12-22": 4,
+            "2025-12-23": 5,
+            "2025-12-24": 3,
+            "2025-12-25": 3,
+            "2025-12-26": 5
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Sunset Cruise",
+          "slug": "sunset-cruise-maldives",
+          "description": "Romantic sunset cruise with dolphin watching and champagne.",
+          "eventDate": "2025-12-19T17:00:00Z",
+          "location": "Private Yacht",
+          "price": 150.00,
+          "capacity": 12
+        },
+        {
+          "name": "Snorkeling Adventure",
+          "slug": "snorkeling-adventure",
+          "description": "Guided snorkeling tour to coral reefs with marine life viewing.",
+          "eventDate": "2025-12-20T10:00:00Z",
+          "location": "Coral Reefs",
+          "price": 85.00,
+          "capacity": 15
+        },
+        {
+          "name": "Beach BBQ Dinner",
+          "slug": "beach-bbq-dinner",
+          "description": "Traditional Maldivian BBQ dinner on the beach under the stars.",
+          "eventDate": "2025-12-21T19:00:00Z",
+          "location": "Beach",
+          "price": 95.00,
+          "capacity": 30
+        }
+      ],
+      "offers": [
+        {
+          "name": "Honeymoon Package",
+          "slug": "honeymoon-package-maldives",
+          "description": "Special package for couples with romantic dinners and spa treatments",
+          "discount": 22.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-06-30T00:00:00Z",
+          "minNights": 5
+        },
+        {
+          "name": "All-Inclusive Upgrade",
+          "slug": "all-inclusive-maldives",
+          "description": "Upgrade to all-inclusive with meals, drinks, and activities included",
+          "discount": 25.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-12-31T00:00:00Z",
+          "minNights": 3
+        }
+      ]
+    },
+    {
+      "name": "Urban Boutique Amsterdam",
+      "slug": "urban-boutique-amsterdam",
+      "description": "Stylish boutique hotel in the heart of Amsterdam with canal views and modern Dutch design.",
+      "location": "Amsterdam, Netherlands",
+      "address": "Herengracht 341",
+      "city": "Amsterdam",
+      "country": "Netherlands",
+      "rooms": [
+        {
+          "name": "Canal View Room",
+          "slug": "canal-view-amsterdam",
+          "description": "Charming room with views of Amsterdam's famous canals.",
+          "maxOccupancy": 2,
+          "bedType": "Queen",
+          "size": "28 m²",
+          "prices": {
+            "2025-12-19": 180.00,
+            "2025-12-20": 180.00,
+            "2025-12-21": 200.00,
+            "2025-12-22": 200.00,
+            "2025-12-23": 220.00,
+            "2025-12-24": 250.00,
+            "2025-12-25": 250.00,
+            "2025-12-26": 220.00
+          },
+          "availability": {
+            "2025-12-19": 10,
+            "2025-12-20": 10,
+            "2025-12-21": 8,
+            "2025-12-22": 8,
+            "2025-12-23": 10,
+            "2025-12-24": 7,
+            "2025-12-25": 7,
+            "2025-12-26": 10
+          }
+        },
+        {
+          "name": "Designer Suite",
+          "slug": "designer-suite-amsterdam",
+          "description": "Modern designer suite with contemporary Dutch art and luxury amenities.",
+          "maxOccupancy": 2,
+          "bedType": "King",
+          "size": "45 m²",
+          "prices": {
+            "2025-12-19": 320.00,
+            "2025-12-20": 320.00,
+            "2025-12-21": 360.00,
+            "2025-12-22": 360.00,
+            "2025-12-23": 400.00,
+            "2025-12-24": 450.00,
+            "2025-12-25": 450.00,
+            "2025-12-26": 400.00
+          },
+          "availability": {
+            "2025-12-19": 4,
+            "2025-12-20": 4,
+            "2025-12-21": 3,
+            "2025-12-22": 3,
+            "2025-12-23": 4,
+            "2025-12-24": 2,
+            "2025-12-25": 2,
+            "2025-12-26": 4
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Canal Tour & Wine Tasting",
+          "slug": "canal-tour-wine-tasting",
+          "description": "Private canal tour followed by Dutch wine and cheese tasting.",
+          "eventDate": "2025-12-19T15:00:00Z",
+          "location": "Canal Boat",
+          "price": 65.00,
+          "capacity": 20
+        },
+        {
+          "name": "Art Gallery Evening",
+          "slug": "art-gallery-evening",
+          "description": "Exclusive evening at a local art gallery with guided tour and refreshments.",
+          "eventDate": "2025-12-20T18:00:00Z",
+          "location": "Local Gallery",
+          "price": 45.00,
+          "capacity": 25
+        }
+      ],
+      "offers": [
+        {
+          "name": "City Break Package",
+          "slug": "city-break-amsterdam",
+          "description": "Perfect for weekend getaways with museum passes included",
+          "discount": 12.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-03-31T00:00:00Z",
+          "requiresWeekend": true
+        },
+        {
+          "name": "Cultural Experience",
+          "slug": "cultural-experience-amsterdam",
+          "description": "Includes canal tour, museum tickets, and bike rental",
+          "discount": 15.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-06-30T00:00:00Z",
+          "minNights": 2
+        }
+      ]
+    }
+  ]
+}
+

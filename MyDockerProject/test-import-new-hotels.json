@@ -1,0 +1,559 @@
+{
+  "hotels": [
+    {
+      "name": "Riverside Manor Edinburgh",
+      "slug": "riverside-manor-edinburgh",
+      "description": "A historic Georgian mansion converted into a luxury hotel, overlooking the River Forth. Experience Scottish hospitality at its finest with period features and modern amenities.",
+      "address": "15 Princes Street",
+      "city": "Edinburgh",
+      "country": "Scotland",
+      "rooms": [
+        {
+          "name": "Royal Suite",
+          "slug": "royal-suite-edinburgh",
+          "description": "Opulent suite with four-poster bed, original Georgian features, and views of Edinburgh Castle.",
+          "maxOccupancy": 2,
+          "bedType": "King Four-Poster",
+          "size": "95 m²",
+          "prices": {
+            "2025-12-19": 450.00,
+            "2025-12-20": 450.00,
+            "2025-12-21": 480.00,
+            "2025-12-22": 480.00,
+            "2025-12-23": 520.00,
+            "2025-12-24": 600.00,
+            "2025-12-25": 600.00,
+            "2025-12-26": 550.00,
+            "2025-12-27": 500.00,
+            "2025-12-28": 500.00
+          },
+          "availability": {
+            "2025-12-19": 1,
+            "2025-12-20": 1,
+            "2025-12-21": 1,
+            "2025-12-22": 1,
+            "2025-12-23": 1,
+            "2025-12-24": 0,
+            "2025-12-25": 0,
+            "2025-12-26": 1,
+            "2025-12-27": 1,
+            "2025-12-28": 1
+          }
+        },
+        {
+          "name": "Heritage Double Room",
+          "slug": "heritage-double-edinburgh",
+          "description": "Elegant double room with period furniture and city views.",
+          "maxOccupancy": 2,
+          "bedType": "Double",
+          "size": "32 m²",
+          "prices": {
+            "2025-12-19": 180.00,
+            "2025-12-20": 180.00,
+            "2025-12-21": 200.00,
+            "2025-12-22": 200.00,
+            "2025-12-23": 220.00,
+            "2025-12-24": 280.00,
+            "2025-12-25": 280.00,
+            "2025-12-26": 250.00,
+            "2025-12-27": 220.00,
+            "2025-12-28": 220.00
+          },
+          "availability": {
+            "2025-12-19": 8,
+            "2025-12-20": 8,
+            "2025-12-21": 7,
+            "2025-12-22": 7,
+            "2025-12-23": 8,
+            "2025-12-24": 5,
+            "2025-12-25": 5,
+            "2025-12-26": 7,
+            "2025-12-27": 8,
+            "2025-12-28": 8
+          }
+        },
+        {
+          "name": "Family Room",
+          "slug": "family-room-edinburgh",
+          "description": "Spacious family room with two double beds, perfect for families visiting Edinburgh.",
+          "maxOccupancy": 4,
+          "bedType": "Two Doubles",
+          "size": "45 m²",
+          "prices": {
+            "2025-12-19": 280.00,
+            "2025-12-20": 280.00,
+            "2025-12-21": 300.00,
+            "2025-12-22": 300.00,
+            "2025-12-23": 320.00,
+            "2025-12-24": 380.00,
+            "2025-12-25": 380.00,
+            "2025-12-26": 350.00,
+            "2025-12-27": 320.00,
+            "2025-12-28": 320.00
+          },
+          "availability": {
+            "2025-12-19": 4,
+            "2025-12-20": 4,
+            "2025-12-21": 3,
+            "2025-12-22": 3,
+            "2025-12-23": 4,
+            "2025-12-24": 2,
+            "2025-12-25": 2,
+            "2025-12-26": 3,
+            "2025-12-27": 4,
+            "2025-12-28": 4
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Whisky Tasting Experience",
+          "slug": "whisky-tasting-edinburgh",
+          "description": "Sample Scotland's finest single malts with expert guidance from our resident whisky sommelier.",
+          "eventDate": "2025-12-19T19:00:00Z",
+          "location": "Library Bar",
+          "price": 85.00,
+          "capacity": 20
+        },
+        {
+          "name": "Historic Edinburgh Walking Tour",
+          "slug": "walking-tour-edinburgh",
+          "description": "Guided walking tour through Edinburgh's Old Town, including the Royal Mile and hidden closes.",
+          "eventDate": "2025-12-20T10:00:00Z",
+          "location": "Hotel Lobby",
+          "price": 35.00,
+          "capacity": 15
+        },
+        {
+          "name": "Traditional Scottish Ceilidh",
+          "slug": "ceilidh-edinburgh",
+          "description": "Evening of traditional Scottish music and dancing in our grand ballroom.",
+          "eventDate": "2025-12-21T20:00:00Z",
+          "location": "Grand Ballroom",
+          "price": 55.00,
+          "capacity": 60
+        }
+      ],
+      "offers": [
+        {
+          "name": "Edinburgh Festival Package",
+          "slug": "festival-package-edinburgh",
+          "description": "Special rates during festival season with complimentary breakfast and show tickets",
+          "discount": 20.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-03-31T00:00:00Z"
+        },
+        {
+          "name": "Winter Warmth Special",
+          "slug": "winter-warmth-edinburgh",
+          "description": "Cozy winter stay with afternoon tea and spa access included",
+          "discount": 15.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-02-28T00:00:00Z",
+          "minNights": 2
+        }
+      ]
+    },
+    {
+      "name": "Vineyard Estate Tuscany",
+      "slug": "vineyard-estate-tuscany",
+      "description": "A luxurious wine estate in the heart of Tuscany, surrounded by rolling hills and vineyards. Experience authentic Italian hospitality with farm-to-table dining and wine tastings.",
+      "address": "Strada Provinciale 15",
+      "city": "Chianti",
+      "country": "Italy",
+      "rooms": [
+        {
+          "name": "Vineyard View Suite",
+          "slug": "vineyard-view-suite",
+          "description": "Elegant suite with panoramic views of the vineyards and Tuscan countryside. Features a private terrace.",
+          "maxOccupancy": 2,
+          "bedType": "King",
+          "size": "75 m²",
+          "prices": {
+            "2025-12-19": 320.00,
+            "2025-12-20": 320.00,
+            "2025-12-21": 350.00,
+            "2025-12-22": 350.00,
+            "2025-12-23": 380.00,
+            "2025-12-24": 450.00,
+            "2025-12-25": 450.00,
+            "2025-12-26": 400.00,
+            "2025-12-27": 380.00,
+            "2025-12-28": 380.00
+          },
+          "availability": {
+            "2025-12-19": 6,
+            "2025-12-20": 6,
+            "2025-12-21": 5,
+            "2025-12-22": 5,
+            "2025-12-23": 6,
+            "2025-12-24": 4,
+            "2025-12-25": 4,
+            "2025-12-26": 5,
+            "2025-12-27": 6,
+            "2025-12-28": 6
+          }
+        },
+        {
+          "name": "Tuscan Farmhouse Room",
+          "slug": "tuscan-farmhouse-room",
+          "description": "Charming room with rustic Tuscan decor and garden views.",
+          "maxOccupancy": 2,
+          "bedType": "Queen",
+          "size": "40 m²",
+          "prices": {
+            "2025-12-19": 180.00,
+            "2025-12-20": 180.00,
+            "2025-12-21": 200.00,
+            "2025-12-22": 200.00,
+            "2025-12-23": 220.00,
+            "2025-12-24": 280.00,
+            "2025-12-25": 280.00,
+            "2025-12-26": 250.00,
+            "2025-12-27": 220.00,
+            "2025-12-28": 220.00
+          },
+          "availability": {
+            "2025-12-19": 12,
+            "2025-12-20": 12,
+            "2025-12-21": 10,
+            "2025-12-22": 10,
+            "2025-12-23": 12,
+            "2025-12-24": 8,
+            "2025-12-25": 8,
+            "2025-12-26": 10,
+            "2025-12-27": 12,
+            "2025-12-28": 12
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Wine Tasting & Cellar Tour",
+          "slug": "wine-tasting-tuscany",
+          "description": "Explore our wine cellars and taste award-winning Chianti wines with our winemaker.",
+          "eventDate": "2025-12-19T17:00:00Z",
+          "location": "Wine Cellar",
+          "price": 65.00,
+          "capacity": 25
+        },
+        {
+          "name": "Cooking Class: Traditional Tuscan Cuisine",
+          "slug": "cooking-class-tuscany",
+          "description": "Learn to cook authentic Tuscan dishes using fresh ingredients from our garden.",
+          "eventDate": "2025-12-20T11:00:00Z",
+          "location": "Cooking School",
+          "price": 120.00,
+          "capacity": 12
+        },
+        {
+          "name": "Sunset Vineyard Tour",
+          "slug": "sunset-vineyard-tour",
+          "description": "Evening tour of the vineyards at sunset, followed by wine and cheese tasting.",
+          "eventDate": "2025-12-21T17:30:00Z",
+          "location": "Vineyards",
+          "price": 75.00,
+          "capacity": 20
+        }
+      ],
+      "offers": [
+        {
+          "name": "Wine Lovers Package",
+          "slug": "wine-lovers-package",
+          "description": "Includes daily wine tastings, vineyard tours, and complimentary bottle of estate wine",
+          "discount": 18.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-11-30T00:00:00Z",
+          "minNights": 3
+        },
+        {
+          "name": "Romantic Tuscany Getaway",
+          "slug": "romantic-tuscany-getaway",
+          "description": "Perfect for couples with romantic dinners and spa treatments included",
+          "discount": 22.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-06-30T00:00:00Z",
+          "minNights": 2
+        }
+      ]
+    },
+    {
+      "name": "Mountain Peak Lodge Aspen",
+      "slug": "mountain-peak-lodge-aspen",
+      "description": "A luxury ski-in/ski-out lodge at the base of Aspen Mountain. Experience world-class skiing, fine dining, and après-ski relaxation in the heart of the Rocky Mountains.",
+      "address": "315 East Dean Street",
+      "city": "Aspen",
+      "country": "United States",
+      "rooms": [
+        {
+          "name": "Ski-In/Ski-Out Penthouse",
+          "slug": "ski-penthouse-aspen",
+          "description": "Ultra-luxurious penthouse with private hot tub, ski storage, and direct mountain access.",
+          "maxOccupancy": 4,
+          "bedType": "King + Sofa Bed",
+          "size": "140 m²",
+          "prices": {
+            "2025-12-19": 1200.00,
+            "2025-12-20": 1200.00,
+            "2025-12-21": 1300.00,
+            "2025-12-22": 1300.00,
+            "2025-12-23": 1500.00,
+            "2025-12-24": 1800.00,
+            "2025-12-25": 1800.00,
+            "2025-12-26": 1600.00,
+            "2025-12-27": 1400.00,
+            "2025-12-28": 1400.00
+          },
+          "availability": {
+            "2025-12-19": 2,
+            "2025-12-20": 2,
+            "2025-12-21": 1,
+            "2025-12-22": 1,
+            "2025-12-23": 2,
+            "2025-12-24": 0,
+            "2025-12-25": 0,
+            "2025-12-26": 1,
+            "2025-12-27": 2,
+            "2025-12-28": 2
+          }
+        },
+        {
+          "name": "Mountain View Suite",
+          "slug": "mountain-view-suite-aspen",
+          "description": "Spacious suite with fireplace and stunning mountain views.",
+          "maxOccupancy": 2,
+          "bedType": "King",
+          "size": "65 m²",
+          "prices": {
+            "2025-12-19": 580.00,
+            "2025-12-20": 580.00,
+            "2025-12-21": 620.00,
+            "2025-12-22": 620.00,
+            "2025-12-23": 680.00,
+            "2025-12-24": 800.00,
+            "2025-12-25": 800.00,
+            "2025-12-26": 720.00,
+            "2025-12-27": 680.00,
+            "2025-12-28": 680.00
+          },
+          "availability": {
+            "2025-12-19": 8,
+            "2025-12-20": 8,
+            "2025-12-21": 7,
+            "2025-12-22": 7,
+            "2025-12-23": 8,
+            "2025-12-24": 5,
+            "2025-12-25": 5,
+            "2025-12-26": 7,
+            "2025-12-27": 8,
+            "2025-12-28": 8
+          }
+        },
+        {
+          "name": "Standard Ski Room",
+          "slug": "standard-ski-room-aspen",
+          "description": "Comfortable room with ski storage and mountain access.",
+          "maxOccupancy": 2,
+          "bedType": "Queen",
+          "size": "35 m²",
+          "prices": {
+            "2025-12-19": 380.00,
+            "2025-12-20": 380.00,
+            "2025-12-21": 420.00,
+            "2025-12-22": 420.00,
+            "2025-12-23": 480.00,
+            "2025-12-24": 580.00,
+            "2025-12-25": 580.00,
+            "2025-12-26": 520.00,
+            "2025-12-27": 480.00,
+            "2025-12-28": 480.00
+          },
+          "availability": {
+            "2025-12-19": 15,
+            "2025-12-20": 15,
+            "2025-12-21": 12,
+            "2025-12-22": 12,
+            "2025-12-23": 15,
+            "2025-12-24": 8,
+            "2025-12-25": 8,
+            "2025-12-26": 12,
+            "2025-12-27": 15,
+            "2025-12-28": 15
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Après-Ski Wine & Cheese",
+          "slug": "apres-ski-wine-cheese",
+          "description": "Relax after skiing with fine wines and artisanal cheeses in our fireside lounge.",
+          "eventDate": "2025-12-19T16:00:00Z",
+          "location": "Fireside Lounge",
+          "price": 55.00,
+          "capacity": 30
+        },
+        {
+          "name": "Private Ski Lesson",
+          "slug": "private-ski-lesson-aspen",
+          "description": "One-on-one ski instruction with certified professional instructors.",
+          "eventDate": "2025-12-20T09:00:00Z",
+          "location": "Aspen Mountain",
+          "price": 250.00,
+          "capacity": 1
+        },
+        {
+          "name": "Mountain Photography Workshop",
+          "slug": "photography-workshop-aspen",
+          "description": "Capture the beauty of the Rockies with professional photography guidance.",
+          "eventDate": "2025-12-21T08:00:00Z",
+          "location": "Mountain Trails",
+          "price": 95.00,
+          "capacity": 10
+        }
+      ],
+      "offers": [
+        {
+          "name": "Ski Package Deal",
+          "slug": "ski-package-aspen",
+          "description": "Includes lift tickets, equipment rental, and daily breakfast",
+          "discount": 25.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-03-31T00:00:00Z",
+          "minNights": 3
+        },
+        {
+          "name": "Early Season Special",
+          "slug": "early-season-aspen",
+          "description": "Book early and save on your winter ski vacation",
+          "discount": 20.00,
+          "validFrom": "2025-11-01T00:00:00Z",
+          "validTo": "2025-12-15T00:00:00Z",
+          "advanceBookingDays": 30
+        }
+      ]
+    },
+    {
+      "name": "Desert Oasis Marrakech",
+      "slug": "desert-oasis-marrakech",
+      "description": "A luxurious riad in the heart of Marrakech's medina, featuring traditional Moroccan architecture, tranquil courtyards, and authentic hammam spa. Experience the magic of North Africa.",
+      "address": "Derb Sidi Bouloukat",
+      "city": "Marrakech",
+      "country": "Morocco",
+      "rooms": [
+        {
+          "name": "Royal Riad Suite",
+          "slug": "royal-riad-suite",
+          "description": "Opulent suite with traditional zellige tiles, private courtyard, and rooftop terrace with Atlas Mountain views.",
+          "maxOccupancy": 2,
+          "bedType": "King",
+          "size": "90 m²",
+          "prices": {
+            "2025-12-19": 420.00,
+            "2025-12-20": 420.00,
+            "2025-12-21": 450.00,
+            "2025-12-22": 450.00,
+            "2025-12-23": 480.00,
+            "2025-12-24": 550.00,
+            "2025-12-25": 550.00,
+            "2025-12-26": 500.00,
+            "2025-12-27": 480.00,
+            "2025-12-28": 480.00
+          },
+          "availability": {
+            "2025-12-19": 2,
+            "2025-12-20": 2,
+            "2025-12-21": 1,
+            "2025-12-22": 1,
+            "2025-12-23": 2,
+            "2025-12-24": 1,
+            "2025-12-25": 1,
+            "2025-12-26": 2,
+            "2025-12-27": 2,
+            "2025-12-28": 2
+          }
+        },
+        {
+          "name": "Traditional Courtyard Room",
+          "slug": "courtyard-room-marrakech",
+          "description": "Authentic Moroccan room opening onto the central courtyard with fountain.",
+          "maxOccupancy": 2,
+          "bedType": "Double",
+          "size": "38 m²",
+          "prices": {
+            "2025-12-19": 180.00,
+            "2025-12-20": 180.00,
+            "2025-12-21": 200.00,
+            "2025-12-22": 200.00,
+            "2025-12-23": 220.00,
+            "2025-12-24": 280.00,
+            "2025-12-25": 280.00,
+            "2025-12-26": 250.00,
+            "2025-12-27": 220.00,
+            "2025-12-28": 220.00
+          },
+          "availability": {
+            "2025-12-19": 10,
+            "2025-12-20": 10,
+            "2025-12-21": 8,
+            "2025-12-22": 8,
+            "2025-12-23": 10,
+            "2025-12-24": 6,
+            "2025-12-25": 6,
+            "2025-12-26": 8,
+            "2025-12-27": 10,
+            "2025-12-28": 10
+          }
+        }
+      ],
+      "events": [
+        {
+          "name": "Traditional Moroccan Cooking Class",
+          "slug": "moroccan-cooking-class",
+          "description": "Learn to prepare tagines, couscous, and pastilla with local chefs in our traditional kitchen.",
+          "eventDate": "2025-12-19T11:00:00Z",
+          "location": "Riad Kitchen",
+          "price": 85.00,
+          "capacity": 8
+        },
+        {
+          "name": "Souk Shopping Tour",
+          "slug": "souk-shopping-tour",
+          "description": "Guided tour of Marrakech's famous souks with insider tips on bargaining and authentic crafts.",
+          "eventDate": "2025-12-20T09:00:00Z",
+          "location": "Jemaa el-Fnaa",
+          "price": 45.00,
+          "capacity": 12
+        },
+        {
+          "name": "Sunset Rooftop Mint Tea Ceremony",
+          "slug": "mint-tea-ceremony",
+          "description": "Experience traditional Moroccan mint tea ceremony on our rooftop terrace at sunset.",
+          "eventDate": "2025-12-21T17:00:00Z",
+          "location": "Rooftop Terrace",
+          "price": 35.00,
+          "capacity": 15
+        }
+      ],
+      "offers": [
+        {
+          "name": "Hammam & Spa Package",
+          "slug": "hammam-spa-package",
+          "description": "Includes traditional hammam treatment, massage, and spa access",
+          "discount": 20.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-11-30T00:00:00Z"
+        },
+        {
+          "name": "Cultural Immersion Package",
+          "slug": "cultural-immersion-marrakech",
+          "description": "Includes cooking class, souk tour, and traditional dinner",
+          "discount": 18.00,
+          "validFrom": "2025-12-01T00:00:00Z",
+          "validTo": "2026-06-30T00:00:00Z",
+          "minNights": 3
+        }
+      ]
+    }
+  ]
+}
+
