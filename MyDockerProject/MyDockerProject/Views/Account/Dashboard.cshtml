@@ -63,11 +63,11 @@
                 
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex flex-col md:flex-row gap-6">
-                        @* Room/Hotel Image - Similar to pricing summary *@
+                        @* Room/Hotel Image - Small image on left, matching pricing summary (max 200px) *@
                         @if (!string.IsNullOrEmpty(roomImage) || !string.IsNullOrEmpty(hotelImage))
                         {
-                            <div class="w-full md:w-48 flex-shrink-0">
-                                <div class="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100">
+                            <div class="w-full md:w-[200px] md:max-w-[200px] flex-shrink-0">
+                                <div class="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100" style="max-width: 200px;">
                                     <img 
                                         src="@(roomImage ?? hotelImage)" 
                                         alt="@(productName ?? hotelName ?? "Booking")"
