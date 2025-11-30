@@ -113,13 +113,21 @@ export class BookingService {
 
       const bookingData = await response.json();
 
+      // Construct guestDetails from request or bookingData
+      const guestDetails = request.guestDetails || {
+        firstName: bookingData.guestFirstName || '',
+        lastName: bookingData.guestLastName || '',
+        email: bookingData.guestEmail || '',
+        phone: bookingData.guestPhone || undefined
+      };
+
       // Map Umbraco response to BookingResponse format
       return {
         bookingId: bookingData.bookingId || bookingData.bookingReference,
         productId: bookingData.productId,
         from: new Date(bookingData.checkIn),
         to: bookingData.checkOut ? new Date(bookingData.checkOut) : new Date(bookingData.checkIn),
-        guestDetails: request.guestDetails,
+        guestDetails: guestDetails,
         status: bookingData.status?.toLowerCase() || 'confirmed',
         createdAt: new Date(bookingData.createdAt),
         totalPrice: bookingData.totalPrice,
