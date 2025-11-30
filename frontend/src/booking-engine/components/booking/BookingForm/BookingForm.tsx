@@ -5,7 +5,7 @@ import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
 import { TEST_IDS } from '../../../constants/testids';
 import { AnalyticsManager } from '../../../../services/analytics';
-import { formatPrice, calculateTotal, calculateNights } from '../../../utils/priceUtils';
+import { formatPrice, calculateTotal, calculateAddOnPrice, calculateNights } from '../../../utils/priceUtils';
 import { formatDate } from '../../../utils/dateUtils';
 
 export interface BookingFormProps {
@@ -20,7 +20,7 @@ export interface BookingFormProps {
 }
 
 export const BookingForm = ({ className = '', user }: BookingFormProps) => {
-  const { selectedProductId, selectedDateRange, selectedAddOns, selectedEvents, availabilityResult, setConfirmation, setError } = useBookingStore();
+  const { selectedProductId, selectedDateRange, selectedAddOns, selectedEvents, availabilityResult, availableAddOns, setConfirmation, setError } = useBookingStore();
   const { submitBooking, loading } = useBookingFlow();
   
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -28,16 +28,40 @@ export const BookingForm = ({ className = '', user }: BookingFormProps) => {
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
 
-  // Calculate total price for summary
-  const totalPrice = useMemo(() => {
-    if (!availabilityResult || !selectedDateRange.from) return 0;
-    return calculateTotal(availabilityResult, selectedDateRange, selectedAddOns, selectedEvents);
-  }, [availabilityResult, selectedDateRange, selectedAddOns, selectedEvents]);
-
   const nights = useMemo(() => {
     if (!selectedDateRange.from) return 0;
     return calculateNights(selectedDateRange.from, selectedDateRange.to || selectedDateRange.from);
   }, [selectedDateRange]);
+
+  // Calculate total price for summary
+  const totalPrice = useMemo(() => {
+    if (!availabilityResult || !selectedDateRange.from) return 0;
+    const availableDays = availabilityResult.days.filter((day) => day.available);
+    let baseTotal = calculateTotal(availableDays);
+    
+    // Add add-ons
+    selectedAddOns.forEach((addOnSelection) => {
+      const addOn = availableAddOns.find((a) => a.id === addOnSelection.addOnId);
+      if (addOn) {
+        const addOnPrice = calculateAddOnPrice(
+          addOn.price,
+          addOn.type,
+          addOnSelection.quantity,
+          nights,
+          1
+        );
+        baseTotal += addOnPrice;
+      }
+    });
+    
+    // Add events
+    selectedEvents.forEach((eventSelection) => {
+      // Events are typically included in the base price, but if they have additional cost, add it here
+      // For now, we'll assume events don't add extra cost
+    });
+    
+    return baseTotal;
+  }, [availabilityResult, selectedDateRange, selectedAddOns, selectedEvents, availableAddOns, nights]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
