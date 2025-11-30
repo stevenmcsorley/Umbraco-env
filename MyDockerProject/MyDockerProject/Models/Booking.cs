@@ -64,5 +64,17 @@ public class Booking
     
     // Foreign key to user (if authenticated)
     public Guid? UserId { get; set; }
+    
+    // Payment information
+    [MaxLength(100)]
+    public string? PaymentId { get; set; } // Payment provider's payment ID
+    
+    [MaxLength(100)]
+    public string? TransactionId { get; set; } // Payment provider's transaction ID
+    
+    [MaxLength(50)]
+    public string? PaymentStatus { get; set; } // Paid, Pending, Failed, Refunded
+    
+    public DateTime? PaymentDate { get; set; }
 }
 

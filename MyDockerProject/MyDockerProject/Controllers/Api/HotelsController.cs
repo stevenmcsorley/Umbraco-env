@@ -725,6 +725,54 @@ public class HotelsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{identifier}/addons")]
+    public IActionResult GetAddOns(string identifier)
+    {
+        IContent? hotel = null;
+        
+        // Try to find by GUID first
+        if (Guid.TryParse(identifier, out var guid))
+        {
+            hotel = _contentService.GetById(guid);
+        }
+        
+        // If not found by GUID, try to find by slug
+        if (hotel == null || hotel.ContentType.Alias != "hotel")
+        {
+            var contentType = _contentTypeService.Get("hotel");
+            if (contentType != null)
+            {
+                var hotels = _contentService.GetPagedOfType(contentType.Id, 0, int.MaxValue, out _, null);
+                hotel = hotels.FirstOrDefault(h =>
+                {
+                    var hotelName = h.GetValue<string>("hotelName") ?? h.Name;
+                    var slug = UrlHelper.ToSlug(hotelName);
+                    return slug.Equals(identifier, StringComparison.OrdinalIgnoreCase);
+                });
+            }
+        }
+        
+        if (hotel == null || hotel.ContentType.Alias != "hotel")
+        {
+            return NotFound();
+        }
+
+        var addOns = _contentService.GetPagedChildren(hotel.Id, 0, int.MaxValue, out var total)
+            .Where(c => c.ContentType.Alias == "addOn");
+
+        var result = addOns.Select(a => new
+        {
+            id = a.Key,
+            name = a.GetValue<string>("addOnName") ?? a.Name,
+            description = a.GetValue<string>("description"),
+            price = a.GetValue<decimal?>("price") ?? 0,
+            pricingType = a.GetValue<string>("pricingType") ?? "one-time",
+            image = GetMediaUrl(a.GetValue<object>("image"))
+        }).ToList();
+
+        return Ok(result);
+    }
+
     [HttpGet("inventory/{productId}")]
     public async Task<IActionResult> GetInventory(
         string productId, 

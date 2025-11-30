@@ -26,7 +26,11 @@ public class BookingService
         decimal totalPrice,
         string currency = "GBP",
         string? additionalData = null,
-        Guid? userId = null)
+        Guid? userId = null,
+        string? paymentId = null,
+        string? transactionId = null,
+        string? paymentStatus = null,
+        DateTime? paymentDate = null)
     {
         // Generate unique booking reference
         var bookingRef = $"BK-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
@@ -48,7 +52,11 @@ public class BookingService
             Status = "Confirmed",
             AdditionalData = additionalData,
             UserId = userId,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            PaymentId = paymentId,
+            TransactionId = transactionId,
+            PaymentStatus = paymentStatus,
+            PaymentDate = paymentDate
         };
         
         _context.Bookings.Add(booking);

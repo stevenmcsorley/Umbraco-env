@@ -13,22 +13,52 @@ public class BookingsController : ControllerBase
     private readonly BookingService _bookingService;
     private readonly InventoryService _inventoryService;
     private readonly BookingDbContext _context;
+    private readonly IEmailService _emailService;
+    private readonly IPaymentService _paymentService;
 
     public BookingsController(
         BookingService bookingService,
         InventoryService inventoryService,
-        BookingDbContext context)
+        BookingDbContext context,
+        IEmailService emailService,
+        IPaymentService paymentService)
     {
         _bookingService = bookingService;
         _inventoryService = inventoryService;
         _context = context;
+        _emailService = emailService;
+        _paymentService = paymentService;
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
+    public async Task<IActionResult> CreateBooking([FromBody] dynamic requestData)
     {
         try
         {
+            // Handle both string and Guid productId
+            var productIdStr = requestData.productId?.ToString();
+            if (string.IsNullOrEmpty(productIdStr) || !Guid.TryParse(productIdStr, out var productId))
+            {
+                return BadRequest(new { error = "Invalid productId" });
+            }
+
+            var request = new CreateBookingRequest
+            {
+                ProductId = productId,
+                ProductType = requestData.productType?.ToString() ?? "Room",
+                CheckIn = DateTime.Parse(requestData.checkIn?.ToString() ?? DateTime.UtcNow.ToString()),
+                CheckOut = requestData.checkOut != null ? DateTime.Parse(requestData.checkOut.ToString()) : null,
+                Quantity = requestData.quantity != null ? (int)requestData.quantity : 1,
+                GuestFirstName = requestData.guestFirstName?.ToString() ?? "",
+                GuestLastName = requestData.guestLastName?.ToString() ?? "",
+                GuestEmail = requestData.guestEmail?.ToString() ?? "",
+                GuestPhone = requestData.guestPhone?.ToString(),
+                TotalPrice = requestData.totalPrice != null ? (decimal)requestData.totalPrice : 0,
+                Currency = requestData.currency?.ToString(),
+                AdditionalData = requestData.additionalData?.ToString(),
+                UserId = requestData.userId != null && Guid.TryParse(requestData.userId.ToString(), out var userId) ? userId : null
+            };
+
             // Validate availability before creating booking
             var isAvailable = request.ProductType == "Room" && request.CheckOut.HasValue
                 ? await _inventoryService.IsAvailableForRangeAsync(
@@ -48,6 +78,33 @@ public class BookingsController : ControllerBase
                 });
             }
 
+            // Process payment
+            var paymentRequest = new PaymentRequest
+            {
+                Amount = request.TotalPrice,
+                Currency = request.Currency ?? "GBP",
+                Description = $"Booking for {request.ProductType} - {request.ProductId}",
+                CustomerEmail = request.GuestEmail,
+                CustomerName = $"{request.GuestFirstName} {request.GuestLastName}",
+                Metadata = new Dictionary<string, string>
+                {
+                    { "productId", request.ProductId.ToString() },
+                    { "productType", request.ProductType },
+                    { "checkIn", request.CheckIn.ToString("O") }
+                }
+            };
+
+            var paymentResult = await _paymentService.ProcessPaymentAsync(paymentRequest);
+
+            if (!paymentResult.Success)
+            {
+                return BadRequest(new
+                {
+                    error = "Payment processing failed",
+                    paymentError = paymentResult.ErrorMessage
+                });
+            }
+
             var booking = await _bookingService.CreateBookingAsync(
                 request.ProductId,
                 request.ProductType,
@@ -61,8 +118,26 @@ public class BookingsController : ControllerBase
                 request.TotalPrice,
                 request.Currency ?? "GBP",
                 request.AdditionalData,
-                request.UserId
+                request.UserId,
+                paymentResult.PaymentId,
+                paymentResult.TransactionId,
+                "Paid",
+                DateTime.UtcNow
             );
+
+            // Send confirmation email (fire and forget)
+            _ = Task.Run(async () =>
+            {
+                await _emailService.SendBookingConfirmationAsync(
+                    booking.GuestEmail,
+                    $"{booking.GuestFirstName} {booking.GuestLastName}",
+                    booking.BookingReference,
+                    booking.TotalPrice,
+                    booking.Currency,
+                    booking.CheckIn,
+                    booking.CheckOut
+                );
+            });
 
             return Ok(new
             {
@@ -125,7 +200,24 @@ public class BookingsController : ControllerBase
     {
         try
         {
+            var booking = await _bookingService.GetBookingByReferenceAsync(bookingReference);
+            if (booking == null)
+            {
+                return NotFound(new { error = "Booking not found" });
+            }
+
             await _bookingService.CancelBookingAsync(bookingReference);
+
+            // Send cancellation email (fire and forget)
+            _ = Task.Run(async () =>
+            {
+                await _emailService.SendBookingCancellationAsync(
+                    booking.GuestEmail,
+                    $"{booking.GuestFirstName} {booking.GuestLastName}",
+                    bookingReference
+                );
+            });
+
             return Ok(new { message = "Booking cancelled successfully" });
         }
         catch (Exception ex)
@@ -171,5 +263,14 @@ public class CreateBookingRequest
     public string? Currency { get; set; }
     public string? AdditionalData { get; set; } // JSON string for add-ons, events, offers
     public Guid? UserId { get; set; }
+    
+    // Accept productId as string (from booking engine) and convert to Guid
+    public void SetProductId(string productId)
+    {
+        if (Guid.TryParse(productId, out var guid))
+        {
+            ProductId = guid;
+        }
+    }
 }
 

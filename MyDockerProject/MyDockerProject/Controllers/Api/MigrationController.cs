@@ -24,6 +24,7 @@ public class MigrationController : ControllerBase
         {
             int bookingsCreated = 0;
             int inventoryCreated = 0;
+            int usersCreated = 0;
             
             // Create Bookings table if it doesn't exist
             try
@@ -49,7 +50,11 @@ public class MigrationController : ControllerBase
                             [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
                             [UpdatedAt] datetime2 NULL,
                             [AdditionalData] nvarchar(max) NULL,
-                            [UserId] uniqueidentifier NULL
+                            [UserId] uniqueidentifier NULL,
+                            [PaymentId] nvarchar(100) NULL,
+                            [TransactionId] nvarchar(100) NULL,
+                            [PaymentStatus] nvarchar(50) NULL,
+                            [PaymentDate] datetime2 NULL
                         );
                         CREATE UNIQUE INDEX [IX_Bookings_BookingReference] ON [dbo].[Bookings] ([BookingReference]);
                         CREATE INDEX [IX_Bookings_ProductId_CheckIn] ON [dbo].[Bookings] ([ProductId], [CheckIn], [CheckOut]);
@@ -97,12 +102,40 @@ public class MigrationController : ControllerBase
                 _logger.LogWarning(ex, "Inventory table may already exist or error creating it");
             }
             
+            // Create Users table if it doesn't exist
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync(@"
+                    IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Users]') AND type in (N'U'))
+                    BEGIN
+                        CREATE TABLE [dbo].[Users] (
+                            [Id] uniqueidentifier NOT NULL PRIMARY KEY DEFAULT NEWID(),
+                            [Email] nvarchar(100) NOT NULL,
+                            [PasswordHash] nvarchar(255) NOT NULL,
+                            [FirstName] nvarchar(100) NOT NULL,
+                            [LastName] nvarchar(100) NOT NULL,
+                            [Phone] nvarchar(50) NULL,
+                            [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                            [LastLoginAt] datetime2 NULL,
+                            [IsActive] bit NOT NULL DEFAULT 1
+                        );
+                        CREATE UNIQUE INDEX [IX_Users_Email] ON [dbo].[Users] ([Email]);
+                    END
+                ");
+                usersCreated = 1;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Users table may already exist or error creating it");
+            }
+            
             return Ok(new
             {
                 success = true,
                 message = "Database tables created/verified successfully",
                 bookingsTableCreated = bookingsCreated > 0,
-                inventoryTableCreated = inventoryCreated > 0
+                inventoryTableCreated = inventoryCreated > 0,
+                usersTableCreated = usersCreated > 0
             });
         }
         catch (Exception ex)

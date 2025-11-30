@@ -344,9 +344,30 @@ export class UmbracoAdapter {
    */
   async getAddOns(hotelId: string): Promise<AddOn[]> {
     try {
-      // In future, this would fetch from Umbraco add-ons content
-      // For now, return empty array - can be extended when add-ons content type is created
-      return [];
+      const response = await fetch(`${UMBRACO_API_BASE}/hotels/${hotelId}/addons`);
+      if (!response.ok) {
+        console.warn(`Failed to fetch add-ons for hotel ${hotelId}: ${response.status}`);
+        return [];
+      }
+
+      const addOnsData = await response.json() as Array<{
+        id: string;
+        name: string;
+        description?: string;
+        price: number;
+        pricingType: string;
+        image?: string;
+      }>;
+
+      return addOnsData.map(addOn => ({
+        id: addOn.id,
+        name: addOn.name,
+        description: addOn.description,
+        price: addOn.price,
+        type: (addOn.pricingType || 'one-time') as 'one-time' | 'per-night' | 'per-person' | 'per-unit',
+        available: true,
+        image: addOn.image
+      }));
     } catch (error) {
       console.error('Error fetching add-ons:', error);
       return [];

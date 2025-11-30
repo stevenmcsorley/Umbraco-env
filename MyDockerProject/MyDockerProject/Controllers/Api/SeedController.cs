@@ -117,6 +117,35 @@ public class SeedController : ControllerBase
         }
     }
 
+    [HttpPost("create-addon-document-type")]
+    public IActionResult CreateAddOnDocumentTypeEndpoint()
+    {
+        try
+        {
+            var docTypeService = new Services.DocumentTypeService(
+                _contentTypeService,
+                _dataTypeService,
+                _shortStringHelper);
+            
+            docTypeService.CreateAddOnDocumentType();
+
+            return Ok(new
+            {
+                success = true,
+                message = "AddOn document type created successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                details = ex.ToString()
+            });
+        }
+    }
+
     [HttpPost("seed-offers-events")]
     public IActionResult SeedOffersAndEvents()
     {

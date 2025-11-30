@@ -78,6 +78,16 @@ This starts:
 
 ### 3. Create Content Types
 
+**Option A: Create via API (Recommended)**
+```powershell
+# Create all document types at once
+Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-document-types" -Method POST
+
+# Or create individually:
+Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-addon-document-type" -Method POST
+```
+
+**Option B: Create Manually**
 1. Go to Umbraco Backoffice: https://localhost:44372/umbraco
 2. Navigate to **Settings** → **Document Types**
 3. Create:
@@ -85,6 +95,7 @@ This starts:
    - **Room** (alias: `room`, child of Hotel)
    - **Offer** (alias: `offer`, child of Hotel)
    - **Event** (alias: `event`, child of Hotel) - optional
+   - **Add On** (alias: `addOn`, child of Hotel) - for booking add-ons
 
 See [Getting Started Guide](docs/GETTING_STARTED.md) for detailed instructions.
 
@@ -103,16 +114,16 @@ This creates:
 
 ### 5. Create Database Tables (First Time Setup)
 
-Before importing data with prices, ensure the Inventory and Bookings tables exist:
+Before importing data with prices, ensure the Inventory, Bookings, and Users tables exist:
 
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:44372/api/migration/ensure-tables" -Method POST
 ```
 
-This creates the `Bookings` and `Inventory` tables needed for:
-- Storing date-specific prices
-- Tracking room/event availability
-- Managing bookings
+This creates:
+- **Bookings** table: Stores all bookings with guest details, payment info, and status
+- **Inventory** table: Tracks date-specific prices and availability
+- **Users** table: User accounts for authentication
 
 **Note:** This only needs to be run once after initial setup.
 
@@ -306,12 +317,30 @@ Universal components available in `Views/Partials/`:
 - `GET /api/hotels/{id}` - Get hotel details
 - `GET /api/hotels/{id}/rooms` - Get rooms for a hotel
 - `GET /api/hotels/{id}/offers` - Get offers for a hotel
+- `GET /api/hotels/{id}/events` - Get events for a hotel
+- `GET /api/hotels/{id}/addons` - Get add-ons for a hotel
 - `GET /api/hotels/{id}/availability` - Get basic availability structure
 - `GET /api/hotels/inventory/{productId}?from=DATE&to=DATE` - Get date-specific prices and availability from Inventory table (used by booking engine)
-- `POST /api/migration/ensure-tables` - Create Bookings and Inventory database tables (run once after setup)
+- `POST /api/migration/ensure-tables` - Create Bookings, Inventory, and Users database tables (run once after setup)
 - `POST /api/importer/import` - Bulk import hotels, rooms, events, and offers from JSON (updates existing content)
 - `POST /api/importer/import-file` - Bulk import from uploaded JSON file (updates existing content)
 - `POST /api/seed/create-demo-hotel` - Create demo hotel content
+- `POST /api/seed/create-document-types` - Create all document types (Hotel, Room, Offer, Event, AddOn)
+- `POST /api/seed/create-addon-document-type` - Create AddOn document type
+
+### Authentication APIs
+
+- `POST /api/auth/register` - Register new user account
+- `POST /api/auth/login` - Login and get authentication token
+- `GET /api/auth/user/{userId}` - Get user details
+- `GET /api/auth/user/{userId}/bookings` - Get user's booking history
+
+### Booking APIs
+
+- `POST /api/bookings` - Create new booking (includes payment processing)
+- `GET /api/bookings/{bookingReference}` - Get booking details
+- `POST /api/bookings/{bookingReference}/cancel` - Cancel a booking
+- `GET /api/bookings/user/{userId}` - Get bookings for a user
 
 ### Admin APIs
 
@@ -319,10 +348,16 @@ Universal components available in `Views/Partials/`:
 - `GET /api/admin/bookings` - Get all bookings (with optional filtering by productId, productType, status, date range)
 - `GET /api/admin/inventory/summary` - Get inventory and booking statistics summary
 
+### Admin Dashboard (UI)
+
+- `GET /admin` - Admin dashboard with statistics
+- `GET /admin/bookings` - Bookings management page
+- `GET /admin/inventory` - Inventory management page
+
 ### Booking Engine APIs
 
 - `GET /engine/availability?productId={id}&from={date}&to={date}` - Check availability (uses Inventory API for date-specific prices)
-- `POST /engine/book` - Create booking
+- `POST /engine/book` - Create booking (now persists to database via Umbraco API)
 - `GET /engine/health` - Health check
 
 **Note:** The booking engine automatically fetches date-specific prices from the Inventory table via `/api/hotels/inventory/{productId}`. Prices imported through the import system are immediately available to the booking engine.

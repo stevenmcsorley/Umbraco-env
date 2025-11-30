@@ -11,6 +11,7 @@ public class BookingDbContext : DbContext
     
     public DbSet<Booking> Bookings { get; set; }
     public DbSet<Inventory> Inventory { get; set; }
+    public DbSet<User> Users { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +33,12 @@ public class BookingDbContext : DbContext
             entity.HasIndex(e => new { e.ProductId, e.Date }).IsUnique();
             entity.HasIndex(e => e.Date);
             entity.HasIndex(e => e.ProductId);
+        });
+        
+        // Configure User
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(e => e.Email).IsUnique();
         });
     }
 }

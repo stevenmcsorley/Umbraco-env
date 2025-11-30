@@ -21,6 +21,19 @@ if (!string.IsNullOrEmpty(connectionString))
     builder.Services.AddScoped<BookingService>();
     builder.Services.AddScoped<InventoryService>();
     builder.Services.AddScoped<DataImportService>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
+    builder.Services.AddScoped<IUserService, UserService>();
+    
+    // Register payment service (can be swapped for real provider)
+    var paymentProvider = builder.Configuration["Payment:Provider"] ?? "Mock";
+    if (paymentProvider.Equals("Stripe", StringComparison.OrdinalIgnoreCase))
+    {
+        builder.Services.AddScoped<IPaymentService, StripePaymentService>();
+    }
+    else
+    {
+        builder.Services.AddScoped<IPaymentService, MockPaymentService>();
+    }
 }
 
 builder.CreateUmbracoBuilder()

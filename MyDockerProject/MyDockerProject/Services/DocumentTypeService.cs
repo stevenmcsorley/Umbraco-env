@@ -410,6 +410,7 @@ public class DocumentTypeService
         CreateRoomDocumentType();
         CreateOfferDocumentType();
         CreateEventDocumentType();
+        CreateAddOnDocumentType();
     }
 
 }
