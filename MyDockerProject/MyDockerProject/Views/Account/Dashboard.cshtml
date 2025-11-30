@@ -62,31 +62,33 @@
                 var nights = booking.CheckOut.HasValue ? (booking.CheckOut.Value - booking.CheckIn).Days : 0;
                 
                 <div class="bg-white rounded-lg shadow p-6">
-                    <div style="display: flex; flex-direction: column; gap: 20px; align-items: start;">
-                        <style>
-                            @@media (min-width: 768px) {
-                                .booking-card-container {
-                                    flex-direction: row !important;
-                                }
+                    <style>
+                        @@media (min-width: 768px) {
+                            .booking-card-row {
+                                display: flex !important;
+                                flex-direction: row !important;
+                                gap: 20px !important;
+                                align-items: start !important;
                             }
-                        </style>
-                        <div class="booking-card-container" style="display: flex; flex-direction: column; gap: 20px; align-items: start; width: 100%;">
-                            @* Room/Hotel Image - Small image on left, matching pricing summary (max 200px) *@
-                            @if (!string.IsNullOrEmpty(roomImage) || !string.IsNullOrEmpty(hotelImage))
-                            {
-                                <div style="width: 100%; max-width: 200px; flex-shrink: 0;">
-                                    <div class="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100" style="max-width: 200px;">
-                                        <img 
-                                            src="@(roomImage ?? hotelImage)" 
-                                            alt="@(productName ?? hotelName ?? "Booking")"
-                                            class="w-full h-full object-cover"
-                                        />
-                                    </div>
+                        }
+                    </style>
+                    <div class="booking-card-row" style="display: flex; flex-direction: column; gap: 20px; align-items: start;">
+                        @* Room/Hotel Image - Small image on left, matching pricing summary (max 200px) *@
+                        @if (!string.IsNullOrEmpty(roomImage) || !string.IsNullOrEmpty(hotelImage))
+                        {
+                            <div style="width: 100%; max-width: 200px; flex-shrink: 0;">
+                                <div class="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100" style="max-width: 200px;">
+                                    <img 
+                                        src="@(roomImage ?? hotelImage)" 
+                                        alt="@(productName ?? hotelName ?? "Booking")"
+                                        class="w-full h-full object-cover"
+                                    />
                                 </div>
-                            }
-                            
-                            @* Booking Details - Matching pricing summary layout exactly *@
-                            <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                            </div>
+                        }
+                        
+                        @* Booking Details - Matching pricing summary layout exactly *@
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
                             @* Room Name *@
                             @if (!string.IsNullOrEmpty(productName))
                             {
