@@ -43,9 +43,12 @@ public class BookingsController : ControllerBase
             }
 
             Guid? userId = null;
-            if (requestData.userId != null && Guid.TryParse(requestData.userId.ToString(), out Guid parsedUserId))
+            if (requestData.userId != null)
             {
-                userId = parsedUserId;
+                if (Guid.TryParse(requestData.userId.ToString(), out Guid parsedUserId))
+                {
+                    userId = parsedUserId;
+                }
             }
 
             var request = new CreateBookingRequest
