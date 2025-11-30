@@ -50,10 +50,22 @@ public class MigrationController : ControllerBase
                             [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
                             [UpdatedAt] datetime2 NULL,
                             [AdditionalData] nvarchar(max) NULL,
-                            [UserId] uniqueidentifier NULL
+                            [UserId] uniqueidentifier NULL,
+                            [PaymentId] nvarchar(100) NULL,
+                            [TransactionId] nvarchar(100) NULL,
+                            [PaymentStatus] nvarchar(50) NULL,
+                            [PaymentDate] datetime2 NULL
                         );
-                        
-                        -- Add payment columns if they don't exist
+                        CREATE UNIQUE INDEX [IX_Bookings_BookingReference] ON [dbo].[Bookings] ([BookingReference]);
+                        CREATE INDEX [IX_Bookings_ProductId_CheckIn] ON [dbo].[Bookings] ([ProductId], [CheckIn], [CheckOut]);
+                        CREATE INDEX [IX_Bookings_GuestEmail] ON [dbo].[Bookings] ([GuestEmail]);
+                        CREATE INDEX [IX_Bookings_CreatedAt] ON [dbo].[Bookings] ([CreatedAt]);
+                        CREATE INDEX [IX_Bookings_UserId] ON [dbo].[Bookings] ([UserId]);
+                    END
+                    
+                    -- Add payment columns if table exists but columns don't
+                    IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND type in (N'U'))
+                    BEGIN
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND name = 'PaymentId')
                         BEGIN
                             ALTER TABLE [dbo].[Bookings] ADD [PaymentId] nvarchar(100) NULL;
