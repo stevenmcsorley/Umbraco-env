@@ -349,7 +349,7 @@
         
         // Load React Booking Engine
         (function() {
-            function initializeBookingEngine() {
+            async function initializeBookingEngine() {
                 if (typeof window.initBookingEngine === 'function') {
                     const bookingRoot = document.getElementById('booking-engine-root');
                     if (!bookingRoot) {
@@ -370,11 +370,33 @@
                         `;
                         return;
                     }
+                    
+                    // Fetch current user information
+                    let userData = null;
+                    try {
+                        const userResponse = await fetch('/api/auth/current-user');
+                        if (userResponse.ok) {
+                            const userResult = await userResponse.json();
+                            if (userResult.isAuthenticated) {
+                                userData = {
+                                    userId: userResult.userId,
+                                    email: userResult.email,
+                                    firstName: userResult.firstName,
+                                    lastName: userResult.lastName,
+                                    phone: userResult.phone || ''
+                                };
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Failed to fetch user data:', error);
+                    }
+                    
                     window.initBookingEngine({
                         containerId: 'booking-engine-root',
                         productId: productId,
                         hotelId: hotelIdAttr,
-                        apiBaseUrl: '/engine'
+                        apiBaseUrl: '/engine',
+                        user: userData
                     });
                 } else {
                     console.warn('initBookingEngine not found, retrying...');

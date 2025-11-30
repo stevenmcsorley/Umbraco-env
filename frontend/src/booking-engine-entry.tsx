@@ -15,6 +15,13 @@ import './index.css';
   productId: string;
   hotelId: string;
   apiBaseUrl: string;
+  user?: {
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  } | null;
 }) => {
   console.log('[initBookingEngine] Starting initialization with config:', config);
   const container = document.getElementById(config.containerId);
@@ -33,6 +40,7 @@ import './index.css';
           hotelId={config.hotelId}
           apiBaseUrl={config.apiBaseUrl}
           defaultProductId={config.productId}
+          user={config.user}
         />
       </React.StrictMode>
     );

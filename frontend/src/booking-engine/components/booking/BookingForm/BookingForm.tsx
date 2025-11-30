@@ -8,16 +8,23 @@ import { AnalyticsManager } from '../../../../services/analytics';
 
 export interface BookingFormProps {
   className?: string;
+  user?: {
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  } | null;
 }
 
-export const BookingForm = ({ className = '' }: BookingFormProps) => {
+export const BookingForm = ({ className = '', user }: BookingFormProps) => {
   const { selectedProductId, selectedDateRange, selectedAddOns, selectedEvents, setConfirmation, setError } = useBookingStore();
   const { submitBooking, loading } = useBookingFlow();
   
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

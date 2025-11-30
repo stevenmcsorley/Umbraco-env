@@ -115,6 +115,32 @@ public class AuthController : ControllerBase
         }));
     }
 
+    [HttpGet("current-user")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var userIdStr = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
+        {
+            return Ok(new { isAuthenticated = false });
+        }
+
+        var user = await _userService.GetUserByIdAsync(userId);
+        if (user == null)
+        {
+            return Ok(new { isAuthenticated = false });
+        }
+
+        return Ok(new
+        {
+            isAuthenticated = true,
+            userId = user.Id,
+            email = user.Email,
+            firstName = user.FirstName,
+            lastName = user.LastName,
+            phone = user.Phone
+        });
+    }
+
     private string GenerateSimpleToken(Guid userId)
     {
         // Simple token generation - in production, use JWT or similar

@@ -15,13 +15,21 @@ export interface BookingAppProps {
   tokens?: Partial<DesignTokens>;
   apiBaseUrl?: string;
   defaultProductId?: string;
+  user?: {
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  } | null;
 }
 
 export const BookingApp = ({
   hotelId,
   tokens: _tokens = {},
   apiBaseUrl: _apiBaseUrl = '/engine',
-  defaultProductId
+  defaultProductId,
+  user
 }: BookingAppProps) => {
   const { selectedProductId, setSelectedProductId, confirmation } = useBookingStore();
 
@@ -58,7 +66,7 @@ export const BookingApp = ({
         )}
 
         <PageSection>
-          <BookingForm />
+          <BookingForm user={user} />
         </PageSection>
     </PageContainer>
   );
