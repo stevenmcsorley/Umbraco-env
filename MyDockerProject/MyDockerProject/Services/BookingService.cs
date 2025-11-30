@@ -59,6 +59,8 @@ public class BookingService
             PaymentDate = paymentDate
         };
         
+        Console.WriteLine($"[BookingService] Creating booking with UserId: {userId?.ToString() ?? "NULL"}");
+        
         _context.Bookings.Add(booking);
         
         // Update inventory

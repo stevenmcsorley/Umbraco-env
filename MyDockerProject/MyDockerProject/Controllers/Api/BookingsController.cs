@@ -53,10 +53,20 @@ public class BookingsController : ControllerBase
             Guid? userId = null;
             if (requestData.userId != null)
             {
-                if (Guid.TryParse(requestData.userId.ToString(), out Guid parsedUserId))
+                var userIdStr = requestData.userId.ToString();
+                if (Guid.TryParse(userIdStr, out Guid parsedUserId))
                 {
                     userId = parsedUserId;
+                    Console.WriteLine($"[BookingsController] Parsed userId: {userId}");
                 }
+                else
+                {
+                    Console.WriteLine($"[BookingsController] Failed to parse userId: {userIdStr}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("[BookingsController] No userId provided in request");
             }
 
             // If userId is provided but guest details are missing, fetch user details
