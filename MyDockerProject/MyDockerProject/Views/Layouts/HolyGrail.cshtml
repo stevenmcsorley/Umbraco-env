@@ -32,7 +32,6 @@
                     LUXURY HOTELS
                 </a>
                 <nav class="hidden md:flex space-x-6 items-center">
-                    <a href="/hotels" class="text-sm text-gray-700 hover:text-gray-900 font-light tracking-wide uppercase transition-colors">Hotels</a>
                     @if (Context.Session.GetString("UserId") != null)
                     {
                         <a href="/account" class="text-sm text-gray-700 hover:text-gray-900 font-light tracking-wide uppercase transition-colors">My Account</a>
@@ -55,7 +54,6 @@
             </div>
             <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-gray-100 mt-4 pt-4">
                 <nav class="flex flex-col space-y-3">
-                    <a href="/hotels" class="text-sm text-gray-700 hover:text-gray-900 py-2 uppercase tracking-wide">Hotels</a>
                     @if (Context.Session.GetString("UserId") != null)
                     {
                         <a href="/account" class="text-sm text-gray-700 hover:text-gray-900 py-2 uppercase tracking-wide">My Account</a>
