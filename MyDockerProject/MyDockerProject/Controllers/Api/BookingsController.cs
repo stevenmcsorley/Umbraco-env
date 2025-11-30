@@ -37,15 +37,23 @@ public class BookingsController : ControllerBase
         {
             // Handle both string and Guid productId
             var productIdStr = requestData.productId?.ToString();
-            if (string.IsNullOrEmpty(productIdStr) || !Guid.TryParse(productIdStr, out Guid productId))
+            if (string.IsNullOrEmpty(productIdStr))
+            {
+                return BadRequest(new { error = "Invalid productId" });
+            }
+            
+            if (!Guid.TryParse(productIdStr, out Guid productId))
             {
                 return BadRequest(new { error = "Invalid productId" });
             }
 
             Guid? userId = null;
-            if (requestData.userId != null && Guid.TryParse(requestData.userId.ToString(), out Guid parsedUserId))
+            if (requestData.userId != null)
             {
-                userId = parsedUserId;
+                if (Guid.TryParse(requestData.userId.ToString(), out Guid parsedUserId))
+                {
+                    userId = parsedUserId;
+                }
             }
 
             var request = new CreateBookingRequest
