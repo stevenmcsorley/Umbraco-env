@@ -18,6 +18,7 @@ public class BookingsController : ControllerBase
     private readonly IPaymentService _paymentService;
     private readonly Services.IUserService _userService;
     private readonly IContentService _contentService;
+    private readonly ILogger<BookingsController> _logger;
 
     public BookingsController(
         BookingService bookingService,
@@ -26,7 +27,8 @@ public class BookingsController : ControllerBase
         IEmailService emailService,
         IPaymentService paymentService,
         Services.IUserService userService,
-        IContentService contentService)
+        IContentService contentService,
+        ILogger<BookingsController> logger)
     {
         _bookingService = bookingService;
         _inventoryService = inventoryService;
@@ -35,6 +37,7 @@ public class BookingsController : ControllerBase
         _paymentService = paymentService;
         _userService = userService;
         _contentService = contentService;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -61,16 +64,16 @@ public class BookingsController : ControllerBase
                 if (Guid.TryParse(userIdStr, out Guid parsedUserId))
                 {
                     userId = parsedUserId;
-                    Console.WriteLine($"[BookingsController] Parsed userId: {userId}");
+                    _logger.LogInformation("[BookingsController] Parsed userId: {UserId}", userId);
                 }
                 else
                 {
-                    Console.WriteLine($"[BookingsController] Failed to parse userId: {userIdStr}");
+                    _logger.LogWarning("[BookingsController] Failed to parse userId: {UserIdStr}", userIdStr);
                 }
             }
             else
             {
-                Console.WriteLine("[BookingsController] No userId provided in request");
+                _logger.LogInformation("[BookingsController] No userId provided in request");
             }
 
             // If userId is provided but guest details are missing, fetch user details
@@ -220,11 +223,12 @@ public class BookingsController : ControllerBase
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[BookingsController] Error fetching product/hotel details: {ex.Message}");
+                _logger.LogError(ex, "[BookingsController] Error fetching product/hotel details");
             }
             
             // Log booking creation for debugging
-            Console.WriteLine($"[BookingsController] Booking created - Id: {booking.Id}, UserId: {booking.UserId?.ToString() ?? "NULL"}, ProductId: {booking.ProductId}");
+            _logger.LogInformation("[BookingsController] Booking created - Id: {BookingId}, UserId: {UserId}, ProductId: {ProductId}, Reference: {Reference}", 
+                booking.Id, booking.UserId?.ToString() ?? "NULL", booking.ProductId, booking.BookingReference);
 
             return Ok(new
             {

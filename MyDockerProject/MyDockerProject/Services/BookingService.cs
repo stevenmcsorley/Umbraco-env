@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MyDockerProject.Data;
 using MyDockerProject.Models;
 
@@ -7,10 +8,12 @@ namespace MyDockerProject.Services;
 public class BookingService
 {
     private readonly BookingDbContext _context;
+    private readonly ILogger<BookingService> _logger;
     
-    public BookingService(BookingDbContext context)
+    public BookingService(BookingDbContext context, ILogger<BookingService> logger)
     {
         _context = context;
+        _logger = logger;
     }
     
     public async Task<Booking> CreateBookingAsync(
@@ -59,7 +62,8 @@ public class BookingService
             PaymentDate = paymentDate
         };
         
-        Console.WriteLine($"[BookingService] Creating booking with UserId: {userId?.ToString() ?? "NULL"}");
+        _logger.LogInformation("[BookingService] Creating booking with UserId: {UserId}, ProductId: {ProductId}, Reference: {Reference}", 
+            userId?.ToString() ?? "NULL", productId, bookingRef);
         
         _context.Bookings.Add(booking);
         
