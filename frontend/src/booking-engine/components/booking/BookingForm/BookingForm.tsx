@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useBookingStore } from '../../../app/state/bookingStore';
 import { useBookingFlow } from '../../../hooks/useBookingFlow';
+import { useAvailability } from '../../../hooks/useAvailability';
+import { useOffers } from '../../../hooks/useOffers';
+import { useEvents } from '../../../hooks/useEvents';
 import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
 import { TEST_IDS } from '../../../constants/testids';
@@ -10,6 +13,7 @@ import { formatDate } from '../../../utils/dateUtils';
 
 export interface BookingFormProps {
   className?: string;
+  hotelId?: string;
   user?: {
     userId: string;
     email: string;
@@ -19,8 +23,8 @@ export interface BookingFormProps {
   } | null;
 }
 
-export const BookingForm = ({ className = '', user }: BookingFormProps) => {
-  const { selectedProductId, selectedDateRange, selectedAddOns, selectedEvents, availabilityResult, availableAddOns, setConfirmation, setError } = useBookingStore();
+export const BookingForm = ({ className = '', hotelId, user }: BookingFormProps) => {
+  const { selectedProductId, selectedDateRange, selectedAddOns, selectedEvents, availableAddOns, selectedOffer, setConfirmation, setError } = useBookingStore();
   const { submitBooking, loading } = useBookingFlow();
   
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -28,40 +32,93 @@ export const BookingForm = ({ className = '', user }: BookingFormProps) => {
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
 
+  // Fetch availability for selected date range (same as AvailabilityPanel)
+  const request = selectedProductId && selectedDateRange.from
+    ? {
+        productId: selectedProductId,
+        from: selectedDateRange.from,
+        to: selectedDateRange.to || selectedDateRange.from
+      }
+    : null;
+  const { data: availabilityData } = useAvailability(request);
+  
+  // Fetch offers and events (needed for discount and event prices)
+  const { offers } = useOffers(hotelId);
+  const { events } = useEvents(hotelId);
+  
+  const selectedOfferDetails = selectedOffer && offers.find(o => o.id === selectedOffer.offerId);
+  
+  // Get selected event details
+  const selectedEventDetails = useMemo(() => {
+    if (!selectedDateRange.from || !events.length) return [];
+    const endDate = selectedDateRange.to || selectedDateRange.from;
+    const fromDate = new Date(selectedDateRange.from);
+    fromDate.setHours(0, 0, 0, 0);
+    const toDate = new Date(endDate);
+    toDate.setHours(0, 0, 0, 0);
+    
+    return selectedEvents
+      .map((se) => events.find((e) => e.id === se.eventId))
+      .filter((event): event is typeof events[0] => {
+        if (!event || !event.eventDate) return false;
+        const eventDate = new Date(event.eventDate);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate >= fromDate && eventDate <= toDate;
+      });
+  }, [selectedEvents, events, selectedDateRange]);
+
   const nights = useMemo(() => {
     if (!selectedDateRange.from) return 0;
     return calculateNights(selectedDateRange.from, selectedDateRange.to || selectedDateRange.from);
   }, [selectedDateRange]);
 
-  // Calculate total price for summary
+  // Calculate total price for summary - must match AvailabilityPanel logic exactly
   const totalPrice = useMemo(() => {
-    if (!availabilityResult || !selectedDateRange.from) return 0;
-    const availableDays = availabilityResult.days.filter((day) => day.available);
+    // Use availabilityData (filtered to selected range) if available, otherwise return 0
+    if (!availabilityData || !selectedDateRange.from) {
+      return 0;
+    }
+
+    const availableDays = availabilityData.days.filter((day) => day.available);
+    if (availableDays.length === 0) return 0;
+    
     let baseTotal = calculateTotal(availableDays);
     
-    // Add add-ons
-    selectedAddOns.forEach((addOnSelection) => {
-      const addOn = availableAddOns.find((a) => a.id === addOnSelection.addOnId);
-      if (addOn) {
-        const addOnPrice = calculateAddOnPrice(
-          addOn.price,
-          addOn.type,
-          addOnSelection.quantity,
-          nights,
-          1
-        );
-        baseTotal += addOnPrice;
+    // Calculate discount amount FIRST (based on original base price)
+    let discountAmount = 0;
+    if (selectedOfferDetails && selectedOfferDetails.discount) {
+      discountAmount = (baseTotal * selectedOfferDetails.discount) / 100;
+    }
+    
+    // Subtract discount from base
+    const totalAfterDiscount = baseTotal - discountAmount;
+    
+    // Add event prices
+    let eventsTotal = 0;
+    selectedEventDetails.forEach((event) => {
+      if (event && event.price) {
+        eventsTotal += event.price;
       }
     });
     
-    // Add events
-    selectedEvents.forEach((eventSelection) => {
-      // Events are typically included in the base price, but if they have additional cost, add it here
-      // For now, we'll assume events don't add extra cost
+    // Add add-ons
+    let addOnsTotal = 0;
+    selectedAddOns.forEach((selectedAddOn) => {
+      const addOn = availableAddOns.find((a) => a.id === selectedAddOn.addOnId);
+      if (addOn) {
+        addOnsTotal += calculateAddOnPrice(
+          addOn.price,
+          addOn.type,
+          selectedAddOn.quantity,
+          nights,
+          1
+        );
+      }
     });
     
-    return baseTotal;
-  }, [availabilityResult, selectedDateRange, selectedAddOns, selectedEvents, availableAddOns, nights]);
+    // Return: base - discount + events + addons (same as AvailabilityPanel)
+    return totalAfterDiscount + addOnsTotal + eventsTotal;
+  }, [availabilityData, selectedDateRange, selectedAddOns, selectedEvents, availableAddOns, nights, selectedOfferDetails, selectedEventDetails]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -215,13 +272,13 @@ export const BookingForm = ({ className = '', user }: BookingFormProps) => {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                    {nights} {nights === 1 ? 'day' : 'days'} available
+                    {availabilityData?.days?.filter((day) => day.available).length || 0} {availabilityData?.days?.filter((day) => day.available).length === 1 ? 'day' : 'days'} available
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '14px', color: '#374151' }}>Base price:</span>
                   <span style={{ fontSize: '14px', color: '#111827', fontWeight: '400' }}>
-                    {formatPrice(totalPrice, availabilityResult?.currency || 'GBP')}
+                    {formatPrice(totalPrice, availabilityData?.currency || 'GBP')}
                   </span>
                 </div>
                 <div style={{
@@ -234,7 +291,7 @@ export const BookingForm = ({ className = '', user }: BookingFormProps) => {
                 }}>
                   <span style={{ fontSize: '16px', color: '#111827', fontWeight: '500' }}>Total:</span>
                   <span style={{ fontSize: '16px', color: '#111827', fontWeight: '500' }}>
-                    {formatPrice(totalPrice, availabilityResult?.currency || 'GBP')}
+                    {formatPrice(totalPrice, availabilityData?.currency || 'GBP')}
                   </span>
                 </div>
               </div>

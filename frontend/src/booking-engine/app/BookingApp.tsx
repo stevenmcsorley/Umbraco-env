@@ -66,7 +66,7 @@ export const BookingApp = ({
         )}
 
         <PageSection>
-          <BookingForm user={user} />
+          <BookingForm user={user} hotelId={hotelId} />
         </PageSection>
     </PageContainer>
   );
