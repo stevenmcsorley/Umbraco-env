@@ -20,6 +20,14 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
           (leftColumn as HTMLElement).style.display = 'none';
         }
       }
+      
+      // Debug: log confirmation data
+      console.log('[ConfirmationScreen] Confirmation data:', {
+        productName: confirmation.productName,
+        hotelName: confirmation.hotelName,
+        hotelLocation: confirmation.hotelLocation,
+        bookingId: confirmation.bookingId
+      });
     }
   }, [confirmation]);
 
