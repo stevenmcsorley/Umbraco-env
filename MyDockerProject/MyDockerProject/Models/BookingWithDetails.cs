@@ -10,5 +10,6 @@ public class BookingWithDetails
     public string? HotelLocation { get; set; }
     public string? RoomImage { get; set; }
     public string? HotelImage { get; set; }
+    public List<string>? RoomFeatures { get; set; }
 }
 

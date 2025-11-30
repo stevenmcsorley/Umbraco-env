@@ -62,7 +62,7 @@
                 var nights = booking.CheckOut.HasValue ? (booking.CheckOut.Value - booking.CheckIn).Days : 0;
                 
                 <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex flex-col md:flex-row gap-5 items-start">
                         @* Room/Hotel Image - Small image on left, matching pricing summary (max 200px) *@
                         @if (!string.IsNullOrEmpty(roomImage) || !string.IsNullOrEmpty(hotelImage))
                         {
@@ -77,60 +77,71 @@
                             </div>
                         }
                         
-                        @* Booking Details *@
-                        <div class="flex-1 flex flex-col md:flex-row justify-between gap-4">
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold mb-2 text-gray-900">@booking.BookingReference</h3>
-                                
-                                @if (!string.IsNullOrEmpty(productName) || !string.IsNullOrEmpty(hotelName))
+                        @* Booking Details - Matching pricing summary layout *@
+                        <div class="flex-1 flex flex-col gap-3">
+                            @* Room Name *@
+                            @if (!string.IsNullOrEmpty(productName))
+                            {
+                                <h3 class="text-[22px] font-medium text-gray-900 mb-0" style="font-family: 'Playfair Display', serif; letter-spacing: -0.02em;">
+                                    @productName
+                                </h3>
+                            }
+                            
+                            @* Hotel Name and Location *@
+                            @if (!string.IsNullOrEmpty(hotelName))
+                            {
+                                <p class="text-sm text-gray-600 font-light mb-0">
+                                    @hotelName
+                                    @if (!string.IsNullOrEmpty(hotelLocation))
+                                    {
+                                        <span> • @hotelLocation</span>
+                                    }
+                                </p>
+                            }
+                            
+                            @* Dates *@
+                            <div class="text-[13px] text-gray-700 font-light mt-1">
+                                <span class="font-normal">Check-in:</span> @booking.CheckIn.ToString("dd MMM yyyy")
+                                @if (booking.CheckOut.HasValue)
                                 {
-                                    <div class="mb-3">
-                                        @if (!string.IsNullOrEmpty(productName))
-                                        {
-                                            <p class="text-xl font-medium text-gray-900 mb-1" style="font-family: 'Playfair Display', serif;">@productName</p>
-                                        }
-                                        @if (!string.IsNullOrEmpty(hotelName))
-                                        {
-                                            <p class="text-sm text-gray-600 font-light">
-                                                @hotelName
-                                                @if (!string.IsNullOrEmpty(hotelLocation))
-                                                {
-                                                    <span> • @hotelLocation</span>
-                                                }
-                                            </p>
-                                        }
-                                    </div>
+                                    <span style="margin: 0 8px; color: #d1d5db;">•</span>
+                                    <span class="font-normal">Check-out:</span> @booking.CheckOut.Value.ToString("dd MMM yyyy")
+                                    <span class="text-gray-500 ml-1">(@nights @(nights == 1 ? "night" : "nights"))</span>
                                 }
-                                
-                                <div class="text-sm text-gray-600 space-y-1 font-light">
-                                    <p>
-                                        <span class="font-normal">Check-in:</span> @booking.CheckIn.ToString("dd MMM yyyy")
-                                        @if (booking.CheckOut.HasValue)
-                                        {
-                                            <span class="mx-2 text-gray-300">•</span>
-                                            <span class="font-normal">Check-out:</span> @booking.CheckOut.Value.ToString("dd MMM yyyy")
-                                            <span class="text-gray-500 ml-1">(@nights @(nights == 1 ? "night" : "nights"))</span>
-                                        }
-                                    </p>
-                                    <p>
-                                        <span class="font-normal">Quantity:</span> @booking.Quantity
-                                    </p>
-                                </div>
                             </div>
                             
-                            @* Price and Status *@
-                            <div class="text-right md:text-right mt-4 md:mt-0">
-                                <p class="text-lg font-semibold mb-2 text-gray-900">@booking.Currency @booking.TotalPrice.ToString("N2")</p>
-                                <span class="inline-block px-3 py-1 rounded text-xs font-medium
-                                    @(booking.Status == "Confirmed" || booking.Status == "Paid" ? "bg-green-100 text-green-800" : 
-                                      booking.Status == "Cancelled" ? "bg-red-100 text-red-800" : 
-                                      "bg-gray-100 text-gray-800")">
-                                    @booking.Status
-                                </span>
-                                @if (!string.IsNullOrEmpty(booking.PaymentStatus))
-                                {
-                                    <p class="text-xs text-gray-500 mt-1">Payment: @booking.PaymentStatus</p>
-                                }
+                            @* Room Features *@
+                            @if (bookingItem.RoomFeatures != null && bookingItem.RoomFeatures.Count > 0)
+                            {
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    @foreach (var feature in bookingItem.RoomFeatures.Take(3))
+                                    {
+                                        <span class="text-[11px] text-gray-600 bg-gray-100 px-2 py-1 rounded font-light">
+                                            @feature
+                                        </span>
+                                    }
+                                </div>
+                            }
+                            
+                            @* Booking Reference, Price and Status *@
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mt-2 pt-3 border-t border-gray-200">
+                                <div>
+                                    <p class="text-xs text-gray-500 mb-1">Booking Reference</p>
+                                    <p class="text-sm font-medium text-gray-900">@booking.BookingReference</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-semibold text-gray-900 mb-1">@booking.Currency @booking.TotalPrice.ToString("N2")</p>
+                                    <span class="inline-block px-3 py-1 rounded text-xs font-medium
+                                        @(booking.Status == "Confirmed" || booking.Status == "Paid" ? "bg-green-100 text-green-800" : 
+                                          booking.Status == "Cancelled" ? "bg-red-100 text-red-800" : 
+                                          "bg-gray-100 text-gray-800")">
+                                        @booking.Status
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(booking.PaymentStatus))
+                                    {
+                                        <p class="text-xs text-gray-500 mt-1">Payment: @booking.PaymentStatus</p>
+                                    }
+                                </div>
                             </div>
                         </div>
                     </div>
