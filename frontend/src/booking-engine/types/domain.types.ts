@@ -53,7 +53,8 @@ export interface BookingRequest {
   productId: string;
   from: Date | string;
   to: Date | string;
-  guestDetails: GuestDetails;
+  guestDetails?: GuestDetails;
+  userId?: string;
   quantity?: number;
   addOns?: Array<{
     addOnId: string;

@@ -7,8 +7,10 @@ export class BookingAdapter {
       from: typeof request.from === 'string' ? request.from : request.from.toISOString(),
       to: typeof request.to === 'string' ? request.to : request.to.toISOString(),
       guestDetails: request.guestDetails,
+      userId: request.userId,
       quantity: request.quantity || 1,
-      addOns: request.addOns || []
+      addOns: request.addOns || [],
+      events: request.events || []
     };
   }
 
