@@ -165,33 +165,43 @@ public class AccountController : Controller
                     {
                         if (featuresValue is string featuresString && !string.IsNullOrEmpty(featuresString))
                         {
-                            // Try to parse as JSON array or comma-separated
+                            // Try to parse as JSON array first
                             if (featuresString.TrimStart().StartsWith("["))
                             {
                                 try
                                 {
                                     var jsonArray = System.Text.Json.JsonSerializer.Deserialize<string[]>(featuresString);
-                                    if (jsonArray != null)
+                                    if (jsonArray != null && jsonArray.Length > 0)
                                     {
-                                        roomFeatures = jsonArray.ToList();
+                                        roomFeatures = jsonArray
+                                            .Select(f => f?.Trim())
+                                            .Where(f => !string.IsNullOrEmpty(f))
+                                            .ToList();
                                     }
                                 }
                                 catch { }
                             }
-                            else
+                            
+                            // If not parsed as JSON, try comma-separated, semicolon-separated, or newline-separated
+                            if (roomFeatures == null || roomFeatures.Count == 0)
                             {
-                                // Comma-separated or newline-separated
-                                roomFeatures = featuresString
-                                    .Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                                var separators = new[] { ',', ';', '\n', '\r' };
+                                var splitFeatures = featuresString
+                                    .Split(separators, StringSplitOptions.RemoveEmptyEntries)
                                     .Select(f => f.Trim())
                                     .Where(f => !string.IsNullOrEmpty(f))
                                     .ToList();
+                                
+                                if (splitFeatures.Count > 0)
+                                {
+                                    roomFeatures = splitFeatures;
+                                }
                             }
                         }
                         else if (featuresValue is System.Collections.IEnumerable featuresEnumerable && !(featuresValue is string))
                         {
                             roomFeatures = featuresEnumerable.Cast<object>()
-                                .Select(f => f?.ToString() ?? "")
+                                .Select(f => f?.ToString()?.Trim() ?? "")
                                 .Where(f => !string.IsNullOrEmpty(f))
                                 .ToList();
                         }
