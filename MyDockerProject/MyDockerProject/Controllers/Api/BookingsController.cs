@@ -207,11 +207,14 @@ public class BookingsController : ControllerBase
                         ?? productContent.Name;
                     
                     // Get hotel (parent of room/event)
-                    var hotelContent = productContent.Parent();
-                    if (hotelContent != null)
+                    if (productContent.ParentId > 0)
                     {
-                        hotelName = hotelContent.GetValue<string>("hotelName") ?? hotelContent.Name;
-                        hotelLocation = hotelContent.GetValue<string>("location");
+                        var hotelContent = _contentService.GetById(productContent.ParentId);
+                        if (hotelContent != null)
+                        {
+                            hotelName = hotelContent.GetValue<string>("hotelName") ?? hotelContent.Name;
+                            hotelLocation = hotelContent.GetValue<string>("location");
+                        }
                     }
                 }
             }
