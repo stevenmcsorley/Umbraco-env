@@ -144,6 +144,7 @@ public class AccountController : Controller
             string? hotelLocation = null;
             string? roomImage = null;
             string? hotelImage = null;
+            List<string>? roomFeatures = null;
             
             try
             {
@@ -157,6 +158,44 @@ public class AccountController : Controller
                     // Get room image (heroImage)
                     var heroImageValue = productContent.GetValue("heroImage");
                     roomImage = GetMediaUrl(heroImageValue);
+                    
+                    // Get room features
+                    var featuresValue = productContent.GetValue("features");
+                    if (featuresValue != null)
+                    {
+                        if (featuresValue is string featuresString && !string.IsNullOrEmpty(featuresString))
+                        {
+                            // Try to parse as JSON array or comma-separated
+                            if (featuresString.TrimStart().StartsWith("["))
+                            {
+                                try
+                                {
+                                    var jsonArray = System.Text.Json.JsonSerializer.Deserialize<string[]>(featuresString);
+                                    if (jsonArray != null)
+                                    {
+                                        roomFeatures = jsonArray.ToList();
+                                    }
+                                }
+                                catch { }
+                            }
+                            else
+                            {
+                                // Comma-separated or newline-separated
+                                roomFeatures = featuresString
+                                    .Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(f => f.Trim())
+                                    .Where(f => !string.IsNullOrEmpty(f))
+                                    .ToList();
+                            }
+                        }
+                        else if (featuresValue is System.Collections.IEnumerable featuresEnumerable && !(featuresValue is string))
+                        {
+                            roomFeatures = featuresEnumerable.Cast<object>()
+                                .Select(f => f?.ToString() ?? "")
+                                .Where(f => !string.IsNullOrEmpty(f))
+                                .ToList();
+                        }
+                    }
                     
                     // Get hotel (parent of room/event)
                     if (productContent.ParentId > 0)
@@ -187,7 +226,8 @@ public class AccountController : Controller
                 HotelName = hotelName,
                 HotelLocation = hotelLocation,
                 RoomImage = roomImage,
-                HotelImage = hotelImage
+                HotelImage = hotelImage,
+                RoomFeatures = roomFeatures
             });
         }
         
