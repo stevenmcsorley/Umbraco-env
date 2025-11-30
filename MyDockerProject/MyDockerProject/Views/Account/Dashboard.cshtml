@@ -57,6 +57,7 @@
                 var productName = bookingItem.ProductName as string;
                 var hotelName = bookingItem.HotelName as string;
                 var hotelLocation = bookingItem.HotelLocation as string;
+                var nights = booking.CheckOut.HasValue ? (booking.CheckOut.Value - booking.CheckIn).Days : 0;
                 
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex justify-between items-start">
@@ -90,9 +91,6 @@
                                     {
                                         <span class="mx-2">→</span>
                                         <span class="font-medium">Check-out:</span> @booking.CheckOut.Value.ToString("dd MMM yyyy")
-                                        @{
-                                            var nights = (booking.CheckOut.Value - booking.CheckIn).Days;
-                                        }
                                         <span class="text-gray-500">(@nights @(nights == 1 ? "night" : "nights"))</span>
                                     }
                                 </p>
