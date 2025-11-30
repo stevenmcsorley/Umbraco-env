@@ -8,5 +8,7 @@ public class BookingWithDetails
     public string? ProductName { get; set; }
     public string? HotelName { get; set; }
     public string? HotelLocation { get; set; }
+    public string? RoomImage { get; set; }
+    public string? HotelImage { get; set; }
 }
 

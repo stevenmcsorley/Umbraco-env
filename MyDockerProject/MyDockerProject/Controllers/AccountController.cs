@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using MyDockerProject.Services;
 using Umbraco.Cms.Core.Services;
+using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models.PublishedContent;
 
 namespace MyDockerProject.Controllers;
 
@@ -8,11 +12,108 @@ public class AccountController : Controller
 {
     private readonly Services.IUserService _userService;
     private readonly IContentService _contentService;
+    private readonly IMediaService _mediaService;
+    private readonly IPublishedContentQuery _publishedContentQuery;
+    private readonly ILogger<AccountController> _logger;
 
-    public AccountController(Services.IUserService userService, IContentService contentService)
+    public AccountController(
+        Services.IUserService userService, 
+        IContentService contentService,
+        IMediaService mediaService,
+        IPublishedContentQuery publishedContentQuery,
+        ILogger<AccountController> logger)
     {
         _userService = userService;
         _contentService = contentService;
+        _mediaService = mediaService;
+        _publishedContentQuery = publishedContentQuery;
+        _logger = logger;
+    }
+    
+    private string? GetMediaUrl(object? mediaValue)
+    {
+        if (mediaValue == null) return null;
+        
+        // Handle MediaWithCrops (MediaPicker3)
+        if (mediaValue is MediaWithCrops mediaWithCrops)
+        {
+            var media = mediaWithCrops.MediaItem;
+            if (media != null)
+            {
+                return media.Url();
+            }
+        }
+        
+        // Handle IEnumerable<MediaWithCrops>
+        if (mediaValue is IEnumerable<MediaWithCrops> mediaList)
+        {
+            var firstMedia = mediaList.FirstOrDefault();
+            if (firstMedia?.MediaItem != null)
+            {
+                return firstMedia.MediaItem.Url();
+            }
+        }
+        
+        // Handle Udi
+        if (mediaValue is Udi mediaUdi && mediaUdi is GuidUdi guidUdi)
+        {
+            var publishedMediaItem = _publishedContentQuery.Media(guidUdi.Guid);
+            if (publishedMediaItem != null)
+            {
+                return publishedMediaItem.Url();
+            }
+            
+            var media = _mediaService.GetById(guidUdi.Guid);
+            if (media != null)
+            {
+                var fileValue = media.GetValue<string>("umbracoFile");
+                if (!string.IsNullOrEmpty(fileValue))
+                {
+                    if (fileValue.TrimStart().StartsWith("{"))
+                    {
+                        try
+                        {
+                            var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(fileValue);
+                            if (json.TryGetProperty("src", out var src))
+                            {
+                                return src.GetString();
+                            }
+                        }
+                        catch { }
+                    }
+                    return fileValue;
+                }
+            }
+        }
+        
+        // Handle string (URL or JSON)
+        if (mediaValue is string stringValue)
+        {
+            if (stringValue.TrimStart().StartsWith("["))
+            {
+                // JSON array - try to parse
+                try
+                {
+                    var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(stringValue);
+                    if (json != null && json.Length > 0)
+                    {
+                        if (json[0].TryGetProperty("mediaKey", out var mediaKey))
+                        {
+                            var guid = Guid.Parse(mediaKey.GetString()!);
+                            var publishedMedia = _publishedContentQuery.Media(guid);
+                            return publishedMedia?.Url();
+                        }
+                    }
+                }
+                catch { }
+            }
+            else if (!string.IsNullOrEmpty(stringValue))
+            {
+                return stringValue;
+            }
+        }
+        
+        return null;
     }
 
     [HttpGet("/account")]
@@ -35,11 +136,14 @@ public class AccountController : Controller
         
         // Fetch product (room/event) and hotel details for each booking
         var bookingsWithDetails = new List<Models.BookingWithDetails>();
+        
         foreach (var booking in bookings)
         {
             string? productName = null;
             string? hotelName = null;
             string? hotelLocation = null;
+            string? roomImage = null;
+            string? hotelImage = null;
             
             try
             {
@@ -50,6 +154,10 @@ public class AccountController : Controller
                         ?? productContent.GetValue<string>("eventName") 
                         ?? productContent.Name;
                     
+                    // Get room image (heroImage)
+                    var heroImageValue = productContent.GetValue("heroImage");
+                    roomImage = GetMediaUrl(heroImageValue);
+                    
                     // Get hotel (parent of room/event)
                     if (productContent.ParentId > 0)
                     {
@@ -58,6 +166,10 @@ public class AccountController : Controller
                         {
                             hotelName = hotelContent.GetValue<string>("hotelName") ?? hotelContent.Name;
                             hotelLocation = hotelContent.GetValue<string>("location");
+                            
+                            // Get hotel image
+                            var hotelImageValue = hotelContent.GetValue("heroImage");
+                            hotelImage = GetMediaUrl(hotelImageValue);
                         }
                     }
                 }
@@ -65,7 +177,7 @@ public class AccountController : Controller
             catch (Exception ex)
             {
                 // Log error but continue
-                Console.WriteLine($"[AccountController] Error fetching details for booking {booking.Id}: {ex.Message}");
+                _logger.LogError(ex, "[AccountController] Error fetching details for booking {BookingId}", booking.Id);
             }
             
             bookingsWithDetails.Add(new Models.BookingWithDetails
@@ -73,17 +185,20 @@ public class AccountController : Controller
                 Booking = booking,
                 ProductName = productName,
                 HotelName = hotelName,
-                HotelLocation = hotelLocation
+                HotelLocation = hotelLocation,
+                RoomImage = roomImage,
+                HotelImage = hotelImage
             });
         }
         
         // Debug logging
-        Console.WriteLine($"[AccountController] UserId: {userId}, Bookings count: {bookings?.Count ?? 0}");
+        _logger.LogInformation("[AccountController] UserId: {UserId}, Bookings count: {BookingsCount}", userId, bookings?.Count ?? 0);
         if (bookings != null && bookings.Count > 0)
         {
             foreach (var booking in bookings)
             {
-                Console.WriteLine($"[AccountController] Booking - Id: {booking.Id}, UserId: {booking.UserId?.ToString() ?? "NULL"}, Reference: {booking.BookingReference}");
+                _logger.LogInformation("[AccountController] Booking - Id: {BookingId}, UserId: {UserId}, Reference: {Reference}", 
+                    booking.Id, booking.UserId?.ToString() ?? "NULL", booking.BookingReference);
             }
         }
 
