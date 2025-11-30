@@ -51,26 +51,60 @@
     else
     {
         <div class="space-y-4">
-            @foreach (var booking in bookings)
+            @foreach (dynamic bookingItem in bookings)
             {
+                var booking = bookingItem.Booking as MyDockerProject.Models.Booking;
+                var productName = bookingItem.ProductName as string;
+                var hotelName = bookingItem.HotelName as string;
+                var hotelLocation = bookingItem.HotelLocation as string;
+                
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="text-lg font-semibold">@booking.BookingReference</h3>
-                            <p class="text-sm text-gray-600 mt-1">
-                                @booking.ProductType - 
-                                @booking.CheckIn.ToString("dd MMM yyyy")
-                                @if (booking.CheckOut.HasValue)
-                                {
-                                    <span>to @booking.CheckOut.Value.ToString("dd MMM yyyy")</span>
-                                }
-                            </p>
-                            <p class="text-sm text-gray-600">Quantity: @booking.Quantity</p>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold mb-2">@booking.BookingReference</h3>
+                            
+                            @if (!string.IsNullOrEmpty(productName) || !string.IsNullOrEmpty(hotelName))
+                            {
+                                <div class="mb-3">
+                                    @if (!string.IsNullOrEmpty(productName))
+                                    {
+                                        <p class="text-base font-medium text-gray-900">@productName</p>
+                                    }
+                                    @if (!string.IsNullOrEmpty(hotelName))
+                                    {
+                                        <p class="text-sm text-gray-600">
+                                            @hotelName
+                                            @if (!string.IsNullOrEmpty(hotelLocation))
+                                            {
+                                                <span> • @hotelLocation</span>
+                                            }
+                                        </p>
+                                    }
+                                </div>
+                            }
+                            
+                            <div class="text-sm text-gray-600 space-y-1">
+                                <p>
+                                    <span class="font-medium">Check-in:</span> @booking.CheckIn.ToString("dd MMM yyyy")
+                                    @if (booking.CheckOut.HasValue)
+                                    {
+                                        <span class="mx-2">→</span>
+                                        <span class="font-medium">Check-out:</span> @booking.CheckOut.Value.ToString("dd MMM yyyy")
+                                        @{
+                                            var nights = (booking.CheckOut.Value - booking.CheckIn).Days;
+                                        }
+                                        <span class="text-gray-500">(@nights @(nights == 1 ? "night" : "nights"))</span>
+                                    }
+                                </p>
+                                <p>
+                                    <span class="font-medium">Quantity:</span> @booking.Quantity
+                                </p>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-lg font-semibold">@booking.Currency @booking.TotalPrice.ToString("N2")</p>
-                            <span class="inline-block mt-2 px-3 py-1 rounded text-xs font-medium
-                                @(booking.Status == "Confirmed" ? "bg-green-100 text-green-800" : 
+                        <div class="text-right ml-6">
+                            <p class="text-lg font-semibold mb-2">@booking.Currency @booking.TotalPrice.ToString("N2")</p>
+                            <span class="inline-block px-3 py-1 rounded text-xs font-medium
+                                @(booking.Status == "Confirmed" || booking.Status == "Paid" ? "bg-green-100 text-green-800" : 
                                   booking.Status == "Cancelled" ? "bg-red-100 text-red-800" : 
                                   "bg-gray-100 text-gray-800")">
                                 @booking.Status
