@@ -112,6 +112,7 @@ export class BookingService {
       }
 
       const bookingData = await response.json();
+      console.log('Umbraco booking response:', bookingData);
 
       // Construct guestDetails from request or bookingData
       const guestDetails = request.guestDetails || {
@@ -121,9 +122,18 @@ export class BookingService {
         phone: bookingData.guestPhone || undefined
       };
 
+      if (!guestDetails.firstName || !guestDetails.email) {
+        console.warn('Missing guest details in booking response:', { bookingData, guestDetails });
+      }
+
+      const bookingId = bookingData.bookingId || bookingData.bookingReference;
+      if (!bookingId) {
+        throw new Error('Booking response missing bookingId/bookingReference');
+      }
+
       // Map Umbraco response to BookingResponse format
-      return {
-        bookingId: bookingData.bookingId || bookingData.bookingReference,
+      const bookingResponse = {
+        bookingId: bookingId,
         productId: bookingData.productId,
         from: new Date(bookingData.checkIn),
         to: bookingData.checkOut ? new Date(bookingData.checkOut) : new Date(bookingData.checkIn),
@@ -134,6 +144,9 @@ export class BookingService {
         currency: bookingData.currency || 'GBP',
         addOns: addOnsDetails.length > 0 ? addOnsDetails : undefined
       };
+
+      console.log('Mapped booking response:', bookingResponse);
+      return bookingResponse;
     } catch (error) {
       console.error('Error creating booking via Umbraco API:', error);
       throw error;

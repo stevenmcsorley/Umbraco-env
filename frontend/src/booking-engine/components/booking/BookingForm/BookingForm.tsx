@@ -129,6 +129,14 @@ export const BookingForm = ({ className = '', hotelId, user }: BookingFormProps)
     }
 
     try {
+      console.log('Submitting booking...', {
+        productId: selectedProductId,
+        from: selectedDateRange.from,
+        to: selectedDateRange.to || selectedDateRange.from,
+        userId: user?.userId,
+        hasGuestDetails: !user
+      });
+
       const booking = await submitBooking({
         productId: selectedProductId,
         from: selectedDateRange.from,
@@ -144,10 +152,28 @@ export const BookingForm = ({ className = '', hotelId, user }: BookingFormProps)
         events: selectedEvents.length > 0 ? selectedEvents : undefined
       });
 
+      console.log('Booking successful:', booking);
+      
+      if (!booking || !booking.bookingId) {
+        throw new Error('Invalid booking response: missing bookingId');
+      }
+
+      if (!booking.guestDetails) {
+        console.warn('Booking response missing guestDetails, using fallback');
+        booking.guestDetails = {
+          firstName: user?.firstName || '',
+          lastName: user?.lastName || '',
+          email: user?.email || '',
+          phone: user?.phone
+        };
+      }
+
       setConfirmation(booking);
+      console.log('Confirmation set in store');
       AnalyticsManager.trackBookingConfirmed(booking.bookingId);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Booking error:', err);
+      setError(err.message || 'Failed to create booking. Please try again.');
     }
   };
 
