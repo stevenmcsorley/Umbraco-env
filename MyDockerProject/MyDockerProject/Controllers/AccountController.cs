@@ -159,7 +159,7 @@ public class AccountController : Controller
                     var heroImageValue = productContent.GetValue("heroImage");
                     roomImage = GetMediaUrl(heroImageValue);
                     
-                    // Get room features
+                    // Get room features - handle multiple formats
                     var featuresValue = productContent.GetValue("features");
                     if (featuresValue != null)
                     {
@@ -182,19 +182,40 @@ public class AccountController : Controller
                                 catch { }
                             }
                             
-                            // If not parsed as JSON, try comma-separated, semicolon-separated, or newline-separated
+                            // If not parsed as JSON, try different separators
                             if (roomFeatures == null || roomFeatures.Count == 0)
                             {
-                                var separators = new[] { ',', ';', '\n', '\r' };
-                                var splitFeatures = featuresString
-                                    .Split(separators, StringSplitOptions.RemoveEmptyEntries)
-                                    .Select(f => f.Trim())
-                                    .Where(f => !string.IsNullOrEmpty(f))
-                                    .ToList();
-                                
-                                if (splitFeatures.Count > 0)
+                                // Try newline first (most common in Umbraco textarea)
+                                if (featuresString.Contains('\n') || featuresString.Contains('\r'))
                                 {
-                                    roomFeatures = splitFeatures;
+                                    roomFeatures = featuresString
+                                        .Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                                        .Select(f => f.Trim())
+                                        .Where(f => !string.IsNullOrEmpty(f))
+                                        .ToList();
+                                }
+                                // Then try comma or semicolon
+                                else if (featuresString.Contains(',') || featuresString.Contains(';'))
+                                {
+                                    var separators = new[] { ',', ';' };
+                                    roomFeatures = featuresString
+                                        .Split(separators, StringSplitOptions.RemoveEmptyEntries)
+                                        .Select(f => f.Trim())
+                                        .Where(f => !string.IsNullOrEmpty(f))
+                                        .ToList();
+                                }
+                                // If no separators found, try to split by capital letters (camelCase)
+                                else
+                                {
+                                    // Split by capital letters: "Two bedroomsSeparate living areaKitchenette" -> ["Two bedrooms", "Separate living area", "Kitchenette"]
+                                    var matches = System.Text.RegularExpressions.Regex.Matches(featuresString, @"([A-Z][a-z]+(?:\s+[a-z]+)*)");
+                                    if (matches.Count > 0)
+                                    {
+                                        roomFeatures = matches.Cast<System.Text.RegularExpressions.Match>()
+                                            .Select(m => m.Value.Trim())
+                                            .Where(f => !string.IsNullOrEmpty(f))
+                                            .ToList();
+                                    }
                                 }
                             }
                         }
