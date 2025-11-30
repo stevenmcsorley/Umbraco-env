@@ -1,7 +1,7 @@
 @{
     Layout = "~/Views/Layouts/FullWidth.cshtml";
     ViewData["Title"] = "My Account";
-    var bookings = ViewBag.Bookings as List<MyDockerProject.Models.Booking> ?? new List<MyDockerProject.Models.Booking>();
+    var bookingsWithDetails = ViewBag.Bookings as List<dynamic> ?? new List<dynamic>();
     var user = ViewBag.User as MyDockerProject.Models.User;
 }
 
@@ -41,7 +41,7 @@
 
     <h2 class="text-2xl font-serif mb-6">My Bookings</h2>
     
-    @if (bookings == null || bookings.Count == 0)
+    @if (bookingsWithDetails == null || bookingsWithDetails.Count == 0)
     {
         <div class="bg-white rounded-lg shadow p-8 text-center">
             <p class="text-gray-500">You don't have any bookings yet.</p>
@@ -51,7 +51,7 @@
     else
     {
         <div class="space-y-4">
-            @foreach (dynamic bookingItem in bookings)
+            @foreach (dynamic bookingItem in bookingsWithDetails)
             {
                 var booking = bookingItem.Booking as MyDockerProject.Models.Booking;
                 var productName = bookingItem.ProductName as string;
