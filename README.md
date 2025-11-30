@@ -101,7 +101,22 @@ This creates:
 - 4 example rooms
 - 3 example offers
 
-### 5. Import Data (Bulk Import)
+### 5. Create Database Tables (First Time Setup)
+
+Before importing data with prices, ensure the Inventory and Bookings tables exist:
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:44372/api/migration/ensure-tables" -Method POST
+```
+
+This creates the `Bookings` and `Inventory` tables needed for:
+- Storing date-specific prices
+- Tracking room/event availability
+- Managing bookings
+
+**Note:** This only needs to be run once after initial setup.
+
+### 6. Import Data (Bulk Import)
 
 You can bulk import hotels, rooms, events, and offers using the import API:
 
@@ -178,9 +193,41 @@ Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import-file" -Method
 
 See `sample-import.json` and `test-import-multiple.json` for complete examples.
 
-**Note:** The import creates content as published. If hotels already exist (by name), they will be skipped to avoid duplicates.
+**Update Existing Content:**
+- **Hotels**: If a hotel with the same name exists, it will be **updated** (not skipped)
+- **Rooms**: If a room with the same name exists under the hotel, it will be **updated**
+- **Events & Offers**: Existing items are **updated** by name
+- **Prices & Availability**: Inventory entries are **updated** if they exist, or **created** for new dates
 
-### 6. View Pages
+**Price Updates for Booking Engine:**
+- Prices in the `prices` object are stored in the Inventory table
+- The booking engine automatically uses these date-specific prices via `/api/hotels/inventory/{productId}`
+- You can update prices anytime by re-importing with new price data
+- Updated prices are immediately available to the booking engine
+- Each date can have its own price (dynamic pricing support)
+
+**Example: Update prices for existing room**
+```json
+{
+  "hotels": [
+    {
+      "name": "Existing Hotel Name",  // Will update existing hotel
+      "rooms": [
+        {
+          "name": "Existing Room",  // Will update existing room
+          "prices": {
+            "2025-12-19": 250.00,  // Updates existing price
+            "2025-12-20": 280.00,  // Updates existing price
+            "2025-12-29": 300.00   // Creates new inventory entry
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 7. View Pages
 
 - **Hotel List**: http://localhost:44372/hotels
 - **Hotel Details**: http://localhost:44372/hotels/{id}
@@ -260,15 +307,25 @@ Universal components available in `Views/Partials/`:
 - `GET /api/hotels/{id}/rooms` - Get rooms for a hotel
 - `GET /api/hotels/{id}/offers` - Get offers for a hotel
 - `GET /api/hotels/{id}/availability` - Get basic availability structure
-- `POST /api/importer/import` - Bulk import hotels, rooms, events, and offers from JSON
-- `POST /api/importer/import-file` - Bulk import from uploaded JSON file
+- `GET /api/hotels/inventory/{productId}?from=DATE&to=DATE` - Get date-specific prices and availability from Inventory table (used by booking engine)
+- `POST /api/migration/ensure-tables` - Create Bookings and Inventory database tables (run once after setup)
+- `POST /api/importer/import` - Bulk import hotels, rooms, events, and offers from JSON (updates existing content)
+- `POST /api/importer/import-file` - Bulk import from uploaded JSON file (updates existing content)
 - `POST /api/seed/create-demo-hotel` - Create demo hotel content
+
+### Admin APIs
+
+- `GET /api/admin/inventory` - Get all inventory entries (with optional filtering by productId, productType, date range)
+- `GET /api/admin/bookings` - Get all bookings (with optional filtering by productId, productType, status, date range)
+- `GET /api/admin/inventory/summary` - Get inventory and booking statistics summary
 
 ### Booking Engine APIs
 
-- `GET /engine/availability?productId={id}&from={date}&to={date}` - Check availability
+- `GET /engine/availability?productId={id}&from={date}&to={date}` - Check availability (uses Inventory API for date-specific prices)
 - `POST /engine/book` - Create booking
 - `GET /engine/health` - Health check
+
+**Note:** The booking engine automatically fetches date-specific prices from the Inventory table via `/api/hotels/inventory/{productId}`. Prices imported through the import system are immediately available to the booking engine.
 
 ## Development
 
@@ -350,31 +407,132 @@ See **[docs/UMBRACO_SITE_KIT.md](docs/UMBRACO_SITE_KIT.md)** for complete API re
 
 ## Data Import System
 
-The system includes a comprehensive data import feature that allows you to bulk import hotels, rooms, events, and offers from JSON files.
+The system includes a comprehensive data import feature that allows you to bulk import hotels, rooms, events, and offers from JSON files, with full support for updating existing content and prices.
 
 **Features:**
 - ✅ Import multiple hotels in a single request
 - ✅ Import rooms with pricing and availability data
 - ✅ Import events with capacity and pricing
 - ✅ Import offers with discount and validity periods
-- ✅ Automatic duplicate detection (skips existing hotels by name)
+- ✅ **Update existing content** - Hotels, rooms, events, and offers are updated if they already exist
+- ✅ **Update prices** - Re-import to update room/event prices for any date
+- ✅ **Booking Engine Integration** - Prices are automatically used by the booking engine via Inventory API
 - ✅ Creates and publishes content automatically
-- ✅ Detailed import results with success/error reporting
+- ✅ Detailed import results with created/updated counts and error reporting
+
+**Price Updates & Booking Engine:**
+- Prices are stored in the Inventory table with date-specific pricing
+- The booking engine fetches prices from `/api/hotels/inventory/{productId}` endpoint
+- Re-importing with updated prices automatically updates the Inventory table
+- Updated prices are immediately available to the booking engine
+- Supports dynamic pricing (different prices for different dates)
+
+**How Prices Are Displayed:**
+
+1. **Hotel Cards & Room Listings** (`/api/hotels/{id}/rooms`):
+   - Shows `priceFrom` property from Umbraco content (if set)
+   - **Fallback**: If `priceFrom` is not set, automatically calculates minimum price from Inventory table (next 90 days)
+   - This ensures all rooms show prices even if the Umbraco property isn't set
+
+2. **Room Detail Pages** (`room.cshtml`):
+   - Displays `priceFrom` from the API response
+   - Uses the same fallback logic as room listings
+   - Shows "Price from £X per night" in the room overview section
+
+3. **Booking Engine** (`/engine/availability`):
+   - Fetches date-specific prices from `/api/hotels/inventory/{productId}`
+   - Shows actual prices for selected dates (not just "from" price)
+   - Supports dynamic pricing with different prices per date
+   - Applies offer discounts to the total price
+   - Includes add-ons and events in the final total
+
+**Updating Prices:**
+
+To update prices for existing rooms:
+1. Create or update your import JSON file with new prices:
+   ```json
+   {
+     "hotels": [
+       {
+         "name": "Existing Hotel Name",
+         "rooms": [
+           {
+             "name": "Existing Room Name",
+             "prices": {
+               "2025-12-19": 250.00,  // Updates existing price
+               "2025-12-20": 280.00,  // Updates existing price
+               "2025-12-29": 300.00   // Creates new inventory entry
+             },
+             "availability": {
+               "2025-12-19": 5,
+               "2025-12-20": 5
+             }
+           }
+         ]
+       }
+     ]
+   }
+   ```
+
+2. Import using the API:
+   ```powershell
+   $jsonContent = Get-Content -Path "updated-prices.json" -Raw
+   $body = @{ ContentJson = $jsonContent } | ConvertTo-Json -Depth 10
+   Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST -Body $body -ContentType "application/json"
+   ```
+
+3. The import will:
+   - Update existing inventory entries with new prices
+   - Create new inventory entries for new dates
+   - Update room content if properties changed
+   - **Not create duplicate hotels/rooms** (uses smart matching)
+
+4. Prices are immediately available:
+   - Hotel cards and room pages will show updated `priceFrom` (minimum from inventory)
+   - Booking engine will show actual date-specific prices
+   - No cache clearing needed
+
+**Generating Prices for All Hotels:**
+
+Use the included script to generate prices for all existing hotels:
+```powershell
+.\generate-prices.ps1
+```
+
+This creates `import-all-prices.json` with:
+- 90 days of pricing per room
+- Weekend surcharges (+20%)
+- Holiday surcharges (+30%)
+- Random variation for realistic pricing
+- Availability (2-8 units per day)
+
+Then import it:
+```powershell
+$jsonContent = Get-Content -Path "import-all-prices.json" -Raw
+$body = @{ ContentJson = $jsonContent } | ConvertTo-Json -Depth 10
+Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST -Body $body -ContentType "application/json"
+```
 
 **Sample Files:**
 - `sample-import.json` - Basic example with one hotel
 - `test-import-multiple.json` - Comprehensive example with 4 hotels, multiple rooms, events, and offers
+- `test-import-new-hotels.json` - Additional hotels with varied pricing examples
 
 **Import Response:**
 ```json
 {
   "success": true,
-  "message": "Import completed. Created: 4 hotels, 9 rooms, 10 events, 8 offers...",
-  "hotelsCreated": 4,
-  "roomsCreated": 9,
-  "eventsCreated": 10,
-  "offersCreated": 8,
+  "message": "Import completed. 0 hotels created, 1 hotels updated, 0 rooms created, 1 rooms updated, 0 inventory entries created, 10 inventory entries updated",
+  "hotelsCreated": 0,
+  "hotelsUpdated": 1,
+  "roomsCreated": 0,
+  "roomsUpdated": 1,
+  "eventsCreated": 0,
+  "eventsUpdated": 0,
+  "offersCreated": 0,
+  "offersUpdated": 0,
   "inventoryEntriesCreated": 0,
+  "inventoryEntriesUpdated": 10,
   "errors": []
 }
 ```

@@ -33,10 +33,15 @@ public class DataImportService
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public int HotelsCreated { get; set; }
+        public int HotelsUpdated { get; set; }
         public int RoomsCreated { get; set; }
+        public int RoomsUpdated { get; set; }
         public int EventsCreated { get; set; }
+        public int EventsUpdated { get; set; }
         public int OffersCreated { get; set; }
+        public int OffersUpdated { get; set; }
         public int InventoryEntriesCreated { get; set; }
+        public int InventoryEntriesUpdated { get; set; }
         public List<string> Errors { get; set; } = new();
     }
     
@@ -139,10 +144,13 @@ public class DataImportService
             {
                 try
                 {
-                    var hotel = await ImportHotelAsync(hotelData, hotelType, rootContent.Key);
+                    var (hotel, hotelWasCreated) = await ImportHotelAsync(hotelData, hotelType, rootContent.Key);
                     if (hotel != null)
                     {
-                        result.HotelsCreated++;
+                        if (hotelWasCreated)
+                            result.HotelsCreated++;
+                        else
+                            result.HotelsUpdated++;
                         
                         // Import rooms
                         if (hotelData.Rooms != null)
@@ -151,16 +159,20 @@ public class DataImportService
                             {
                                 try
                                 {
-                                    var room = await ImportRoomAsync(roomData, hotel.Key);
+                                    var (room, roomWasCreated) = await ImportRoomAsync(roomData, hotel.Key);
                                     if (room != null)
                                     {
-                                        result.RoomsCreated++;
+                                        if (roomWasCreated)
+                                            result.RoomsCreated++;
+                                        else
+                                            result.RoomsUpdated++;
                                         
-                                        // Import inventory and pricing
+                                        // Import inventory and pricing (always updates existing inventory)
                                         if (roomData.Prices != null || roomData.Availability != null)
                                         {
-                                            await ImportRoomInventoryAsync(room.Key, roomData);
-                                            result.InventoryEntriesCreated += roomData.Prices?.Count ?? roomData.Availability?.Count ?? 0;
+                                            var (created, updated) = await ImportRoomInventoryAsync(room.Key, roomData);
+                                            result.InventoryEntriesCreated += created;
+                                            result.InventoryEntriesUpdated += updated;
                                         }
                                     }
                                 }
@@ -178,14 +190,20 @@ public class DataImportService
                             {
                                 try
                                 {
-                                    var eventItem = await ImportEventAsync(eventData, hotel.Key);
+                                    var (eventItem, eventWasCreated) = await ImportEventAsync(eventData, hotel.Key);
                                     if (eventItem != null)
                                     {
-                                        result.EventsCreated++;
+                                        if (eventWasCreated)
+                                            result.EventsCreated++;
+                                        else
+                                            result.EventsUpdated++;
                                         
-                                        // Import event inventory
+                                        // Import event inventory (always updates existing inventory)
                                         if (eventData.EventDate.HasValue && eventData.Capacity.HasValue && eventData.Price.HasValue)
                                         {
+                                            var inventoryExists = await _inventoryService.GetInventoryForDateAsync(
+                                                eventItem.Key, eventData.EventDate.Value) != null;
+                                            
                                             await _inventoryService.SetInventoryAsync(
                                                 eventItem.Key,
                                                 "Event",
@@ -193,7 +211,11 @@ public class DataImportService
                                                 eventData.Capacity.Value,
                                                 eventData.Price.Value
                                             );
-                                            result.InventoryEntriesCreated++;
+                                            
+                                            if (inventoryExists)
+                                                result.InventoryEntriesUpdated++;
+                                            else
+                                                result.InventoryEntriesCreated++;
                                         }
                                     }
                                 }
@@ -211,10 +233,13 @@ public class DataImportService
                             {
                                 try
                                 {
-                                    var offer = await ImportOfferAsync(offerData, hotel.Key);
+                                    var (offer, offerWasCreated) = await ImportOfferAsync(offerData, hotel.Key);
                                     if (offer != null)
                                     {
-                                        result.OffersCreated++;
+                                        if (offerWasCreated)
+                                            result.OffersCreated++;
+                                        else
+                                            result.OffersUpdated++;
                                     }
                                 }
                                 catch (Exception ex)
@@ -232,7 +257,19 @@ public class DataImportService
             }
             
             result.Success = true;
-            result.Message = $"Import completed. Created: {result.HotelsCreated} hotels, {result.RoomsCreated} rooms, {result.EventsCreated} events, {result.OffersCreated} offers, {result.InventoryEntriesCreated} inventory entries.";
+            var parts = new List<string>();
+            if (result.HotelsCreated > 0) parts.Add($"{result.HotelsCreated} hotels created");
+            if (result.HotelsUpdated > 0) parts.Add($"{result.HotelsUpdated} hotels updated");
+            if (result.RoomsCreated > 0) parts.Add($"{result.RoomsCreated} rooms created");
+            if (result.RoomsUpdated > 0) parts.Add($"{result.RoomsUpdated} rooms updated");
+            if (result.EventsCreated > 0) parts.Add($"{result.EventsCreated} events created");
+            if (result.EventsUpdated > 0) parts.Add($"{result.EventsUpdated} events updated");
+            if (result.OffersCreated > 0) parts.Add($"{result.OffersCreated} offers created");
+            if (result.OffersUpdated > 0) parts.Add($"{result.OffersUpdated} offers updated");
+            if (result.InventoryEntriesCreated > 0) parts.Add($"{result.InventoryEntriesCreated} inventory entries created");
+            if (result.InventoryEntriesUpdated > 0) parts.Add($"{result.InventoryEntriesUpdated} inventory entries updated");
+            
+            result.Message = "Import completed. " + (parts.Count > 0 ? string.Join(", ", parts) : "No changes.");
             
             if (result.Errors.Count > 0)
             {
@@ -249,26 +286,64 @@ public class DataImportService
         return result;
     }
     
-    private async Task<IContent?> ImportHotelAsync(HotelImport data, IContentType hotelType, Guid parentId)
+    private async Task<(IContent?, bool wasCreated)> ImportHotelAsync(HotelImport data, IContentType hotelType, Guid parentId)
     {
         if (string.IsNullOrEmpty(data.Name))
         {
-            return null;
+            return (null, false);
         }
         
         var slug = data.Slug ?? data.Name.ToLower().Replace(" ", "-");
         
-        // Check if hotel already exists
-        var existing = _contentService.GetByLevel(1)
-            .FirstOrDefault(h => h.GetValue<string>("hotelName") == data.Name);
+        // Check if hotel already exists - use GetPagedOfType for better performance
+        IContent? existing = null;
         
-        if (existing != null)
+        // Get all hotels of this type
+        var allHotels = _contentService.GetPagedOfType(hotelType.Id, 0, int.MaxValue, out _, null)
+            .Where(h => h.ContentType.Alias == "hotel");
+        
+        // First try by hotelName property (case-insensitive)
+        existing = allHotels.FirstOrDefault(h => 
         {
-            return existing; // Skip if already exists
+            var hotelName = h.GetValue<string>("hotelName") ?? h.Name;
+            return hotelName.Equals(data.Name, StringComparison.OrdinalIgnoreCase);
+        });
+        
+        // If not found by hotelName, try by Name property
+        if (existing == null)
+        {
+            existing = allHotels.FirstOrDefault(h => 
+                h.Name.Equals(data.Name, StringComparison.OrdinalIgnoreCase));
         }
         
-        var hotel = _contentService.Create(data.Name, parentId, hotelType.Alias);
-        hotel.SetValue("hotelName", data.Name);
+        // If still not found and we have city, try matching by name + city
+        if (existing == null && !string.IsNullOrEmpty(data.City))
+        {
+            existing = allHotels.FirstOrDefault(h => 
+            {
+                var hotelName = h.GetValue<string>("hotelName") ?? h.Name;
+                var city = h.GetValue<string>("city") ?? "";
+                return hotelName.Equals(data.Name, StringComparison.OrdinalIgnoreCase) &&
+                       city.Equals(data.City, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+        
+        IContent hotel;
+        bool wasCreated = existing == null;
+        
+        if (wasCreated)
+        {
+            // Create new hotel
+            hotel = _contentService.Create(data.Name, parentId, hotelType.Alias);
+            hotel.SetValue("hotelName", data.Name);
+        }
+        else
+        {
+            // Update existing hotel
+            hotel = existing!;
+        }
+        
+        // Update properties (works for both new and existing)
         if (!string.IsNullOrEmpty(data.Description)) hotel.SetValue("description", data.Description);
         // Note: "location" property doesn't exist in hotel document type, using address/city/country instead
         if (!string.IsNullOrEmpty(data.Address)) hotel.SetValue("address", data.Address);
@@ -278,21 +353,46 @@ public class DataImportService
         _contentService.Save(hotel);
         _contentService.Publish(hotel, cultures: Array.Empty<string>(), userId: 0);
         
-        return hotel;
+        return (hotel, wasCreated);
     }
     
-    private async Task<IContent?> ImportRoomAsync(RoomImport data, Guid hotelId)
+    private async Task<(IContent?, bool wasCreated)> ImportRoomAsync(RoomImport data, Guid hotelId)
     {
         if (string.IsNullOrEmpty(data.Name))
         {
-            return null;
+            return (null, false);
         }
         
         var roomType = _contentTypeService.Get("room");
-        if (roomType == null) return null;
+        if (roomType == null) return (null, false);
         
-        var room = _contentService.Create(data.Name, hotelId, roomType.Alias);
-        room.SetValue("roomName", data.Name);
+        // Check if room already exists (by name under this hotel)
+        // First get the hotel to get its Id (int) from Key (Guid)
+        var hotel = _contentService.GetById(hotelId);
+        if (hotel == null) return (null, false);
+        
+        var existingRooms = _contentService.GetPagedChildren(hotel.Id, 0, int.MaxValue, out _)
+            .Where(r => r.ContentType.Alias == "room");
+        
+        var existing = existingRooms.FirstOrDefault(r => 
+            (r.GetValue<string>("roomName") ?? r.Name).Equals(data.Name, StringComparison.OrdinalIgnoreCase));
+        
+        IContent room;
+        bool wasCreated = existing == null;
+        
+        if (wasCreated)
+        {
+            // Create new room
+            room = _contentService.Create(data.Name, hotel.Id, roomType.Alias);
+            room.SetValue("roomName", data.Name);
+        }
+        else
+        {
+            // Update existing room
+            room = existing!;
+        }
+        
+        // Update properties (works for both new and existing)
         if (!string.IsNullOrEmpty(data.Description)) room.SetValue("description", data.Description);
         if (data.MaxOccupancy.HasValue) room.SetValue("maxOccupancy", data.MaxOccupancy.Value);
         if (!string.IsNullOrEmpty(data.BedType)) room.SetValue("bedType", data.BedType);
@@ -301,10 +401,10 @@ public class DataImportService
         _contentService.Save(room);
         _contentService.Publish(room, cultures: Array.Empty<string>(), userId: 0);
         
-        return room;
+        return (room, wasCreated);
     }
     
-    private async Task ImportRoomInventoryAsync(Guid roomId, RoomImport data)
+    private async Task<(int created, int updated)> ImportRoomInventoryAsync(Guid roomId, RoomImport data)
     {
         var inventoryData = new Dictionary<DateTime, (int, decimal)>();
         
@@ -335,21 +435,59 @@ public class DataImportService
             }
         }
         
-        await _inventoryService.BulkSetInventoryAsync(roomId, "Room", inventoryData);
+        int created = 0;
+        int updated = 0;
+        
+        // Set inventory for each date and track created vs updated
+        foreach (var (date, (quantity, price)) in inventoryData)
+        {
+            var existing = await _inventoryService.GetInventoryForDateAsync(roomId, date);
+            await _inventoryService.SetInventoryAsync(roomId, "Room", date, quantity, price);
+            
+            if (existing != null)
+                updated++;
+            else
+                created++;
+        }
+        
+        return (created, updated);
     }
     
-    private async Task<IContent?> ImportEventAsync(EventImport data, Guid hotelId)
+    private async Task<(IContent?, bool wasCreated)> ImportEventAsync(EventImport data, Guid hotelId)
     {
         if (string.IsNullOrEmpty(data.Name) || !data.EventDate.HasValue)
         {
-            return null;
+            return (null, false);
         }
         
         var eventType = _contentTypeService.Get("event");
-        if (eventType == null) return null;
+        if (eventType == null) return (null, false);
         
-        var eventItem = _contentService.Create(data.Name, hotelId, eventType.Alias);
-        eventItem.SetValue("eventName", data.Name);
+        // Check if event already exists (by name under this hotel)
+        // First get the hotel to get its Id (int) from Key (Guid)
+        var hotel = _contentService.GetById(hotelId);
+        if (hotel == null) return (null, false);
+        
+        var existingEvents = _contentService.GetPagedChildren(hotel.Id, 0, int.MaxValue, out _)
+            .Where(e => e.ContentType.Alias == "event");
+        
+        var existing = existingEvents.FirstOrDefault(e => 
+            (e.GetValue<string>("eventName") ?? e.Name).Equals(data.Name, StringComparison.OrdinalIgnoreCase));
+        
+        IContent eventItem;
+        bool wasCreated = existing == null;
+        
+        if (wasCreated)
+        {
+            eventItem = _contentService.Create(data.Name, hotel.Id, eventType.Alias);
+            eventItem.SetValue("eventName", data.Name);
+        }
+        else
+        {
+            eventItem = existing!;
+        }
+        
+        // Update properties (works for both new and existing)
         if (!string.IsNullOrEmpty(data.Description)) eventItem.SetValue("description", data.Description);
         if (data.EventDate.HasValue) eventItem.SetValue("eventDate", data.EventDate.Value);
         if (!string.IsNullOrEmpty(data.Location)) eventItem.SetValue("location", data.Location);
@@ -358,21 +496,44 @@ public class DataImportService
         _contentService.Save(eventItem);
         _contentService.Publish(eventItem, cultures: Array.Empty<string>(), userId: 0);
         
-        return eventItem;
+        return (eventItem, wasCreated);
     }
     
-    private async Task<IContent?> ImportOfferAsync(OfferImport data, Guid hotelId)
+    private async Task<(IContent?, bool wasCreated)> ImportOfferAsync(OfferImport data, Guid hotelId)
     {
         if (string.IsNullOrEmpty(data.Name))
         {
-            return null;
+            return (null, false);
         }
         
         var offerType = _contentTypeService.Get("offer");
-        if (offerType == null) return null;
+        if (offerType == null) return (null, false);
         
-        var offer = _contentService.Create(data.Name, hotelId, offerType.Alias);
-        offer.SetValue("offerName", data.Name);
+        // Check if offer already exists (by name under this hotel)
+        // First get the hotel to get its Id (int) from Key (Guid)
+        var hotel = _contentService.GetById(hotelId);
+        if (hotel == null) return (null, false);
+        
+        var existingOffers = _contentService.GetPagedChildren(hotel.Id, 0, int.MaxValue, out _)
+            .Where(o => o.ContentType.Alias == "offer");
+        
+        var existing = existingOffers.FirstOrDefault(o => 
+            (o.GetValue<string>("offerName") ?? o.Name).Equals(data.Name, StringComparison.OrdinalIgnoreCase));
+        
+        IContent offer;
+        bool wasCreated = existing == null;
+        
+        if (wasCreated)
+        {
+            offer = _contentService.Create(data.Name, hotel.Id, offerType.Alias);
+            offer.SetValue("offerName", data.Name);
+        }
+        else
+        {
+            offer = existing!;
+        }
+        
+        // Update properties (works for both new and existing)
         if (!string.IsNullOrEmpty(data.Description)) offer.SetValue("description", data.Description);
         if (data.Discount.HasValue) offer.SetValue("discount", data.Discount.Value);
         if (data.ValidFrom.HasValue) offer.SetValue("validFrom", data.ValidFrom.Value);
@@ -383,7 +544,7 @@ public class DataImportService
         _contentService.Save(offer);
         _contentService.Publish(offer, cultures: Array.Empty<string>(), userId: 0);
         
-        return offer;
+        return (offer, wasCreated);
     }
 }
 

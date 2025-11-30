@@ -765,7 +765,7 @@ export const AvailabilityPanel = ({ className = '', hotelId }: AvailabilityPanel
                 color: '#111827'
               }}>
                 <span>Total:</span>
-                <span>{formatPrice(baseTotal, data.currency)}</span>
+                <span>{formatPrice(totalWithAddOns !== null ? totalWithAddOns : baseTotal, data.currency)}</span>
               </div>
             )}
           </div>

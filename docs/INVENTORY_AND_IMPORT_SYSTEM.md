@@ -192,6 +192,65 @@ curl -X POST http://localhost:44372/api/importer/import \
 - When tickets are booked, booked quantity increases
 - System prevents overbooking
 
+## Price Display System
+
+### How Prices Appear in the UI
+
+1. **Hotel Cards & Room Listings**:
+   - API endpoint: `/api/hotels/{id}/rooms`
+   - Shows `priceFrom` field for each room
+   - **Smart Fallback**: If `priceFrom` property is not set in Umbraco content, automatically calculates minimum price from Inventory table (next 90 days)
+   - Ensures all rooms display prices even without Umbraco property set
+
+2. **Room Detail Pages**:
+   - Uses same API endpoint as listings
+   - Displays "Price from £X per night" prominently
+   - Uses the same fallback logic for consistent pricing
+
+3. **Booking Engine**:
+   - Fetches date-specific prices from `/api/hotels/inventory/{productId}`
+   - Shows actual prices for selected dates (not just minimum)
+   - Applies offer discounts automatically
+   - Includes add-ons and events in calculations
+
+### Updating Prices
+
+**Method 1: Re-import with Updated Prices**
+```json
+{
+  "hotels": [
+    {
+      "name": "Hotel Name",  // Must match existing hotel name
+      "rooms": [
+        {
+          "name": "Room Name",  // Must match existing room name
+          "prices": {
+            "2025-12-19": 250.00,  // Updates existing inventory entry
+            "2025-12-20": 280.00,  // Updates existing inventory entry
+            "2025-12-29": 300.00   // Creates new inventory entry
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Method 2: Use Admin API**
+```powershell
+# View current inventory
+Invoke-RestMethod -Uri "http://localhost:44372/api/admin/inventory?productId={roomId}&from=2025-12-19&to=2025-12-26"
+
+# Update via import (recommended)
+# Use the import endpoint as shown above
+```
+
+**Important Notes:**
+- Import system uses smart matching: updates existing hotels/rooms by name (case-insensitive)
+- Inventory entries are updated if they exist, created if they don't
+- Prices are immediately available after import (no cache clearing needed)
+- Hotel cards automatically show minimum price from inventory if `priceFrom` property not set
+
 ## Next Steps
 
 1. **User Authentication**: Add login system for users to manage their bookings

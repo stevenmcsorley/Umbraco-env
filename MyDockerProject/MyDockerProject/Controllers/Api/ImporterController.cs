@@ -33,10 +33,15 @@ public class ImporterController : ControllerBase
                     success = true,
                     message = result.Message,
                     hotelsCreated = result.HotelsCreated,
+                    hotelsUpdated = result.HotelsUpdated,
                     roomsCreated = result.RoomsCreated,
+                    roomsUpdated = result.RoomsUpdated,
                     eventsCreated = result.EventsCreated,
+                    eventsUpdated = result.EventsUpdated,
                     offersCreated = result.OffersCreated,
+                    offersUpdated = result.OffersUpdated,
                     inventoryEntriesCreated = result.InventoryEntriesCreated,
+                    inventoryEntriesUpdated = result.InventoryEntriesUpdated,
                     errors = result.Errors
                 });
             }
@@ -83,10 +88,15 @@ public class ImporterController : ControllerBase
                     success = true,
                     message = result.Message,
                     hotelsCreated = result.HotelsCreated,
+                    hotelsUpdated = result.HotelsUpdated,
                     roomsCreated = result.RoomsCreated,
+                    roomsUpdated = result.RoomsUpdated,
                     eventsCreated = result.EventsCreated,
+                    eventsUpdated = result.EventsUpdated,
                     offersCreated = result.OffersCreated,
+                    offersUpdated = result.OffersUpdated,
                     inventoryEntriesCreated = result.InventoryEntriesCreated,
+                    inventoryEntriesUpdated = result.InventoryEntriesUpdated,
                     errors = result.Errors
                 });
             }

@@ -103,7 +103,7 @@ export class UmbracoAdapter {
   }
 
   /**
-   * Gets room availability from Umbraco hotel API
+   * Gets room availability from Umbraco hotel API with inventory pricing
    */
   private async getRoomAvailability(request: AvailabilityRequest, hotelId: string): Promise<AvailabilityResponse> {
     const fromDate = new Date(request.from);
@@ -114,46 +114,68 @@ export class UmbracoAdapter {
     const toStr = toDate.toISOString().split('T')[0];
 
     try {
-      // Fetch availability from Umbraco API
+      // Fetch inventory data with prices from the new inventory endpoint
+      let inventoryData: { days: Array<{ date: string; price: number; availableQuantity: number; isAvailable: boolean }> } | null = null;
+      try {
+        // Format dates as yyyy-MM-dd (not ISO string with time)
+        const fromStr = fromDate.toISOString().split('T')[0];
+        const toStr = toDate.toISOString().split('T')[0];
+        const inventoryResponse = await fetch(
+          `${UMBRACO_API_BASE}/hotels/inventory/${request.productId}?from=${fromStr}&to=${toStr}`
+        );
+        
+        if (inventoryResponse.ok) {
+          inventoryData = await inventoryResponse.json() as { days: Array<{ date: string; price: number; availableQuantity: number; isAvailable: boolean }> };
+        }
+      } catch (error) {
+        console.warn('Failed to fetch inventory data, falling back to room data:', error);
+      }
+
+      // Fetch room data from Umbraco API for fallback
       const response = await fetch(
         `${UMBRACO_API_BASE}/hotels/${hotelId}/availability?from=${fromStr}&to=${toStr}`
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch availability from Umbraco');
-      }
-
-      const data = await response.json() as {
+      const data = response.ok ? await response.json() as {
         hotelId: string;
         from: string;
         to: string;
         rooms?: Array<{ roomId: string; roomName: string; available?: boolean }>;
-      };
+      } : null;
       
       // Find the specific room in the response
-      const roomData = data.rooms?.find((r) => r.roomId === request.productId);
-      
-      if (!roomData) {
-        // Room not found in availability, generate basic availability
-        return this.generateBasicAvailability(request);
-      }
+      const roomData = data?.rooms?.find((r) => r.roomId === request.productId);
 
-      // Generate calendar days based on availability
+      // Generate calendar days based on inventory data
       const days: CalendarDay[] = [];
       let currentDate = new Date(fromDate);
 
       while (currentDate <= toDate) {
-        // For now, assume available if room exists (actual availability logic would come from booking system)
-        // In a real implementation, this would check against actual booking data
-        const isAvailable = roomData.available !== false;
-        const price = await this.getPriceForDate(request.productId, currentDate, 'room');
-
-        days.push({
-          date: new Date(currentDate),
-          available: isAvailable,
-          price: price,
-          unitsAvailable: isAvailable ? 1 : 0
-        });
+        const dateStr = currentDate.toISOString().split('T')[0];
+        
+        // Try to get price and availability from inventory data
+        const inventoryDay = inventoryData?.days?.find(d => d.date === dateStr);
+        
+        if (inventoryDay) {
+          // Use inventory data (has date-specific pricing)
+          days.push({
+            date: new Date(currentDate),
+            available: inventoryDay.isAvailable && inventoryDay.availableQuantity > 0,
+            price: inventoryDay.price,
+            unitsAvailable: inventoryDay.availableQuantity
+          });
+        } else {
+          // Fallback to room data or default
+          const isAvailable = roomData?.available !== false;
+          const fallbackPrice = await this.getPriceForDate(request.productId, currentDate, 'room');
+          
+          days.push({
+            date: new Date(currentDate),
+            available: isAvailable,
+            price: fallbackPrice,
+            unitsAvailable: isAvailable ? 1 : 0
+          });
+        }
 
         currentDate.setDate(currentDate.getDate() + 1);
       }
@@ -163,7 +185,7 @@ export class UmbracoAdapter {
         from: request.from,
         to: request.to,
         days,
-        currency: 'GBP'
+        currency: inventoryData?.days?.[0] ? 'GBP' : 'GBP'
       };
     } catch (error) {
       console.error('Error fetching room availability:', error);
@@ -173,38 +195,78 @@ export class UmbracoAdapter {
   }
 
   /**
-   * Gets event availability
+   * Gets event availability with inventory pricing
    */
   private async getEventAvailability(request: AvailabilityRequest, product: Product): Promise<AvailabilityResponse> {
     const eventDate = product.attributes?.eventDate;
     const fromDate = new Date(request.from);
     const toDate = new Date(request.to);
     
+    // Try to fetch inventory data for events
+    let inventoryData: { days: Array<{ date: string; price: number; availableQuantity: number; isAvailable: boolean }> } | null = null;
+    try {
+      // Format dates as yyyy-MM-dd (not ISO string with time)
+      const fromStr = fromDate.toISOString().split('T')[0];
+      const toStr = toDate.toISOString().split('T')[0];
+      const inventoryResponse = await fetch(
+        `${UMBRACO_API_BASE}/hotels/inventory/${request.productId}?from=${fromStr}&to=${toStr}`
+      );
+      
+      if (inventoryResponse.ok) {
+        inventoryData = await inventoryResponse.json() as { days: Array<{ date: string; price: number; availableQuantity: number; isAvailable: boolean }> };
+      }
+    } catch (error) {
+      console.warn('Failed to fetch event inventory data:', error);
+    }
+    
     const days: CalendarDay[] = [];
     let currentDate = new Date(fromDate);
 
-      while (currentDate <= toDate) {
-        // Check if current date matches event date
-        const eventDateObj = eventDate ? new Date(eventDate as string) : null;
-        const isEventDate = eventDateObj ? this.isSameDay(eventDateObj, currentDate) : false;
-        const availableAttr = product.attributes?.available;
-        // Check if available is explicitly false (boolean) or falsy string/number
-        // Type guard: check if it's a boolean false, or falsy values
-        const isUnavailable = (typeof availableAttr === 'boolean' && availableAttr === false) 
-          || availableAttr === 0 
-          || availableAttr === 'false';
-        const isAvailable = isEventDate && !isUnavailable;
-        const price = isEventDate ? (product.priceFrom ?? 0) : undefined;
-
-        const maxCapacity = typeof product.attributes?.maxCapacity === 'number' 
-          ? product.attributes.maxCapacity 
-          : 100;
+    while (currentDate <= toDate) {
+      // Check if current date matches event date
+      const eventDateObj = eventDate ? new Date(eventDate as string) : null;
+      const isEventDate = eventDateObj ? this.isSameDay(eventDateObj, currentDate) : false;
+      
+      if (isEventDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const inventoryDay = inventoryData?.days?.find(d => d.date === dateStr);
+        
+        if (inventoryDay) {
+          // Use inventory data (has date-specific pricing and capacity)
+          days.push({
+            date: new Date(currentDate),
+            available: inventoryDay.isAvailable && inventoryDay.availableQuantity > 0,
+            price: inventoryDay.price,
+            unitsAvailable: inventoryDay.availableQuantity
+          });
+        } else {
+          // Fallback to product data
+          const availableAttr = product.attributes?.available;
+          const isUnavailable = (typeof availableAttr === 'boolean' && availableAttr === false) 
+            || availableAttr === 0 
+            || availableAttr === 'false';
+          const isAvailable = !isUnavailable;
+          const price = product.priceFrom ?? 0;
+          const maxCapacity = typeof product.attributes?.maxCapacity === 'number' 
+            ? product.attributes.maxCapacity 
+            : 100;
+          
+          days.push({
+            date: new Date(currentDate),
+            available: isAvailable,
+            price: price,
+            unitsAvailable: isAvailable ? maxCapacity : 0
+          });
+        }
+      } else {
+        // Not an event date
         days.push({
           date: new Date(currentDate),
-          available: isAvailable,
-          price: price,
-          unitsAvailable: isAvailable ? maxCapacity : 0
+          available: false,
+          price: undefined,
+          unitsAvailable: 0
         });
+      }
 
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -219,16 +281,27 @@ export class UmbracoAdapter {
   }
 
   /**
-   * Gets price for a specific date (can be extended to support dynamic pricing)
+   * Gets price for a specific date from inventory (deprecated - now using bulk inventory fetch)
+   * Kept for backward compatibility but inventory is now fetched in bulk in getRoomAvailability
    */
   private async getPriceForDate(productId: string, date: Date, productType: string): Promise<number | undefined> {
-    // For now, return base price. In future, this could check:
-    // - Seasonal pricing
-    // - Dynamic pricing rules
-    // - Special offers
-    // - Day-of-week pricing
-    
+    // This method is now deprecated - prices come from inventory endpoint
+    // Kept for any legacy code that might still call it
     try {
+      const dateStr = date.toISOString().split('T')[0];
+      const inventoryResponse = await fetch(
+        `${UMBRACO_API_BASE}/hotels/inventory/${productId}?from=${dateStr}&to=${dateStr}`
+      );
+      
+      if (inventoryResponse.ok) {
+        const inventoryData = await inventoryResponse.json() as { days?: Array<{ date: string; price: number; availableQuantity: number; isAvailable: boolean }> };
+        const day = inventoryData.days?.[0];
+        if (day) {
+          return day.price;
+        }
+      }
+      
+      // Fallback to product base price
       const product = await this.getProduct(productId);
       return product?.priceFrom;
     } catch {

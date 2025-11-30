@@ -5,6 +5,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Extensions;
 using MyDockerProject.Helpers;
+using MyDockerProject.Services;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -16,17 +17,20 @@ public class HotelsController : ControllerBase
     private readonly IContentTypeService _contentTypeService;
     private readonly IMediaService _mediaService;
     private readonly IPublishedContentQuery _publishedContentQuery;
+    private readonly InventoryService _inventoryService;
 
     public HotelsController(
         IContentService contentService, 
         IContentTypeService contentTypeService, 
         IMediaService mediaService,
-        IPublishedContentQuery publishedContentQuery)
+        IPublishedContentQuery publishedContentQuery,
+        InventoryService inventoryService)
     {
         _contentService = contentService;
         _contentTypeService = contentTypeService;
         _mediaService = mediaService;
         _publishedContentQuery = publishedContentQuery;
+        _inventoryService = inventoryService;
     }
 
     private string? GetMediaUrl(object? mediaValue)
@@ -444,7 +448,7 @@ public class HotelsController : ControllerBase
     }
 
     [HttpGet("{identifier}/rooms")]
-    public IActionResult GetRooms(string identifier)
+    public async Task<IActionResult> GetRooms(string identifier)
     {
         IContent? hotel = null;
         
@@ -481,21 +485,46 @@ public class HotelsController : ControllerBase
         var rooms = _contentService.GetPagedChildren(hotel.Id, 0, int.MaxValue, out _)
             .Where(c => c.ContentType.Alias == "room");
 
-        var result = rooms.Select(r =>
+        var result = new List<object>();
+        
+        foreach (var r in rooms)
         {
             var roomName = r.GetValue<string>("roomName") ?? r.Name;
             var roomSlug = UrlHelper.ToSlug(roomName);
             var heroImageValue = r.GetValue("heroImage");
             var roomImagesValue = r.GetValue("roomImages");
             
-            return new
+            // Get priceFrom from content property, or calculate from inventory
+            var priceFrom = r.GetValue<decimal?>("priceFrom");
+            
+            // If no priceFrom in content, get minimum price from inventory for next 90 days
+            if (!priceFrom.HasValue)
+            {
+                try
+                {
+                    var fromDate = DateTime.Today;
+                    var toDate = DateTime.Today.AddDays(90);
+                    var inventory = await _inventoryService.GetInventoryAsync(r.Key, fromDate, toDate);
+                    
+                    if (inventory != null && inventory.Any())
+                    {
+                        priceFrom = inventory.Min(i => i.Price);
+                    }
+                }
+                catch
+                {
+                    // If inventory lookup fails, priceFrom remains null
+                }
+            }
+            
+            result.Add(new
             {
                 id = r.Key,
                 name = roomName,
                 slug = roomSlug,
                 description = r.GetValue<string>("description"),
                 maxOccupancy = r.GetValue<int?>("maxOccupancy"),
-                priceFrom = r.GetValue<decimal?>("priceFrom"),
+                priceFrom = priceFrom,
                 roomType = r.GetValue<string>("roomType"),
                 heroImage = GetMediaUrl(heroImageValue),
                 roomImages = GetMediaUrls(roomImagesValue),
@@ -506,8 +535,8 @@ public class HotelsController : ControllerBase
                 features = r.GetValue<string>("features"),
                 hotelServices = r.GetValue<string>("hotelServices"),
                 url = $"/hotels/{hotelSlug}/rooms/{roomSlug}"
-            };
-        }).ToList();
+            });
+        }
 
         return Ok(result);
     }
@@ -694,6 +723,54 @@ public class HotelsController : ControllerBase
         };
 
         return Ok(result);
+    }
+
+    [HttpGet("inventory/{productId}")]
+    public async Task<IActionResult> GetInventory(
+        string productId, 
+        [FromQuery] DateTime? from, 
+        [FromQuery] DateTime? to)
+    {
+        if (!Guid.TryParse(productId, out var productGuid))
+        {
+            return BadRequest(new { error = "Invalid productId format. Must be a GUID." });
+        }
+
+        var fromDate = from ?? DateTime.Today;
+        var toDate = to ?? DateTime.Today.AddDays(30);
+
+        if (fromDate > toDate)
+        {
+            return BadRequest(new { error = "from date must be before or equal to to date" });
+        }
+
+        try
+        {
+            var inventory = await _inventoryService.GetInventoryAsync(productGuid, fromDate, toDate);
+
+            var result = inventory.Select(i => new
+            {
+                date = i.Date.ToString("yyyy-MM-dd"),
+                price = i.Price,
+                currency = i.Currency,
+                totalQuantity = i.TotalQuantity,
+                bookedQuantity = i.BookedQuantity,
+                availableQuantity = i.AvailableQuantity,
+                isAvailable = i.IsAvailable
+            }).ToList();
+
+            return Ok(new
+            {
+                productId = productGuid,
+                from = fromDate.ToString("yyyy-MM-dd"),
+                to = toDate.ToString("yyyy-MM-dd"),
+                days = result
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 
     [HttpGet("{identifier}/debug-properties")]
