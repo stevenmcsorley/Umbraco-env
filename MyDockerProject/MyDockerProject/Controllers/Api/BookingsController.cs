@@ -42,12 +42,17 @@ public class BookingsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateBooking([FromBody] dynamic requestData)
+    public async Task<IActionResult> CreateBooking([FromBody] System.Text.Json.JsonElement requestData)
     {
         try
         {
             // Handle both string and Guid productId
-            var productIdStr = requestData.productId?.ToString();
+            if (!requestData.TryGetProperty("productId", out var productIdElement))
+            {
+                return BadRequest(new { error = "Invalid productId" });
+            }
+            
+            var productIdStr = productIdElement.GetString();
             if (string.IsNullOrEmpty(productIdStr))
             {
                 return BadRequest(new { error = "Invalid productId" });
@@ -59,19 +64,17 @@ public class BookingsController : ControllerBase
             }
 
             Guid? userId = null;
-            var userIdObj = requestData.userId;
-            if (userIdObj != null)
+            if (requestData.TryGetProperty("userId", out var userIdElement))
             {
-                string userIdStr = userIdObj.ToString() ?? string.Empty;
-                if (Guid.TryParse(userIdStr, out Guid parsedUserId))
+                var userIdStr = userIdElement.GetString();
+                if (!string.IsNullOrEmpty(userIdStr) && Guid.TryParse(userIdStr, out Guid parsedUserId))
                 {
                     userId = parsedUserId;
                     _logger.LogInformation("[BookingsController] Parsed userId: {UserId}", userId);
                 }
                 else
                 {
-                    string logMessage = $"[BookingsController] Failed to parse userId: {userIdStr}";
-                    _logger.LogWarning(logMessage);
+                    _logger.LogWarning("[BookingsController] Failed to parse userId: {UserIdStr}", userIdStr ?? "null");
                 }
             }
             else
@@ -80,10 +83,10 @@ public class BookingsController : ControllerBase
             }
 
             // If userId is provided but guest details are missing, fetch user details
-            string guestFirstName = requestData.guestFirstName?.ToString() ?? "";
-            string guestLastName = requestData.guestLastName?.ToString() ?? "";
-            string guestEmail = requestData.guestEmail?.ToString() ?? "";
-            string? guestPhone = requestData.guestPhone?.ToString();
+            string guestFirstName = requestData.TryGetProperty("guestFirstName", out var fnElement) ? fnElement.GetString() ?? "" : "";
+            string guestLastName = requestData.TryGetProperty("guestLastName", out var lnElement) ? lnElement.GetString() ?? "" : "";
+            string guestEmail = requestData.TryGetProperty("guestEmail", out var emailElement) ? emailElement.GetString() ?? "" : "";
+            string? guestPhone = requestData.TryGetProperty("guestPhone", out var phoneElement) ? phoneElement.GetString() : null;
 
             if (userId.HasValue && (string.IsNullOrEmpty(guestFirstName) || string.IsNullOrEmpty(guestEmail)))
             {
@@ -104,17 +107,23 @@ public class BookingsController : ControllerBase
             var request = new CreateBookingRequest
             {
                 ProductId = productId,
-                ProductType = requestData.productType?.ToString() ?? "Room",
-                CheckIn = DateTime.Parse(requestData.checkIn?.ToString() ?? DateTime.UtcNow.ToString()),
-                CheckOut = requestData.checkOut != null ? DateTime.Parse(requestData.checkOut.ToString()) : null,
-                Quantity = requestData.quantity != null ? (int)requestData.quantity : 1,
+                ProductType = requestData.TryGetProperty("productType", out var ptElement) ? ptElement.GetString() ?? "Room" : "Room",
+                CheckIn = requestData.TryGetProperty("checkIn", out var ciElement) 
+                    ? DateTime.Parse(ciElement.GetString() ?? DateTime.UtcNow.ToString("O")) 
+                    : DateTime.UtcNow,
+                CheckOut = requestData.TryGetProperty("checkOut", out var coElement) && coElement.ValueKind != System.Text.Json.JsonValueKind.Null
+                    ? DateTime.Parse(coElement.GetString() ?? "")
+                    : null,
+                Quantity = requestData.TryGetProperty("quantity", out var qElement) ? qElement.GetInt32() : 1,
                 GuestFirstName = guestFirstName,
                 GuestLastName = guestLastName,
                 GuestEmail = guestEmail,
                 GuestPhone = guestPhone,
-                TotalPrice = requestData.totalPrice != null ? (decimal)requestData.totalPrice : 0,
-                Currency = requestData.currency?.ToString(),
-                AdditionalData = requestData.additionalData?.ToString(),
+                TotalPrice = requestData.TryGetProperty("totalPrice", out var tpElement) ? tpElement.GetDecimal() : 0,
+                Currency = requestData.TryGetProperty("currency", out var currElement) ? currElement.GetString() : null,
+                AdditionalData = requestData.TryGetProperty("additionalData", out var adElement) && adElement.ValueKind != System.Text.Json.JsonValueKind.Null
+                    ? adElement.GetString()
+                    : null,
                 UserId = userId
             };
 
