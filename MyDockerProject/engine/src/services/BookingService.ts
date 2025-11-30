@@ -98,6 +98,9 @@ export class BookingService {
     };
 
     try {
+      console.log('[BookingService] Calling Umbraco API:', `${UMBRACO_API_BASE}/bookings`);
+      console.log('[BookingService] Request payload:', JSON.stringify(umbracoRequest, null, 2));
+      
       const response = await fetch(`${UMBRACO_API_BASE}/bookings`, {
         method: 'POST',
         headers: {
@@ -106,8 +109,11 @@ export class BookingService {
         body: JSON.stringify(umbracoRequest)
       });
 
+      console.log('[BookingService] Response status:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to create booking' }));
+        console.error('[BookingService] Booking failed:', errorData);
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to create booking`);
       }
 

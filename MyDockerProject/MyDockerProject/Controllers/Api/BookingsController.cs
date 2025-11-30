@@ -62,7 +62,7 @@ public class BookingsController : ControllerBase
             var userIdObj = requestData.userId;
             if (userIdObj != null)
             {
-                var userIdStr = userIdObj.ToString();
+                string userIdStr = userIdObj.ToString() ?? string.Empty;
                 if (Guid.TryParse(userIdStr, out Guid parsedUserId))
                 {
                     userId = parsedUserId;
@@ -70,7 +70,8 @@ public class BookingsController : ControllerBase
                 }
                 else
                 {
-                    _logger.LogWarning("[BookingsController] Failed to parse userId: {UserIdStr}", userIdStr ?? "null");
+                    string logMessage = $"[BookingsController] Failed to parse userId: {userIdStr}";
+                    _logger.LogWarning(logMessage);
                 }
             }
             else
