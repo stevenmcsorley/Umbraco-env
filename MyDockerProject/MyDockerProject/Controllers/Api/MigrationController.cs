@@ -50,12 +50,28 @@ public class MigrationController : ControllerBase
                             [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
                             [UpdatedAt] datetime2 NULL,
                             [AdditionalData] nvarchar(max) NULL,
-                            [UserId] uniqueidentifier NULL,
-                            [PaymentId] nvarchar(100) NULL,
-                            [TransactionId] nvarchar(100) NULL,
-                            [PaymentStatus] nvarchar(50) NULL,
-                            [PaymentDate] datetime2 NULL
+                            [UserId] uniqueidentifier NULL
                         );
+                        
+                        -- Add payment columns if they don't exist
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND name = 'PaymentId')
+                        BEGIN
+                            ALTER TABLE [dbo].[Bookings] ADD [PaymentId] nvarchar(100) NULL;
+                        END
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND name = 'TransactionId')
+                        BEGIN
+                            ALTER TABLE [dbo].[Bookings] ADD [TransactionId] nvarchar(100) NULL;
+                        END
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND name = 'PaymentStatus')
+                        BEGIN
+                            ALTER TABLE [dbo].[Bookings] ADD [PaymentStatus] nvarchar(50) NULL;
+                        END
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND name = 'PaymentDate')
+                        BEGIN
+                            ALTER TABLE [dbo].[Bookings] ADD [PaymentDate] datetime2 NULL;
+                        END
+                    END
+                ");
                         CREATE UNIQUE INDEX [IX_Bookings_BookingReference] ON [dbo].[Bookings] ([BookingReference]);
                         CREATE INDEX [IX_Bookings_ProductId_CheckIn] ON [dbo].[Bookings] ([ProductId], [CheckIn], [CheckOut]);
                         CREATE INDEX [IX_Bookings_GuestEmail] ON [dbo].[Bookings] ([GuestEmail]);
