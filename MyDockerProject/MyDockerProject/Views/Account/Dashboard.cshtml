@@ -1,7 +1,8 @@
-@model List<MyDockerProject.Models.Booking>
 @{
     Layout = "~/Views/Layouts/FullWidth.cshtml";
     ViewData["Title"] = "My Account";
+    var bookings = ViewBag.Bookings as List<MyDockerProject.Models.Booking> ?? new List<MyDockerProject.Models.Booking>();
+    var user = ViewBag.User as MyDockerProject.Models.User;
 }
 
 <div class="max-w-7xl mx-auto px-4 py-8">
@@ -10,25 +11,28 @@
     <div class="bg-white rounded-lg shadow p-6 mb-8">
         <h2 class="text-xl font-semibold mb-4">Account Information</h2>
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Name</dt>
-                <dd class="mt-1 text-sm text-gray-900">@ViewBag.User.FirstName @ViewBag.User.LastName</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Email</dt>
-                <dd class="mt-1 text-sm text-gray-900">@ViewBag.User.Email</dd>
-            </div>
-            @if (!string.IsNullOrEmpty(ViewBag.User.Phone))
+            @if (user != null)
             {
                 <div>
-                    <dt class="text-sm font-medium text-gray-500">Phone</dt>
-                    <dd class="mt-1 text-sm text-gray-900">@ViewBag.User.Phone</dd>
+                    <dt class="text-sm font-medium text-gray-500">Name</dt>
+                    <dd class="mt-1 text-sm text-gray-900">@user.FirstName @user.LastName</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Email</dt>
+                    <dd class="mt-1 text-sm text-gray-900">@user.Email</dd>
+                </div>
+                @if (!string.IsNullOrEmpty(user.Phone))
+                {
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Phone</dt>
+                        <dd class="mt-1 text-sm text-gray-900">@user.Phone</dd>
+                    </div>
+                }
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Member Since</dt>
+                    <dd class="mt-1 text-sm text-gray-900">@user.CreatedAt.ToString("MMMM yyyy")</dd>
                 </div>
             }
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Member Since</dt>
-                <dd class="mt-1 text-sm text-gray-900">@ViewBag.User.CreatedAt.ToString("MMMM yyyy")</dd>
-            </div>
         </dl>
         <div class="mt-6">
             <a href="/logout" class="text-sm text-gray-600 hover:text-gray-900">Sign Out</a>
@@ -37,7 +41,7 @@
 
     <h2 class="text-2xl font-serif mb-6">My Bookings</h2>
     
-    @if (Model == null || Model.Count == 0)
+    @if (bookings == null || bookings.Count == 0)
     {
         <div class="bg-white rounded-lg shadow p-8 text-center">
             <p class="text-gray-500">You don't have any bookings yet.</p>
@@ -47,7 +51,7 @@
     else
     {
         <div class="space-y-4">
-            @foreach (var booking in Model)
+            @foreach (var booking in bookings)
             {
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex justify-between items-start">

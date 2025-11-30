@@ -31,7 +31,8 @@ public class AccountController : Controller
         var bookings = await _userService.GetUserBookingsAsync(userId);
 
         ViewBag.User = user;
-        return View(bookings);
+        ViewBag.Bookings = bookings;
+        return View();
     }
 }
 
