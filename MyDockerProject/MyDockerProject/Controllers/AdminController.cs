@@ -45,7 +45,7 @@ public class AdminController : Controller
             {
                 ProductId = g.Key,
                 TotalEntries = g.Count(),
-                TotalAvailable = g.Sum(i => i.AvailableQuantity),
+                TotalAvailable = g.Sum(i => i.TotalQuantity - i.BookedQuantity),
                 TotalBooked = g.Sum(i => i.BookedQuantity)
             })
             .ToListAsync();

@@ -1,0 +1,85 @@
+@model List<MyDockerProject.Models.Booking>
+@{
+    Layout = "~/Views/Layouts/FullWidth.cshtml";
+    ViewData["Title"] = "My Account";
+}
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-serif mb-8">My Account</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Account Information</h2>
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Name</dt>
+                <dd class="mt-1 text-sm text-gray-900">@ViewBag.User.FirstName @ViewBag.User.LastName</dd>
+            </div>
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Email</dt>
+                <dd class="mt-1 text-sm text-gray-900">@ViewBag.User.Email</dd>
+            </div>
+            @if (!string.IsNullOrEmpty(ViewBag.User.Phone))
+            {
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Phone</dt>
+                    <dd class="mt-1 text-sm text-gray-900">@ViewBag.User.Phone</dd>
+                </div>
+            }
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Member Since</dt>
+                <dd class="mt-1 text-sm text-gray-900">@ViewBag.User.CreatedAt.ToString("MMMM yyyy")</dd>
+            </div>
+        </dl>
+        <div class="mt-6">
+            <a href="/logout" class="text-sm text-gray-600 hover:text-gray-900">Sign Out</a>
+        </div>
+    </div>
+
+    <h2 class="text-2xl font-serif mb-6">My Bookings</h2>
+    
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="bg-white rounded-lg shadow p-8 text-center">
+            <p class="text-gray-500">You don't have any bookings yet.</p>
+            <a href="/hotels" class="mt-4 inline-block bg-gray-900 text-white px-6 py-2 rounded hover:bg-gray-800">Browse Hotels</a>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-4">
+            @foreach (var booking in Model)
+            {
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold">@booking.BookingReference</h3>
+                            <p class="text-sm text-gray-600 mt-1">
+                                @booking.ProductType - 
+                                @booking.CheckIn.ToString("dd MMM yyyy")
+                                @if (booking.CheckOut.HasValue)
+                                {
+                                    <span>to @booking.CheckOut.Value.ToString("dd MMM yyyy")</span>
+                                }
+                            </p>
+                            <p class="text-sm text-gray-600">Quantity: @booking.Quantity</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-semibold">@booking.Currency @booking.TotalPrice.ToString("N2")</p>
+                            <span class="inline-block mt-2 px-3 py-1 rounded text-xs font-medium
+                                @(booking.Status == "Confirmed" ? "bg-green-100 text-green-800" : 
+                                  booking.Status == "Cancelled" ? "bg-red-100 text-red-800" : 
+                                  "bg-gray-100 text-gray-800")">
+                                @booking.Status
+                            </span>
+                            @if (!string.IsNullOrEmpty(booking.PaymentStatus))
+                            {
+                                <p class="text-xs text-gray-500 mt-1">Payment: @booking.PaymentStatus</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+

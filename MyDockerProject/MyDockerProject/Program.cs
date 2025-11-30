@@ -7,6 +7,15 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 // Add controllers for custom routes
 builder.Services.AddControllers();
 
+// Add session support for authentication
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 // Add HttpClient for booking engine proxy
 builder.Services.AddHttpClient();
 
@@ -45,6 +54,9 @@ builder.CreateUmbracoBuilder()
 WebApplication app = builder.Build();
 
 await app.BootUmbracoAsync();
+
+// Use session middleware
+app.UseSession();
 
 app.UseUmbraco()
     .WithMiddleware(u =>
@@ -102,6 +114,27 @@ app.UseUmbraco()
             name: "room",
             pattern: "hotels/{hotelSlug}/rooms/{roomSlug}",
             defaults: new { controller = "Hotel", action = "Room" });
+        
+        // Auth routes
+        u.EndpointRouteBuilder.MapControllerRoute(
+            name: "register",
+            pattern: "register",
+            defaults: new { controller = "Auth", action = "Register" });
+        
+        u.EndpointRouteBuilder.MapControllerRoute(
+            name: "login",
+            pattern: "login",
+            defaults: new { controller = "Auth", action = "Login" });
+        
+        u.EndpointRouteBuilder.MapControllerRoute(
+            name: "logout",
+            pattern: "logout",
+            defaults: new { controller = "Auth", action = "Logout" });
+        
+        u.EndpointRouteBuilder.MapControllerRoute(
+            name: "account",
+            pattern: "account",
+            defaults: new { controller = "Account", action = "Dashboard" });
         
         u.UseWebsiteEndpoints();
     });
