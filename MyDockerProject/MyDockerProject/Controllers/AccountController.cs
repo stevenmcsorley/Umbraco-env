@@ -34,10 +34,10 @@ public class AccountController : Controller
     {
         if (mediaValue == null) return null;
         
-        // Handle MediaWithCrops (MediaPicker3)
+        // Handle MediaWithCrops (MediaPicker3) - use Content property
         if (mediaValue is MediaWithCrops mediaWithCrops)
         {
-            var media = mediaWithCrops.MediaItem;
+            var media = mediaWithCrops.Content;
             if (media != null)
             {
                 return media.Url();
@@ -48,9 +48,9 @@ public class AccountController : Controller
         if (mediaValue is IEnumerable<MediaWithCrops> mediaList)
         {
             var firstMedia = mediaList.FirstOrDefault();
-            if (firstMedia?.MediaItem != null)
+            if (firstMedia?.Content != null)
             {
-                return firstMedia.MediaItem.Url();
+                return firstMedia.Content.Url();
             }
         }
         
