@@ -15,19 +15,22 @@ public class BookingsController : ControllerBase
     private readonly BookingDbContext _context;
     private readonly IEmailService _emailService;
     private readonly IPaymentService _paymentService;
+    private readonly IUserService _userService;
 
     public BookingsController(
         BookingService bookingService,
         InventoryService inventoryService,
         BookingDbContext context,
         IEmailService emailService,
-        IPaymentService paymentService)
+        IPaymentService paymentService,
+        IUserService userService)
     {
         _bookingService = bookingService;
         _inventoryService = inventoryService;
         _context = context;
         _emailService = emailService;
         _paymentService = paymentService;
+        _userService = userService;
     }
 
     [HttpPost]
@@ -56,6 +59,28 @@ public class BookingsController : ControllerBase
                 }
             }
 
+            // If userId is provided but guest details are missing, fetch user details
+            string guestFirstName = requestData.guestFirstName?.ToString() ?? "";
+            string guestLastName = requestData.guestLastName?.ToString() ?? "";
+            string guestEmail = requestData.guestEmail?.ToString() ?? "";
+            string? guestPhone = requestData.guestPhone?.ToString();
+
+            if (userId.HasValue && (string.IsNullOrEmpty(guestFirstName) || string.IsNullOrEmpty(guestEmail)))
+            {
+                var user = await _userService.GetUserByIdAsync(userId.Value);
+                if (user != null)
+                {
+                    if (string.IsNullOrEmpty(guestFirstName))
+                        guestFirstName = user.FirstName;
+                    if (string.IsNullOrEmpty(guestLastName))
+                        guestLastName = user.LastName;
+                    if (string.IsNullOrEmpty(guestEmail))
+                        guestEmail = user.Email;
+                    if (string.IsNullOrEmpty(guestPhone))
+                        guestPhone = user.Phone;
+                }
+            }
+
             var request = new CreateBookingRequest
             {
                 ProductId = productId,
@@ -63,10 +88,10 @@ public class BookingsController : ControllerBase
                 CheckIn = DateTime.Parse(requestData.checkIn?.ToString() ?? DateTime.UtcNow.ToString()),
                 CheckOut = requestData.checkOut != null ? DateTime.Parse(requestData.checkOut.ToString()) : null,
                 Quantity = requestData.quantity != null ? (int)requestData.quantity : 1,
-                GuestFirstName = requestData.guestFirstName?.ToString() ?? "",
-                GuestLastName = requestData.guestLastName?.ToString() ?? "",
-                GuestEmail = requestData.guestEmail?.ToString() ?? "",
-                GuestPhone = requestData.guestPhone?.ToString(),
+                GuestFirstName = guestFirstName,
+                GuestLastName = guestLastName,
+                GuestEmail = guestEmail,
+                GuestPhone = guestPhone,
                 TotalPrice = requestData.totalPrice != null ? (decimal)requestData.totalPrice : 0,
                 Currency = requestData.currency?.ToString(),
                 AdditionalData = requestData.additionalData?.ToString(),

@@ -75,6 +75,11 @@ export class BookingService {
       ? JSON.stringify({ addOns: request.addOns })
       : null;
 
+    // If user is logged in, use userId; otherwise use guestDetails
+    // If guestDetails is not provided but userId is, we'll need to fetch user details from Umbraco
+    // For now, if userId is provided, we'll use it and let the API handle guest details
+    const guestDetails = request.guestDetails || {};
+    
     // Call Umbraco API to create booking
     const umbracoRequest = {
       productId: request.productId,
@@ -82,14 +87,14 @@ export class BookingService {
       checkIn: fromDate.toISOString(),
       checkOut: productType === 'Room' ? toDate.toISOString() : null,
       quantity: request.quantity || 1,
-      guestFirstName: request.guestDetails.firstName,
-      guestLastName: request.guestDetails.lastName,
-      guestEmail: request.guestDetails.email,
-      guestPhone: request.guestDetails.phone || null,
+      guestFirstName: guestDetails.firstName || '',
+      guestLastName: guestDetails.lastName || '',
+      guestEmail: guestDetails.email || '',
+      guestPhone: guestDetails.phone || null,
       totalPrice: totalPrice,
       currency: availability.currency || 'GBP',
       additionalData: additionalData,
-      userId: null // Will be set when authentication is implemented
+      userId: request.userId || null // Use userId from request if provided
     };
 
     try {
