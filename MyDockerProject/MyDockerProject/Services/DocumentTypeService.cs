@@ -404,6 +404,100 @@ public class DocumentTypeService
         _contentTypeService.Save(eventType);
     }
 
+    public void CreateAddOnDocumentType()
+    {
+        var existing = _contentTypeService.Get("addOn");
+        if (existing != null)
+        {
+            return;
+        }
+
+        var hotelType = _contentTypeService.Get("hotel");
+        if (hotelType == null)
+        {
+            throw new Exception("Hotel document type must be created first");
+        }
+
+        var allDataTypes = _dataTypeService.GetAll();
+        var textstringDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextBox");
+        var textareaDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextArea");
+        var decimalDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.Decimal");
+        var dropdownDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.DropDown");
+        var mediaPickerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.MediaPicker3");
+        
+        // Use Textstring as fallback for Decimal if it doesn't exist
+        if (decimalDataType == null)
+        {
+            decimalDataType = textstringDataType;
+        }
+        
+        if (textstringDataType == null || textareaDataType == null)
+        {
+            throw new Exception("Required data types not found. Please create data types in Umbraco backoffice first.");
+        }
+
+        var addOnType = new ContentType(_shortStringHelper, hotelType.Id)
+        {
+            Name = "Add On",
+            Alias = "addOn",
+            Icon = "icon-add",
+            AllowedAsRoot = false,
+            IsElement = false
+        };
+
+        addOnType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "addOnName")
+        {
+            Name = "Add On Name",
+            Mandatory = true,
+            SortOrder = 1
+        });
+
+        addOnType.AddPropertyType(new PropertyType(_shortStringHelper, textareaDataType, "description")
+        {
+            Name = "Description",
+            SortOrder = 2
+        });
+
+        addOnType.AddPropertyType(new PropertyType(_shortStringHelper, decimalDataType, "price")
+        {
+            Name = "Price",
+            Mandatory = true,
+            SortOrder = 3
+        });
+
+        // Add pricing type dropdown (one-time, per-night, per-person, per-unit)
+        if (dropdownDataType != null)
+        {
+            addOnType.AddPropertyType(new PropertyType(_shortStringHelper, dropdownDataType, "pricingType")
+            {
+                Name = "Pricing Type",
+                SortOrder = 4
+            });
+        }
+        else
+        {
+            // Fallback to textstring if dropdown doesn't exist
+            addOnType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "pricingType")
+            {
+                Name = "Pricing Type",
+                Description = "one-time, per-night, per-person, or per-unit",
+                SortOrder = 4
+            });
+        }
+
+        // Add image property
+        if (mediaPickerDataType != null)
+        {
+            addOnType.AddPropertyType(new PropertyType(_shortStringHelper, mediaPickerDataType, "image")
+            {
+                Name = "Image",
+                SortOrder = 5
+            });
+        }
+
+        _contentTypeService.Save(addOnType);
+    }
+
     public void CreateAllDocumentTypes()
     {
         CreateHotelDocumentType();

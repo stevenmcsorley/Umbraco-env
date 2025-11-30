@@ -37,9 +37,15 @@ public class BookingsController : ControllerBase
         {
             // Handle both string and Guid productId
             var productIdStr = requestData.productId?.ToString();
-            if (string.IsNullOrEmpty(productIdStr) || !Guid.TryParse(productIdStr, out var productId))
+            if (string.IsNullOrEmpty(productIdStr) || !Guid.TryParse(productIdStr, out Guid productId))
             {
                 return BadRequest(new { error = "Invalid productId" });
+            }
+
+            Guid? userId = null;
+            if (requestData.userId != null && Guid.TryParse(requestData.userId.ToString(), out Guid parsedUserId))
+            {
+                userId = parsedUserId;
             }
 
             var request = new CreateBookingRequest
@@ -56,7 +62,7 @@ public class BookingsController : ControllerBase
                 TotalPrice = requestData.totalPrice != null ? (decimal)requestData.totalPrice : 0,
                 Currency = requestData.currency?.ToString(),
                 AdditionalData = requestData.additionalData?.ToString(),
-                UserId = requestData.userId != null && Guid.TryParse(requestData.userId.ToString(), out var userId) ? userId : null
+                UserId = userId
             };
 
             // Validate availability before creating booking
