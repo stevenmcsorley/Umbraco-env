@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MyDockerProject.Data;
 using MyDockerProject.Models;
 using MyDockerProject.Services;
+using Umbraco.Cms.Core.Services;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -16,6 +17,7 @@ public class BookingsController : ControllerBase
     private readonly IEmailService _emailService;
     private readonly IPaymentService _paymentService;
     private readonly IUserService _userService;
+    private readonly IContentService _contentService;
 
     public BookingsController(
         BookingService bookingService,
@@ -23,7 +25,8 @@ public class BookingsController : ControllerBase
         BookingDbContext context,
         IEmailService emailService,
         IPaymentService paymentService,
-        IUserService userService)
+        IUserService userService,
+        IContentService contentService)
     {
         _bookingService = bookingService;
         _inventoryService = inventoryService;
@@ -31,6 +34,7 @@ public class BookingsController : ControllerBase
         _emailService = emailService;
         _paymentService = paymentService;
         _userService = userService;
+        _contentService = contentService;
     }
 
     [HttpPost]
@@ -188,12 +192,46 @@ public class BookingsController : ControllerBase
                 );
             });
 
+            // Fetch product (room/event) and hotel details for the response
+            string? productName = null;
+            string? hotelName = null;
+            string? hotelLocation = null;
+            
+            try
+            {
+                var productContent = _contentService.GetById(booking.ProductId);
+                if (productContent != null)
+                {
+                    productName = productContent.GetValue<string>("roomName") 
+                        ?? productContent.GetValue<string>("eventName") 
+                        ?? productContent.Name;
+                    
+                    // Get hotel (parent of room/event)
+                    var hotelContent = productContent.Parent();
+                    if (hotelContent != null)
+                    {
+                        hotelName = hotelContent.GetValue<string>("hotelName") ?? hotelContent.Name;
+                        hotelLocation = hotelContent.GetValue<string>("location");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BookingsController] Error fetching product/hotel details: {ex.Message}");
+            }
+            
+            // Log booking creation for debugging
+            Console.WriteLine($"[BookingsController] Booking created - Id: {booking.Id}, UserId: {booking.UserId?.ToString() ?? "NULL"}, ProductId: {booking.ProductId}");
+
             return Ok(new
             {
                 bookingId = booking.Id,
                 bookingReference = booking.BookingReference,
                 productId = booking.ProductId,
                 productType = booking.ProductType,
+                productName = productName,
+                hotelName = hotelName,
+                hotelLocation = hotelLocation,
                 checkIn = booking.CheckIn,
                 checkOut = booking.CheckOut,
                 quantity = booking.Quantity,
@@ -204,7 +242,8 @@ public class BookingsController : ControllerBase
                 totalPrice = booking.TotalPrice,
                 currency = booking.Currency,
                 status = booking.Status,
-                createdAt = booking.CreatedAt
+                createdAt = booking.CreatedAt,
+                userId = booking.UserId
             });
         }
         catch (InvalidOperationException ex)

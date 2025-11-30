@@ -29,6 +29,16 @@ public class AccountController : Controller
         }
 
         var bookings = await _userService.GetUserBookingsAsync(userId);
+        
+        // Debug logging
+        Console.WriteLine($"[AccountController] UserId: {userId}, Bookings count: {bookings?.Count ?? 0}");
+        if (bookings != null && bookings.Count > 0)
+        {
+            foreach (var booking in bookings)
+            {
+                Console.WriteLine($"[AccountController] Booking - Id: {booking.Id}, UserId: {booking.UserId?.ToString() ?? "NULL"}, Reference: {booking.BookingReference}");
+            }
+        }
 
         ViewBag.User = user;
         ViewBag.Bookings = bookings;

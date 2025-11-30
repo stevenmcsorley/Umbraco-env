@@ -114,6 +114,23 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         </div>
       </div>
 
+      {(confirmation.productName || confirmation.hotelName) && (
+        <div style={sectionStyle}>
+          <div style={labelStyle}>Reservation Details</div>
+          {confirmation.productName && (
+            <div style={{ ...valueStyle, fontWeight: '600', marginBottom: '4px' }}>
+              {confirmation.productName}
+            </div>
+          )}
+          {confirmation.hotelName && (
+            <div style={{ ...valueStyle, fontSize: '14px', color: '#6b7280' }}>
+              {confirmation.hotelName}
+              {confirmation.hotelLocation && ` • ${confirmation.hotelLocation}`}
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={sectionStyle}>
         <div style={labelStyle}>Dates</div>
         <div style={valueStyle}>

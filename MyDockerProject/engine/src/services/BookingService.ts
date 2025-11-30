@@ -135,6 +135,9 @@ export class BookingService {
       const bookingResponse = {
         bookingId: bookingId,
         productId: bookingData.productId,
+        productName: bookingData.productName,
+        hotelName: bookingData.hotelName,
+        hotelLocation: bookingData.hotelLocation,
         from: new Date(bookingData.checkIn),
         to: bookingData.checkOut ? new Date(bookingData.checkOut) : new Date(bookingData.checkIn),
         guestDetails: guestDetails,

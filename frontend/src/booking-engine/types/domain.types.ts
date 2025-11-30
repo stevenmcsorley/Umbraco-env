@@ -68,6 +68,9 @@ export interface BookingRequest {
 export interface BookingResponse {
   bookingId: string;
   productId: string;
+  productName?: string;
+  hotelName?: string;
+  hotelLocation?: string;
   from: Date | string;
   to: Date | string;
   guestDetails: GuestDetails;
