@@ -69,7 +69,7 @@ public class AuthController : Controller
         HttpContext.Session.SetString("UserEmail", user.Email);
         HttpContext.Session.SetString("UserName", $"{user.FirstName} {user.LastName}");
 
-        return RedirectToAction("Dashboard", "Account");
+        return Redirect("/account");
     }
 
     [HttpGet("/logout")]
