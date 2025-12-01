@@ -413,9 +413,31 @@ public class BookingsController : ControllerBase
                         events = new List<object>();
                         foreach (var eventItem in eventsElement.EnumerateArray())
                         {
-                            // Keep the raw JSON structure so Node.js can parse it
-                            var eventJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(eventItem.GetRawText());
-                            events.Add(eventJson);
+                            // Convert to a simple object that will serialize correctly
+                            var eventObj = new Dictionary<string, object>();
+                            if (eventItem.ValueKind == System.Text.Json.JsonValueKind.Object)
+                            {
+                                foreach (var prop in eventItem.EnumerateObject())
+                                {
+                                    if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                                    {
+                                        eventObj[prop.Name] = prop.Value.GetString() ?? "";
+                                    }
+                                    else if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.Number)
+                                    {
+                                        eventObj[prop.Name] = prop.Value.GetInt32();
+                                    }
+                                    else
+                                    {
+                                        eventObj[prop.Name] = prop.Value.GetRawText();
+                                    }
+                                }
+                            }
+                            else if (eventItem.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                eventObj["eventId"] = eventItem.GetString() ?? "";
+                            }
+                            events.Add(eventObj);
                         }
                         _logger.LogInformation("[BookingsController] Parsed {Count} events from AdditionalData: {Events}", events.Count, System.Text.Json.JsonSerializer.Serialize(events));
                     }
@@ -430,8 +452,27 @@ public class BookingsController : ControllerBase
                         addOns = new List<object>();
                         foreach (var addOnItem in addOnsElement.EnumerateArray())
                         {
-                            var addOnJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(addOnItem.GetRawText());
-                            addOns.Add(addOnJson);
+                            // Convert to a simple object that will serialize correctly
+                            var addOnObj = new Dictionary<string, object>();
+                            if (addOnItem.ValueKind == System.Text.Json.JsonValueKind.Object)
+                            {
+                                foreach (var prop in addOnItem.EnumerateObject())
+                                {
+                                    if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                                    {
+                                        addOnObj[prop.Name] = prop.Value.GetString() ?? "";
+                                    }
+                                    else if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.Number)
+                                    {
+                                        addOnObj[prop.Name] = prop.Value.GetInt32();
+                                    }
+                                    else
+                                    {
+                                        addOnObj[prop.Name] = prop.Value.GetRawText();
+                                    }
+                                }
+                            }
+                            addOns.Add(addOnObj);
                         }
                         _logger.LogInformation("[BookingsController] Parsed {Count} addOns from AdditionalData", addOns.Count);
                     }
