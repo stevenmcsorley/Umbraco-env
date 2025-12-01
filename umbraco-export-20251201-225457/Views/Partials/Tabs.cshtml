@@ -1,0 +1,65 @@
+@model dynamic
+@{
+    var items = Model?.items as System.Collections.IEnumerable ?? new List<dynamic>();
+    var defaultTab = Model?.defaultTab ?? 0;
+}
+
+<div class="tabs-container">
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="flex space-x-4" role="tablist">
+            @{ int index = 0; }
+            @foreach (var item in items)
+            {
+                <button class="tab-button px-4 py-2 font-semibold border-b-2 transition-colors @(index == defaultTab ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700")" 
+                        onclick="switchTab(@index)" 
+                        role="tab"
+                        aria-selected="@(index == defaultTab ? "true" : "false")">
+                    @(item.label ?? "")
+                </button>
+                index++;
+            }
+        </nav>
+    </div>
+    
+    <div class="tab-content-container">
+        @{ index = 0; }
+        @foreach (var item in items)
+        {
+            <div class="tab-content @(index == defaultTab ? "" : "hidden")" role="tabpanel" data-tab-index="@index">
+                @Html.Raw(item.content ?? "")
+            </div>
+            index++;
+        }
+    </div>
+</div>
+
+<script>
+    function switchTab(index) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        
+        // Remove active state from all buttons
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('border-blue-600', 'text-blue-600');
+            button.classList.add('border-transparent', 'text-gray-500');
+            button.setAttribute('aria-selected', 'false');
+        });
+        
+        // Show selected tab content
+        const selectedContent = document.querySelector(`[data-tab-index="${index}"]`);
+        if (selectedContent) {
+            selectedContent.classList.remove('hidden');
+        }
+        
+        // Activate selected button
+        const selectedButton = document.querySelectorAll('.tab-button')[index];
+        if (selectedButton) {
+            selectedButton.classList.remove('border-transparent', 'text-gray-500');
+            selectedButton.classList.add('border-blue-600', 'text-blue-600');
+            selectedButton.setAttribute('aria-selected', 'true');
+        }
+    }
+</script>
+

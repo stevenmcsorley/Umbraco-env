@@ -1,0 +1,227 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    // Get images from ViewData or Model
+    var images = ViewData["SliderImages"] as System.Collections.IEnumerable 
+                 ?? ViewData["images"] as System.Collections.IEnumerable
+                 ?? (Model != null ? (Model.GetType().GetProperty("images")?.GetValue(Model) as System.Collections.IEnumerable) : null)
+                 ?? new List<string>();
+    
+    // Get configuration options
+    var sliderId = ViewData["SliderId"]?.ToString() ?? $"slider-{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+    var height = ViewData["SliderHeight"]?.ToString() ?? "h-[85vh] min-h-[700px]"; // Default hero height
+    var isHero = ViewData["IsHero"] as bool? ?? false;
+    var showDots = ViewData["ShowDots"] as bool? ?? true;
+    var showArrows = ViewData["ShowArrows"] as bool? ?? true;
+    var autoplay = ViewData["Autoplay"] as bool? ?? true;
+    var autoplayInterval = ViewData["AutoplayInterval"] as int? ?? 5000;
+    var fade = ViewData["Fade"] as bool? ?? false;
+    
+    // Convert images to list of strings
+    var imageList = new List<string>();
+    foreach (var img in images)
+    {
+        if (img != null)
+        {
+            var imgStr = img.ToString();
+            if (!string.IsNullOrEmpty(imgStr))
+            {
+                imageList.Add(imgStr);
+            }
+        }
+    }
+    
+    if (imageList.Count == 0)
+    {
+        return; // Don't render if no images
+    }
+}
+
+<div id="@sliderId" class="relative @height overflow-hidden @(isHero ? "" : "rounded-xl")">
+    <div class="slider-container relative w-full h-full">
+        @for (int i = 0; i < imageList.Count; i++)
+        {
+            <div class="slider-slide absolute inset-0 transition-opacity duration-1000 @(i == 0 ? "opacity-100 z-10" : "opacity-0 z-0")">
+                <img src="@imageList[i]" alt="Slide @(i + 1)" class="w-full h-full object-cover" />
+                @if (isHero)
+                {
+                    <div class="absolute inset-0 bg-black/50"></div>
+                }
+            </div>
+        }
+    </div>
+    
+    @if (showArrows && imageList.Count > 1)
+    {
+        <button class="slider-prev absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all" aria-label="Previous slide">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+        </button>
+        <button class="slider-next absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all" aria-label="Next slide">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </button>
+    }
+    
+    @if (showDots && imageList.Count > 1)
+    {
+        <div class="slider-dots absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            @for (int i = 0; i < imageList.Count; i++)
+            {
+                <button class="slider-dot w-2 h-2 rounded-full transition-all @(i == 0 ? "bg-white w-8" : "bg-white/50")" data-slide="@i" aria-label="Go to slide @(i + 1)"></button>
+            }
+        </div>
+    }
+</div>
+
+@if (ViewData["SliderScriptRendered"] == null)
+{
+    ViewData["SliderScriptRendered"] = true;
+    <script>
+        (function() {
+            // Initialize all sliders on the page
+            function initSliders() {
+                document.querySelectorAll('[id^="slider-"]').forEach(function(slider) {
+                    const sliderId = slider.id;
+                    if (window[sliderId + '_initialized']) return;
+                    window[sliderId + '_initialized'] = true;
+                    
+                    const slides = slider.querySelectorAll('.slider-slide');
+                    if (slides.length <= 1) return;
+                    
+                    const prevBtn = slider.querySelector('.slider-prev');
+                    const nextBtn = slider.querySelector('.slider-next');
+                    const dots = slider.querySelectorAll('.slider-dot');
+                    const autoplayEnabled = slider.dataset.autoplay !== 'false';
+                    const autoplayInterval = parseInt(slider.dataset.autoplayInterval || '5000');
+                    const fadeEnabled = slider.dataset.fade === 'true';
+                    
+                    let currentSlide = 0;
+                    let autoplayTimer = null;
+                    
+                    function showSlide(index) {
+                        if (index < 0) index = slides.length - 1;
+                        if (index >= slides.length) index = 0;
+                        
+                        slides.forEach((slide, i) => {
+                            if (fadeEnabled) {
+                                slide.classList.remove('opacity-100', 'z-10');
+                                slide.classList.add('opacity-0', 'z-0');
+                            } else {
+                                slide.style.transform = `translateX(${(i - index) * 100}%)`;
+                            }
+                        });
+                        
+                        if (fadeEnabled) {
+                            slides[index].classList.remove('opacity-0', 'z-0');
+                            slides[index].classList.add('opacity-100', 'z-10');
+                        }
+                        
+                        dots.forEach((dot, i) => {
+                            if (i === index) {
+                                dot.classList.remove('bg-white/50');
+                                dot.classList.add('bg-white', 'w-8');
+                            } else {
+                                dot.classList.remove('bg-white', 'w-8');
+                                dot.classList.add('bg-white/50');
+                            }
+                        });
+                        
+                        currentSlide = index;
+                    }
+                    
+                    function nextSlide() {
+                        showSlide(currentSlide + 1);
+                        resetAutoplay();
+                    }
+                    
+                    function prevSlide() {
+                        showSlide(currentSlide - 1);
+                        resetAutoplay();
+                    }
+                    
+                    function resetAutoplay() {
+                        if (autoplayTimer) {
+                            clearInterval(autoplayTimer);
+                        }
+                        if (autoplayEnabled) {
+                            autoplayTimer = setInterval(nextSlide, autoplayInterval);
+                        }
+                    }
+                    
+                    // Initialize slides for slide transition (not fade)
+                    if (!fadeEnabled) {
+                        slides.forEach((slide, i) => {
+                            slide.style.transition = 'transform 0.6s ease-in-out';
+                            slide.style.transform = `translateX(${(i - currentSlide) * 100}%)`;
+                        });
+                    }
+                    
+                    // Event listeners
+                    if (nextBtn) {
+                        nextBtn.addEventListener('click', nextSlide);
+                    }
+                    if (prevBtn) {
+                        prevBtn.addEventListener('click', prevSlide);
+                    }
+                    
+                    dots.forEach((dot, i) => {
+                        dot.addEventListener('click', () => {
+                            showSlide(i);
+                            resetAutoplay();
+                        });
+                    });
+                    
+                    // Pause on hover
+                    slider.addEventListener('mouseenter', () => {
+                        if (autoplayTimer) {
+                            clearInterval(autoplayTimer);
+                        }
+                    });
+                    
+                    slider.addEventListener('mouseleave', () => {
+                        resetAutoplay();
+                    });
+                    
+                    // Start autoplay
+                    resetAutoplay();
+                });
+            }
+            
+            // Initialize on DOM ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initSliders);
+            } else {
+                initSliders();
+            }
+            
+            // Re-initialize when new content is added (for dynamic content)
+            const originalAppendChild = Node.prototype.appendChild;
+            Node.prototype.appendChild = function(child) {
+                const result = originalAppendChild.call(this, child);
+                if (child.id && child.id.startsWith('slider-')) {
+                    setTimeout(initSliders, 100);
+                }
+                return result;
+            };
+        })();
+    </script>
+}
+
+@{
+    // Set slider-specific data attributes
+    var sliderElement = $"document.getElementById('{sliderId}')";
+}
+
+<script>
+    (function() {
+        const slider = document.getElementById('@sliderId');
+        if (slider) {
+            slider.dataset.autoplay = '@autoplay.ToString().ToLower()';
+            slider.dataset.autoplayInterval = '@autoplayInterval';
+            slider.dataset.fade = '@fade.ToString().ToLower()';
+        }
+    })();
+</script>
+

@@ -1,0 +1,93 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    var title = ViewData["EventsTitle"]?.ToString() ?? ViewData["title"]?.ToString() ?? "Events";
+    var items = ViewData["EventsItems"] as System.Collections.IEnumerable 
+                ?? ViewData["items"] as System.Collections.IEnumerable
+                ?? (Model != null ? (Model.GetType().GetProperty("items")?.GetValue(Model) as System.Collections.IEnumerable) : null)
+                ?? new List<object>();
+}
+
+@if (items != null && items.Cast<object>().Any())
+{
+    <section class="py-20 lg:py-28 bg-white">
+        <div class="max-w-7xl mx-auto px-6 lg:px-12">
+            <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight text-center">@title</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                @foreach (var eventObj in items)
+                {
+                    // Safely extract properties using reflection
+                    string eventName = "";
+                    string eventDescription = "";
+                    DateTime? eventDate = null;
+                    decimal? eventPrice = null;
+                    string eventLocation = "";
+                    string eventImage = "";
+                    string eventLink = "";
+                    
+                    if (eventObj != null)
+                    {
+                        var eventType = eventObj.GetType();
+                        try
+                        {
+                            eventName = eventType.GetProperty("name")?.GetValue(eventObj)?.ToString() ?? "";
+                            eventDescription = eventType.GetProperty("description")?.GetValue(eventObj)?.ToString() ?? "";
+                            eventDate = eventType.GetProperty("eventDate")?.GetValue(eventObj) as DateTime?;
+                            eventPrice = eventType.GetProperty("price")?.GetValue(eventObj) as decimal?;
+                            eventLocation = eventType.GetProperty("location")?.GetValue(eventObj)?.ToString() ?? "";
+                            eventImage = eventType.GetProperty("image")?.GetValue(eventObj)?.ToString() ?? "";
+                            // Prioritize 'url' over 'link' to use API-generated URLs with hotel slug
+                            eventLink = eventType.GetProperty("url")?.GetValue(eventObj)?.ToString() ?? eventType.GetProperty("link")?.GetValue(eventObj)?.ToString() ?? "";
+                        }
+                        catch { }
+                    }
+                    
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-gray-100">
+                        @if (!string.IsNullOrEmpty(eventImage))
+                        {
+                            <div class="aspect-[4/3] overflow-hidden">
+                                <img src="@eventImage" alt="@eventName" class="w-full h-full object-cover" />
+                            </div>
+                        }
+                        <div class="p-8">
+                            <h3 class="text-xl font-serif text-gray-900 mb-3 tracking-tight">@eventName</h3>
+                            @if (!string.IsNullOrEmpty(eventDescription))
+                            {
+                                <p class="text-gray-600 mb-4 font-light text-sm leading-relaxed">@eventDescription</p>
+                            }
+                            @if (eventDate.HasValue)
+                            {
+                                <p class="text-sm text-gray-500 mb-2 font-light flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    @eventDate.Value.ToString("MMM dd, yyyy")
+                                </p>
+                            }
+                            @if (!string.IsNullOrEmpty(eventLocation))
+                            {
+                                <p class="text-sm text-gray-500 mb-2 font-light flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    @eventLocation
+                                </p>
+                            }
+                            @if (eventPrice.HasValue)
+                            {
+                                <p class="text-2xl font-serif text-gray-900 mb-4">£@eventPrice.Value.ToString("F2")</p>
+                            }
+                            @if (!string.IsNullOrEmpty(eventLink))
+                            {
+                                <a href="@eventLink" class="inline-block mt-4 text-gray-900 text-xs font-light tracking-widest uppercase hover:opacity-70 transition-opacity">
+                                    Learn More →
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+

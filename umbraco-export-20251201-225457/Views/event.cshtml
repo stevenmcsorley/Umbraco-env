@@ -1,0 +1,257 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@{
+    var layoutFromContent = Model?.Value<string>("layout");
+    var layoutName = !string.IsNullOrEmpty(layoutFromContent) ? layoutFromContent : ViewData["Layout"] as string;
+    
+    var layoutPath = layoutName switch
+    {
+        "HolyGrail" => "Layouts/HolyGrail.cshtml",
+        "Sidebar" => "Layouts/Sidebar.cshtml",
+        "Centered" => "Layouts/Centered.cshtml",
+        "FullWidth" => "Layouts/FullWidth.cshtml",
+        _ => "Layouts/Main.cshtml"
+    };
+    
+    Layout = layoutPath;
+    ViewData["Title"] = Model?.Name ?? "Event Details";
+    
+    var eventId = Model?.Key.ToString() 
+                  ?? ViewBag.EventId as string 
+                  ?? ViewBag.EventSlug as string
+                  ?? Context.Request.RouteValues["eventSlug"]?.ToString();
+    var hotelId = (Model?.Parent as IPublishedContent)?.Key.ToString() 
+                  ?? ViewBag.HotelId as string 
+                  ?? ViewBag.HotelSlug as string
+                  ?? Context.Request.RouteValues["hotelSlug"]?.ToString();
+}
+
+<div id="event-page-content">
+    <div class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <p class="text-gray-600 mt-4 text-lg font-light">Loading event details...</p>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const hotelId = '@(hotelId ?? "")';
+        const eventId = '@(eventId ?? "")';
+        const container = document.getElementById('event-page-content');
+        
+        console.log('Event page - hotelId:', hotelId, 'eventId:', eventId);
+        
+        if (!container) {
+            console.error('Container not found');
+            return;
+        }
+    
+    if (!hotelId || hotelId.trim() === '' || !eventId || eventId.trim() === '') {
+        container.innerHTML = `
+            <div class="text-center py-20">
+                <p class="text-red-600 mb-4">Invalid hotel or event identifier.</p>
+                <p class="text-gray-600 text-sm mb-4">Hotel: ${hotelId || 'missing'}, Event: ${eventId || 'missing'}</p>
+                <a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotels</a>
+            </div>
+        `;
+        return;
+    }
+    
+    Promise.all([
+        fetch(`/api/hotels/${encodeURIComponent(hotelId)}`).then(r => {
+            if (!r.ok) {
+                console.error('Failed to fetch hotel:', r.status, r.statusText);
+                throw new Error(`Failed to fetch hotel: ${r.status}`);
+            }
+            return r.json();
+        }),
+        fetch(`/api/hotels/${encodeURIComponent(hotelId)}/events`).then(r => {
+            if (!r.ok) {
+                console.error('Failed to fetch events:', r.status, r.statusText);
+                throw new Error(`Failed to fetch events: ${r.status}`);
+            }
+            return r.json();
+        })
+    ])
+    .then(([hotel, events]) => {
+        console.log('Hotel data:', hotel);
+        console.log('Events data:', events);
+        console.log('Looking for eventId:', eventId);
+        
+        if (!hotel) {
+            throw new Error('Hotel not found');
+        }
+        
+        if (!events || !Array.isArray(events)) {
+            throw new Error('Events data is invalid');
+        }
+        
+        // Try to find event by ID (GUID) first, then by slug
+        const event = events.find(e => {
+            if (!e) return false;
+            const eventIdLower = eventId.toLowerCase();
+            return e.id?.toLowerCase() === eventIdLower || 
+                   e.slug?.toLowerCase() === eventIdLower ||
+                   e.id === eventId ||
+                   e.slug === eventId;
+        });
+        
+        console.log('Found event:', event);
+        const hotelSlug = hotel.slug || hotel.id;
+        const eventSlug = event?.slug || event?.id;
+        
+        if (!event) {
+            container.innerHTML = `
+                <div class="text-center py-20">
+                    <h1 class="text-4xl font-serif text-gray-900 mb-4 tracking-tight">Event Not Found</h1>
+                    <a href="/hotels/${hotelSlug}" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotel</a>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        // Hero Section - matching room page style
+        const eventImageUrl = event.image;
+        html += `
+            <section class="relative h-[85vh] min-h-[700px] overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+                    ${eventImageUrl ? `<img src="${eventImageUrl}" alt="${event.name}" class="w-full h-full object-cover opacity-40" />` : ''}
+                    <div class="absolute inset-0 bg-black/50"></div>
+                </div>
+                <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 h-full flex items-center py-20">
+                    <div class="text-white max-w-3xl">
+                        <h1 class="text-5xl md:text-6xl lg:text-7xl font-serif mb-8 tracking-tight">${event.name || 'Event'}</h1>
+                        ${event.description ? `<p class="text-xl md:text-2xl mb-6 opacity-90 font-light leading-relaxed">${event.description.substring(0, 200)}${event.description.length > 200 ? '...' : ''}</p>` : ''}
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        // Event Details Section - matching room page style
+        html += `
+            <section class="py-20 lg:py-28 bg-white">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    ${eventImageUrl ? `
+                    <div class="mb-12">
+                        <div class="aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden">
+                            <img src="${eventImageUrl}" alt="${event.name}" class="w-full h-full object-cover" />
+                        </div>
+                    </div>
+                    ` : ''}
+                    <div class="max-w-4xl">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-6 tracking-tight">${event.name || 'Event'}</h2>
+                        ${event.description ? `<p class="text-lg text-gray-600 mb-8 font-light leading-relaxed">${event.description}</p>` : ''}
+                        <div class="flex flex-wrap gap-6 mb-8 text-xs font-light text-gray-500 uppercase tracking-widest">
+                            ${event.eventDate ? `<span>${new Date(event.eventDate).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>` : ''}
+                            ${event.location ? `<span>${event.location.toUpperCase()}</span>` : ''}
+                        </div>
+                        ${event.price ? `
+                            <div class="mb-8">
+                                <p class="text-sm text-gray-500 mb-2 font-light uppercase tracking-widest">PRICE</p>
+                                <p class="text-4xl font-serif text-gray-900">£${parseFloat(event.price).toFixed(2)} <span class="text-lg text-gray-500 font-light">per person</span></p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        // Booking Section - cleaner integration
+        html += `
+            <section id="booking" class="py-20 lg:py-28 bg-gray-50">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    <div class="max-w-4xl">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight">Reserve Your Stay</h2>
+                        <div id="booking-engine-root" 
+                             data-product-id="${event.id}" 
+                             data-hotel-id="${hotel.id}"
+                             data-api-base-url="/engine">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        container.innerHTML = html;
+        
+        // Load React Booking Engine
+        (function() {
+            async function initializeBookingEngine() {
+                const bookingRoot = document.getElementById('booking-engine-root');
+                if (!bookingRoot) return;
+                
+                const productId = bookingRoot.getAttribute('data-product-id');
+                const hotelIdAttr = bookingRoot.getAttribute('data-hotel-id');
+                
+                if (!productId || !hotelIdAttr) {
+                    bookingRoot.innerHTML = `
+                        <div class="text-center py-12 bg-red-50 rounded-lg">
+                            <p class="text-red-600 mb-2 font-semibold">Failed to initialize booking engine.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Fetch current user information
+                let userData = null;
+                try {
+                    const userResponse = await fetch('/api/auth/current-user');
+                    if (userResponse.ok) {
+                        const userResult = await userResponse.json();
+                        if (userResult.isAuthenticated) {
+                            userData = {
+                                userId: userResult.userId,
+                                email: userResult.email,
+                                firstName: userResult.firstName,
+                                lastName: userResult.lastName,
+                                phone: userResult.phone || ''
+                            };
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to fetch user data:', error);
+                }
+                
+                window.initBookingEngine({
+                    containerId: 'booking-engine-root',
+                    productId: productId,
+                    hotelId: hotelIdAttr,
+                    apiBaseUrl: '/engine',
+                    user: userData
+                });
+            }
+            
+            const script = document.createElement('script');
+            script.src = '/scripts/booking-engine.js?v=' + Date.now();
+            script.onload = function() {
+                setTimeout(initializeBookingEngine, 50);
+            };
+            script.onerror = function() {
+                const bookingRoot = document.getElementById('booking-engine-root');
+                if (bookingRoot) {
+                    bookingRoot.innerHTML = `
+                        <div class="text-center py-12 bg-red-50 rounded-lg">
+                            <p class="text-red-600 mb-2 font-semibold">Failed to load booking engine.</p>
+                        </div>
+                    `;
+                }
+            };
+            document.head.appendChild(script);
+        })();
+    })
+    .catch(error => {
+        console.error('Error loading event:', error);
+        container.innerHTML = `
+            <div class="text-center py-20">
+                <p class="text-red-600 mb-4 font-semibold">Error loading event details.</p>
+                <p class="text-gray-600 text-sm mb-4">${error.message || 'Unknown error'}</p>
+                <p class="text-gray-500 text-xs mb-4">Hotel: ${hotelId || 'N/A'}, Event: ${eventId || 'N/A'}</p>
+                <a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotels</a>
+            </div>
+        `;
+    });
+    })();
+</script>
+

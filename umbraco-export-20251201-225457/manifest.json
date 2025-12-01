@@ -1,0 +1,8 @@
+{
+  "UmbracoVersion": "14.x",
+  "Notes": "Complete Umbraco export including database, media, and views",
+  "ExportDate": "2025-12-01 22:54:57",
+  "DatabaseBackup": "umbracoDb.bak",
+  "Views": "Views",
+  "MediaFiles": "media"
+}
