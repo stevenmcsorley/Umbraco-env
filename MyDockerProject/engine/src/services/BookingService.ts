@@ -225,6 +225,14 @@ export class BookingService {
         addOns: addOnsDetails.length > 0 ? addOnsDetails : undefined,
         events: eventsDetails.length > 0 ? eventsDetails : undefined
       };
+      
+      console.log('[BookingService] Final bookingResponse:', {
+        bookingId: bookingResponse.bookingId,
+        events: bookingResponse.events,
+        eventsCount: bookingResponse.events?.length || 0,
+        addOns: bookingResponse.addOns,
+        addOnsCount: bookingResponse.addOns?.length || 0
+      });
 
       console.log('[BookingService] Mapped booking response with details:', {
         productName: bookingResponse.productName,

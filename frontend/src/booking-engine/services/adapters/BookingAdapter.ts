@@ -15,7 +15,15 @@ export class BookingAdapter {
   }
 
   static fromAPI(data: any): BookingResponse {
-    return {
+    console.log('[BookingAdapter] fromAPI - received data:', {
+      hasEvents: !!data.events,
+      eventsType: typeof data.events,
+      eventsIsArray: Array.isArray(data.events),
+      eventsValue: data.events,
+      eventsLength: Array.isArray(data.events) ? data.events.length : 0
+    });
+    
+    const response = {
       bookingId: data.bookingId || data.bookingReference,
       productId: data.productId,
       productName: data.productName,
@@ -37,6 +45,14 @@ export class BookingAdapter {
       addOns: data.addOns || [],
       events: data.events || []
     };
+    
+    console.log('[BookingAdapter] fromAPI - mapped response:', {
+      hasEvents: !!response.events,
+      eventsCount: Array.isArray(response.events) ? response.events.length : 0,
+      events: response.events
+    });
+    
+    return response;
   }
 }
 
