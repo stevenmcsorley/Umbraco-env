@@ -1,0 +1,145 @@
+@model List<MyDockerProject.Models.Inventory>
+@{
+    Layout = "~/Views/Layouts/FullWidth.cshtml";
+    ViewData["Title"] = "Inventory Management";
+}
+
+<div class="admin-inventory">
+    <h1>Inventory Management</h1>
+    
+    <div class="admin-actions">
+        <a href="/admin" class="btn btn-secondary">Back to Dashboard</a>
+        <a href="/api/admin/inventory" class="btn btn-info" target="_blank">View API</a>
+    </div>
+
+    <table class="inventory-table">
+        <thead>
+            <tr>
+                <th>Product ID</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Booked</th>
+                <th>Available</th>
+                <th>Price</th>
+                <th>Currency</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td><small>@item.ProductId</small></td>
+                    <td>@item.ProductType</td>
+                    <td>@item.Date.ToString("dd MMM yyyy")</td>
+                    <td>@item.TotalQuantity</td>
+                    <td>@item.BookedQuantity</td>
+                    <td><strong>@item.AvailableQuantity</strong></td>
+                    <td>@item.Price.ToString("N2")</td>
+                    <td>@item.Currency</td>
+                    <td>
+                        @if (item.IsAvailable && item.AvailableQuantity > 0)
+                        {
+                            <span class="status-badge status-available">Available</span>
+                        }
+                        else if (item.AvailableQuantity == 0)
+                        {
+                            <span class="status-badge status-soldout">Sold Out</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-unavailable">Unavailable</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<style>
+.admin-inventory {
+    padding: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.admin-actions {
+    margin: 2rem 0;
+    display: flex;
+    gap: 1rem;
+}
+
+.inventory-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 1rem;
+}
+
+.inventory-table th {
+    background: #f5f5f5;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+}
+
+.inventory-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.inventory-table tr:hover {
+    background: #f9f9f9;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-available {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-soldout {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-unavailable {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+}
+</style>
+

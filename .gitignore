@@ -1,5 +1,2 @@
-# Umbraco export directories (large files, transfer separately)
-umbraco-export-*/
-umbraco-export-*.zip
-umbraco-export-*.tar.gz
+# Umbraco export directories are now included in the repo
 

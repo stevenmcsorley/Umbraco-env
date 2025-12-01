@@ -1,0 +1,47 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    var layoutFromContent = Model?.Value<string>("layout");
+    var layoutName = !string.IsNullOrEmpty(layoutFromContent) ? layoutFromContent : ViewData["Layout"] as string;
+    
+    var layoutPath = layoutName switch
+    {
+        "HolyGrail" => "Layouts/HolyGrail.cshtml",
+        "Sidebar" => "Layouts/Sidebar.cshtml",
+        "Centered" => "Layouts/Centered.cshtml",
+        "FullWidth" => "Layouts/FullWidth.cshtml",
+        _ => "Layouts/Main.cshtml"
+    };
+    
+    Layout = layoutPath;
+    ViewData["Title"] = "Book Your Stay";
+    
+    var user = ViewBag.User;
+    var userJson = user != null ? System.Text.Json.JsonSerializer.Serialize(user) : "null";
+}
+
+<div class="max-w-7xl mx-auto px-6 lg:px-12 py-12">
+    <div id="booking-engine-root" 
+         data-api-base-url="/engine"
+         data-user='@Html.Raw(userJson)'>
+    </div>
+</div>
+
+<script src="~/scripts/booking-engine.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('booking-engine-root');
+        if (container && window.initBookingEngine) {
+            const userData = container.getAttribute('data-user');
+            const user = userData && userData !== 'null' ? JSON.parse(userData) : null;
+            
+            window.initBookingEngine({
+                containerId: 'booking-engine-root',
+                hotelId: null, // No hotel pre-selected for global booking
+                productId: null, // No product pre-selected
+                apiBaseUrl: '/engine',
+                user: user
+            });
+        }
+    });
+</script>
+
