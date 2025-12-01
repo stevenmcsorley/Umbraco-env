@@ -13,28 +13,52 @@ export interface Room {
   image?: string; // Keep for backward compatibility
 }
 
+export interface Hotel {
+  id: string;
+  name: string;
+  location?: string;
+  city?: string;
+  country?: string;
+}
+
 export const RoomSelector = ({ hotelId }: { hotelId: string }) => {
   const { selectedProductId, setSelectedProductId } = useBookingStore();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hotelId) {
       setRooms([]);
+      setHotel(null);
       setLoading(false);
       return;
     }
 
-    const fetchRooms = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/hotels/${hotelId}/rooms`);
-        if (!response.ok) {
+        // Fetch hotel details
+        const hotelResponse = await fetch(`/api/hotels/${hotelId}`);
+        if (hotelResponse.ok) {
+          const hotelData = await hotelResponse.json();
+          setHotel({
+            id: hotelData.id || hotelId,
+            name: hotelData.name || '',
+            location: hotelData.location,
+            city: hotelData.city,
+            country: hotelData.country
+          });
+        }
+        
+        // Fetch rooms
+        const roomsResponse = await fetch(`/api/hotels/${hotelId}/rooms`);
+        if (!roomsResponse.ok) {
           throw new Error('Failed to fetch rooms');
         }
-        const data = await response.json();
-        setRooms(data || []);
+        const roomsData = await roomsResponse.json();
+        setRooms(roomsData || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load rooms');
       } finally {
@@ -42,7 +66,7 @@ export const RoomSelector = ({ hotelId }: { hotelId: string }) => {
       }
     };
 
-    fetchRooms();
+    fetchData();
   }, [hotelId]);
 
   if (!hotelId) {
@@ -118,6 +142,54 @@ export const RoomSelector = ({ hotelId }: { hotelId: string }) => {
         }}>
           Select a Room
         </h2>
+        {hotel && (
+          <div style={{
+            marginBottom: '12px',
+            padding: '12px 16px',
+            backgroundColor: '#f9fafb',
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '4px'
+            }}>
+              <svg style={{ width: '18px', height: '18px', color: '#6b7280', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span style={{
+                fontSize: '16px',
+                fontWeight: '500',
+                color: '#111827',
+                fontFamily: "'Playfair Display', serif"
+              }}>
+                {hotel.name}
+              </span>
+            </div>
+            {(hotel.location || hotel.city || hotel.country) && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginLeft: '26px'
+              }}>
+                <svg style={{ width: '14px', height: '14px', color: '#6b7280' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  fontWeight: '300'
+                }}>
+                  {hotel.location || [hotel.city, hotel.country].filter(Boolean).join(', ')}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
         <p style={{ 
           fontSize: '16px', 
           color: '#6b7280',

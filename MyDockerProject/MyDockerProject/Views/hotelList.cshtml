@@ -24,7 +24,8 @@
     ViewData["HeroBackgroundColor"] = "bg-gray-900";
     ViewData["HeroTextColor"] = "text-white";
     ViewData["HeroButtonText"] = "Book Now";
-    ViewData["HeroButtonLink"] = "/hotels";
+    ViewData["HeroButtonLink"] = "/book";
+    ViewData["HeroShowSecondButton"] = false; // Hide second button on hotels page
 }
 
 @await Html.PartialAsync("Partials/Hero", (object)null)

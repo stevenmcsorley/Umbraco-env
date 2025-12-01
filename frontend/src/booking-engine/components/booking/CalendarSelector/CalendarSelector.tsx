@@ -12,11 +12,72 @@ export interface CalendarSelectorProps {
   hotelId?: string;
 }
 
+export interface Hotel {
+  id: string;
+  name: string;
+  location?: string;
+  city?: string;
+  country?: string;
+}
+
+export interface Room {
+  id: string;
+  name: string;
+}
+
 export const CalendarSelector = ({ availabilityDays = [], className = '', hotelId }: CalendarSelectorProps) => {
-  const { selectedProductId, selectedDateRange, setSelectedDateRange, availabilityResult, setAvailabilityResult } = useBookingStore();
+  const { selectedHotelId, selectedProductId, selectedDateRange, setSelectedDateRange, availabilityResult, setAvailabilityResult } = useBookingStore();
+  const [hotel, setHotel] = useState<Hotel | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
+  
+  // Use prop hotelId if provided, otherwise use selectedHotelId from store
+  const currentHotelId = hotelId || selectedHotelId;
   
   // Fetch events for this hotel to display on calendar
-  const { events } = useEvents(hotelId);
+  const { events } = useEvents(currentHotelId);
+  
+  // Fetch hotel and room details
+  useEffect(() => {
+    const fetchDetails = async () => {
+      if (currentHotelId) {
+        try {
+          const hotelResponse = await fetch(`/api/hotels/${currentHotelId}`);
+          if (hotelResponse.ok) {
+            const hotelData = await hotelResponse.json();
+            setHotel({
+              id: hotelData.id || currentHotelId,
+              name: hotelData.name || '',
+              location: hotelData.location,
+              city: hotelData.city,
+              country: hotelData.country
+            });
+          }
+        } catch (err) {
+          console.error('Failed to fetch hotel details:', err);
+        }
+      }
+      
+      if (selectedProductId && currentHotelId) {
+        try {
+          const roomsResponse = await fetch(`/api/hotels/${currentHotelId}/rooms`);
+          if (roomsResponse.ok) {
+            const roomsData = await roomsResponse.json();
+            const selectedRoom = roomsData.find((r: Room) => r.id === selectedProductId);
+            if (selectedRoom) {
+              setRoom({
+                id: selectedRoom.id,
+                name: selectedRoom.name || selectedRoom.roomName || ''
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch room details:', err);
+        }
+      }
+    };
+    
+    fetchDetails();
+  }, [currentHotelId, selectedProductId]);
   
   // Memoize today to prevent recreating on every render
   const today = useMemo(() => {
@@ -379,6 +440,82 @@ export const CalendarSelector = ({ availabilityDays = [], className = '', hotelI
         letterSpacing: '-0.01em'
       }}
     >
+      {/* Display selected hotel and room */}
+      {(hotel || room) && (
+        <div style={{
+          marginBottom: '24px',
+          padding: '16px 20px',
+          backgroundColor: '#f9fafb',
+          borderRadius: '12px',
+          border: '1px solid #e5e7eb'
+        }}>
+          {hotel && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: room ? '8px' : '0'
+            }}>
+              <svg style={{ width: '20px', height: '20px', color: '#6b7280', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <div style={{ flex: 1 }}>
+                <span style={{
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  color: '#111827',
+                  fontFamily: "'Playfair Display', serif"
+                }}>
+                  {hotel.name}
+                </span>
+                {(hotel.location || hotel.city || hotel.country) && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginTop: '4px'
+                  }}>
+                    <svg style={{ width: '14px', height: '14px', color: '#6b7280' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span style={{
+                      fontSize: '13px',
+                      color: '#6b7280',
+                      fontWeight: '300'
+                    }}>
+                      {hotel.location || [hotel.city, hotel.country].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {room && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginTop: hotel ? '8px' : '0',
+              paddingTop: hotel ? '12px' : '0',
+              borderTop: hotel ? '1px solid #e5e7eb' : 'none'
+            }}>
+              <svg style={{ width: '20px', height: '20px', color: '#6b7280', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span style={{
+                fontSize: '15px',
+                fontWeight: '500',
+                color: '#111827',
+                fontFamily: "'Playfair Display', serif"
+              }}>
+                {room.name}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+      
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h3 style={{ 
