@@ -389,6 +389,9 @@ public class BookingsController : ControllerBase
             _logger.LogInformation("[BookingsController] Booking created - Id: {BookingId}, UserId: {UserId}, ProductId: {ProductId}, Reference: {Reference}", 
                 booking.Id, booking.UserId?.ToString() ?? "NULL", booking.ProductId, booking.BookingReference);
 
+            // Log room image for debugging
+            _logger.LogInformation("[BookingsController] Room image: {RoomImage}", roomImage ?? "NULL");
+            
             return Ok(new
             {
                 bookingId = booking.Id,
@@ -398,6 +401,7 @@ public class BookingsController : ControllerBase
                 productName = productName,
                 hotelName = hotelName,
                 hotelLocation = hotelLocation,
+                roomImage = roomImage,
                 checkIn = booking.CheckIn,
                 checkOut = booking.CheckOut,
                 quantity = booking.Quantity,
