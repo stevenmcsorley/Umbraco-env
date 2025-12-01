@@ -222,8 +222,8 @@ export class BookingService {
         createdAt: new Date(bookingData.createdAt),
         totalPrice: bookingData.totalPrice,
         currency: bookingData.currency || 'GBP',
-        addOns: addOnsDetails.length > 0 ? addOnsDetails : undefined,
-        events: eventsDetails.length > 0 ? eventsDetails : undefined
+        addOns: addOnsDetails.length > 0 ? addOnsDetails : [],
+        events: eventsDetails.length > 0 ? eventsDetails : []
       };
       
       console.log('[BookingService] Final bookingResponse:', {
