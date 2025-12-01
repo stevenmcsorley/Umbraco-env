@@ -421,7 +421,8 @@ public class BookingsController : ControllerBase
                     }
                     else
                     {
-                        _logger.LogInformation("[BookingsController] No events property found in AdditionalData or it's not an array");
+                        _logger.LogInformation("[BookingsController] No events property found in AdditionalData or it's not an array. AdditionalData keys: {Keys}", 
+                            string.Join(", ", additionalDataJson.EnumerateObject().Select(p => p.Name)));
                     }
                     
                     if (additionalDataJson.TryGetProperty("addOns", out var addOnsElement) && addOnsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
@@ -437,7 +438,7 @@ public class BookingsController : ControllerBase
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "[BookingsController] Failed to parse AdditionalData: {AdditionalData}", booking.AdditionalData);
+                    _logger.LogError(ex, "[BookingsController] Failed to parse AdditionalData: {AdditionalData}. Error: {Error}", booking.AdditionalData, ex.Message);
                 }
             }
             else
