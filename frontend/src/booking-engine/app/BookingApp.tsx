@@ -87,7 +87,7 @@ export const BookingApp = ({
         {/* Step 3: Booking Flow (calendar, availability, booking form) */}
         {showBookingFlow && (
           <>
-            <CalendarSelector hotelId={hotelId} />
+            <CalendarSelector hotelId={hotelId || undefined} />
           </>
         )}
       </PageSection>
@@ -95,12 +95,12 @@ export const BookingApp = ({
       {showBookingFlow && (
         <>
           <PageSection>
-            <AvailabilityPanel hotelId={hotelId} />
+            <AvailabilityPanel hotelId={hotelId || undefined} />
           </PageSection>
 
           {hotelId && (
             <PageSection>
-              <AddOnsSelector hotelId={hotelId} />
+              <AddOnsSelector hotelId={hotelId || undefined} />
             </PageSection>
           )}
 
