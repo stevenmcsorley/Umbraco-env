@@ -38,7 +38,9 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
     backgroundColor: '#ffffff',
     borderRadius: '12px',
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    width: '100%',
+    maxWidth: '100%'
   };
 
   const titleStyle: React.CSSProperties = {
@@ -95,7 +97,7 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
   };
 
   return (
-    <div className={className} style={{ ...containerStyle, maxWidth: '800px', margin: '40px auto', width: '100%' }} data-testid={TEST_IDS.confirmationScreen}>
+    <div className={className} style={{ ...containerStyle, margin: '40px auto' }} data-testid={TEST_IDS.confirmationScreen}>
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <div style={{ 
           width: '64px', 

@@ -16,13 +16,21 @@ export class BookingAdapter {
 
   static fromAPI(data: any): BookingResponse {
     return {
-      bookingId: data.bookingId,
+      bookingId: data.bookingId || data.bookingReference,
       productId: data.productId,
-      from: new Date(data.from),
-      to: new Date(data.to),
-      guestDetails: data.guestDetails,
+      productName: data.productName,
+      hotelName: data.hotelName,
+      hotelLocation: data.hotelLocation,
+      from: data.checkIn ? new Date(data.checkIn) : new Date(data.from),
+      to: data.checkOut ? new Date(data.checkOut) : (data.to ? new Date(data.to) : new Date(data.from)),
+      guestDetails: data.guestDetails || {
+        firstName: data.guestFirstName || '',
+        lastName: data.guestLastName || '',
+        email: data.guestEmail || '',
+        phone: data.guestPhone
+      },
       status: data.status,
-      createdAt: new Date(data.createdAt),
+      createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
       totalPrice: data.totalPrice,
       currency: data.currency || 'GBP',
       addOns: data.addOns || []
