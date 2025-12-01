@@ -5,6 +5,8 @@ using MyDockerProject.Data;
 using MyDockerProject.Models;
 using MyDockerProject.Services;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -19,6 +21,8 @@ public class BookingsController : ControllerBase
     private readonly IPaymentService _paymentService;
     private readonly Services.IUserService _userService;
     private readonly IContentService _contentService;
+    private readonly IMediaService _mediaService;
+    private readonly IPublishedContentQuery _publishedContentQuery;
     private readonly ILogger<BookingsController> _logger;
 
     public BookingsController(
@@ -29,6 +33,8 @@ public class BookingsController : ControllerBase
         IPaymentService paymentService,
         Services.IUserService userService,
         IContentService contentService,
+        IMediaService mediaService,
+        IPublishedContentQuery publishedContentQuery,
         ILogger<BookingsController> logger)
     {
         _bookingService = bookingService;
@@ -38,6 +44,8 @@ public class BookingsController : ControllerBase
         _paymentService = paymentService;
         _userService = userService;
         _contentService = contentService;
+        _mediaService = mediaService;
+        _publishedContentQuery = publishedContentQuery;
         _logger = logger;
     }
 
