@@ -138,7 +138,7 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         {/* Left side: Reservation Details */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
           <div style={labelStyle}>Reservation Details</div>
-          {confirmation.productName && (
+          {confirmation.productName ? (
             <div style={{ 
               fontSize: '22px',
               fontWeight: '500',
@@ -148,6 +148,17 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
               margin: 0
             }}>
               {confirmation.productName}
+            </div>
+          ) : (
+            <div style={{ 
+              fontSize: '22px',
+              fontWeight: '500',
+              color: '#111827',
+              fontFamily: "'Playfair Display', serif",
+              letterSpacing: '-0.02em',
+              margin: 0
+            }}>
+              Room Booking
             </div>
           )}
           {confirmation.hotelName && (
