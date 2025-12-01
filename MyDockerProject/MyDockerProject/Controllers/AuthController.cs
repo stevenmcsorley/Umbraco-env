@@ -38,7 +38,7 @@ public class AuthController : Controller
         }
 
         TempData["Success"] = "Registration successful! You can now login.";
-        return RedirectToAction("Login");
+        return Redirect("/login");
     }
 
     [HttpGet("/login")]
