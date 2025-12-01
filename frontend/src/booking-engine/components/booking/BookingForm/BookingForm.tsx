@@ -9,7 +9,7 @@ import { Button } from '../../ui/Button';
 import { TEST_IDS } from '../../../constants/testids';
 import { AnalyticsManager } from '../../../../services/analytics';
 import { formatPrice, calculateTotal, calculateAddOnPrice, calculateNights } from '../../../utils/priceUtils';
-import { formatDate } from '../../../utils/dateUtils';
+import { formatDate, isSameDay } from '../../../utils/dateUtils';
 
 export interface BookingFormProps {
   className?: string;
@@ -79,7 +79,20 @@ export const BookingForm = ({ className = '', hotelId, user }: BookingFormProps)
       return 0;
     }
 
-    const availableDays = availabilityData.days.filter((day) => day.available);
+    // Exclude check-out date from pricing (you don't pay for the day you check out)
+    const checkOutDate = selectedDateRange.to ? new Date(selectedDateRange.to) : null;
+    if (checkOutDate) checkOutDate.setHours(0, 0, 0, 0);
+    
+    const availableDays = availabilityData.days.filter((day) => {
+      if (!day.available) return false;
+      // Exclude check-out date
+      if (checkOutDate) {
+        const dayDate = typeof day.date === 'string' ? new Date(day.date) : day.date;
+        dayDate.setHours(0, 0, 0, 0);
+        if (isSameDay(dayDate, checkOutDate)) return false;
+      }
+      return true;
+    });
     if (availableDays.length === 0) return 0;
     
     let baseTotal = calculateTotal(availableDays);
@@ -302,7 +315,22 @@ export const BookingForm = ({ className = '', hotelId, user }: BookingFormProps)
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                    {availabilityData?.days?.filter((day) => day.available).length || 0} {availabilityData?.days?.filter((day) => day.available).length === 1 ? 'day' : 'days'} available
+                    {(() => {
+                      // Exclude check-out date from count (same logic as totalPrice calculation)
+                      const checkOutDate = selectedDateRange.to ? new Date(selectedDateRange.to) : null;
+                      if (checkOutDate) checkOutDate.setHours(0, 0, 0, 0);
+                      const filteredDays = availabilityData?.days?.filter((day) => {
+                        if (!day.available) return false;
+                        if (checkOutDate) {
+                          const dayDate = typeof day.date === 'string' ? new Date(day.date) : day.date;
+                          dayDate.setHours(0, 0, 0, 0);
+                          if (isSameDay(dayDate, checkOutDate)) return false;
+                        }
+                        return true;
+                      }) || [];
+                      const count = filteredDays.length;
+                      return `${count} ${count === 1 ? 'day' : 'days'} available`;
+                    })()}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

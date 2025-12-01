@@ -113,7 +113,20 @@ export const AvailabilityPanel = ({ className = '', hotelId }: AvailabilityPanel
   const totalWithAddOns = useMemo(() => {
     if (!data || !selectedDateRange.from) return null;
 
-    const availableDays = data.days.filter((day) => day.available);
+    // Exclude check-out date from pricing (you don't pay for the day you check out)
+    const checkOutDate = selectedDateRange.to ? new Date(selectedDateRange.to) : null;
+    if (checkOutDate) checkOutDate.setHours(0, 0, 0, 0);
+    
+    const availableDays = data.days.filter((day) => {
+      if (!day.available) return false;
+      // Exclude check-out date
+      if (checkOutDate) {
+        const dayDate = typeof day.date === 'string' ? new Date(day.date) : day.date;
+        dayDate.setHours(0, 0, 0, 0);
+        if (isSameDay(dayDate, checkOutDate)) return false;
+      }
+      return true;
+    });
     let baseTotal = calculateTotal(availableDays);
     
     // Calculate discount amount FIRST (based on original base price)
@@ -200,7 +213,20 @@ export const AvailabilityPanel = ({ className = '', hotelId }: AvailabilityPanel
     return null;
   }
 
-  const availableDays = data.days.filter((day) => day.available);
+  // Exclude check-out date from pricing (you don't pay for the day you check out)
+  const checkOutDate = selectedDateRange.to ? new Date(selectedDateRange.to) : null;
+  if (checkOutDate) checkOutDate.setHours(0, 0, 0, 0);
+  
+  const availableDays = data.days.filter((day) => {
+    if (!day.available) return false;
+    // Exclude check-out date
+    if (checkOutDate) {
+      const dayDate = typeof day.date === 'string' ? new Date(day.date) : day.date;
+      dayDate.setHours(0, 0, 0, 0);
+      if (isSameDay(dayDate, checkOutDate)) return false;
+    }
+    return true;
+  });
   const baseTotal = calculateTotal(availableDays);
   const endDate = selectedDateRange.to || selectedDateRange.from;
   const nights = calculateNights(selectedDateRange.from, endDate);
