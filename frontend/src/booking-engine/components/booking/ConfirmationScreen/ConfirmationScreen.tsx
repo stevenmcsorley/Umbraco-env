@@ -95,7 +95,7 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
   };
 
   return (
-    <div className={className} style={{ ...containerStyle, maxWidth: '800px', margin: '40px auto' }} data-testid={TEST_IDS.confirmationScreen}>
+    <div className={className} style={{ ...containerStyle, maxWidth: '800px', margin: '40px auto', width: '100%' }} data-testid={TEST_IDS.confirmationScreen}>
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <div style={{ 
           width: '64px', 
@@ -116,118 +116,116 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
       </div>
 
       {/* Reservation Details with Booking Reference and Price on the right */}
-      {(confirmation.productName || confirmation.hotelName) && (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '20px',
-          alignItems: 'flex-start',
-          padding: '16px 0',
-          borderBottom: '1px solid #e5e7eb',
-          textAlign: 'left',
-          marginBottom: '20px'
-        }}
-        className="confirmation-details-row"
-        >
-          <style>{`
-            @media (max-width: 768px) {
-              .confirmation-details-row {
-                flex-direction: column !important;
-              }
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '20px',
+        alignItems: 'flex-start',
+        padding: '16px 0',
+        borderBottom: '1px solid #e5e7eb',
+        textAlign: 'left',
+        marginBottom: '20px'
+      }}
+      className="confirmation-details-row"
+      >
+        <style>{`
+          @media (max-width: 768px) {
+            .confirmation-details-row {
+              flex-direction: column !important;
             }
-          `}</style>
-          {/* Left side: Reservation Details */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
-            <div style={labelStyle}>Reservation Details</div>
-            {confirmation.productName && (
-              <div style={{ 
-                fontSize: '22px',
-                fontWeight: '500',
-                color: '#111827',
-                fontFamily: "'Playfair Display', serif",
-                letterSpacing: '-0.02em',
-                margin: 0
-              }}>
-                {confirmation.productName}
-              </div>
-            )}
-            {confirmation.hotelName && (
-              <div style={{ 
-                fontSize: '14px', 
-                color: '#6b7280',
-                fontWeight: '300',
-                margin: 0
-              }}>
-                {confirmation.hotelName}
-                {confirmation.hotelLocation && ` • ${confirmation.hotelLocation}`}
-              </div>
-            )}
-            <div style={{
-              fontSize: '13px',
-              color: '#374151',
-              fontWeight: '300',
-              marginTop: '4px'
+          }
+        `}</style>
+        {/* Left side: Reservation Details */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
+          <div style={labelStyle}>Reservation Details</div>
+          {confirmation.productName && (
+            <div style={{ 
+              fontSize: '22px',
+              fontWeight: '500',
+              color: '#111827',
+              fontFamily: "'Playfair Display', serif",
+              letterSpacing: '-0.02em',
+              margin: 0
             }}>
-              <span style={{ fontWeight: '400' }}>Check-in:</span>{' '}
-              {typeof confirmation.from === 'string' 
-                ? new Date(confirmation.from).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-                : confirmation.from.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-              <span style={{ margin: '0 8px', color: '#d1d5db' }}>•</span>
-              <span style={{ fontWeight: '400' }}>Check-out:</span>{' '}
-              {typeof confirmation.to === 'string' 
-                ? new Date(confirmation.to).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-                : confirmation.to.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {confirmation.productName}
             </div>
-          </div>
-
-          {/* Right side: Booking Reference and Price */}
-          <div style={{ 
-            flex: '0 0 auto', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '12px',
-            textAlign: 'right',
-            alignItems: 'flex-end',
-            minWidth: '200px'
+          )}
+          {confirmation.hotelName && (
+            <div style={{ 
+              fontSize: '14px', 
+              color: '#6b7280',
+              fontWeight: '300',
+              margin: 0
+            }}>
+              {confirmation.hotelName}
+              {confirmation.hotelLocation && ` • ${confirmation.hotelLocation}`}
+            </div>
+          )}
+          <div style={{
+            fontSize: '13px',
+            color: '#374151',
+            fontWeight: '300',
+            marginTop: '4px'
           }}>
-            <div>
-              <div style={{ ...labelStyle, marginBottom: '4px' }}>Booking Reference</div>
-              <div style={{ 
-                ...valueStyle, 
-                fontFamily: 'monospace', 
-                fontWeight: '600',
-                fontSize: '14px',
-                wordBreak: 'break-all'
-              }} data-testid={TEST_IDS.confirmationReference}>
-                {confirmation.bookingId}
-              </div>
-            </div>
-            {confirmation.totalPrice !== undefined && (
-              <div>
-                <div style={{ 
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#111827',
-                  margin: '0 0 8px 0'
-                }}>
-                  {formatPrice(confirmation.totalPrice, confirmation.currency || 'GBP')}
-                </div>
-                <span style={{
-                  display: 'inline-block',
-                  padding: '4px 12px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  backgroundColor: '#dcfce7',
-                  color: '#166534'
-                }}>
-                  Confirmed
-                </span>
-              </div>
-            )}
+            <span style={{ fontWeight: '400' }}>Check-in:</span>{' '}
+            {typeof confirmation.from === 'string' 
+              ? new Date(confirmation.from).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+              : confirmation.from.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            <span style={{ margin: '0 8px', color: '#d1d5db' }}>•</span>
+            <span style={{ fontWeight: '400' }}>Check-out:</span>{' '}
+            {typeof confirmation.to === 'string' 
+              ? new Date(confirmation.to).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+              : confirmation.to.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         </div>
-      )}
+
+        {/* Right side: Booking Reference and Price */}
+        <div style={{ 
+          flex: '0 0 auto', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '12px',
+          textAlign: 'right',
+          alignItems: 'flex-end',
+          minWidth: '200px'
+        }}>
+          <div>
+            <div style={{ ...labelStyle, marginBottom: '4px' }}>Booking Reference</div>
+            <div style={{ 
+              ...valueStyle, 
+              fontFamily: 'monospace', 
+              fontWeight: '600',
+              fontSize: '14px',
+              wordBreak: 'break-all'
+            }} data-testid={TEST_IDS.confirmationReference}>
+              {confirmation.bookingId}
+            </div>
+          </div>
+          {confirmation.totalPrice !== undefined && (
+            <div>
+              <div style={{ 
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#111827',
+                margin: '0 0 8px 0'
+              }}>
+                {formatPrice(confirmation.totalPrice, confirmation.currency || 'GBP')}
+              </div>
+              <span style={{
+                display: 'inline-block',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: '500',
+                backgroundColor: '#dcfce7',
+                color: '#166534'
+              }}>
+                Confirmed
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div style={sectionStyle}>
         <div style={labelStyle}>Guest Information</div>
