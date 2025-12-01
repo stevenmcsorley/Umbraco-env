@@ -95,7 +95,7 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
   };
 
   return (
-    <div className={className} style={{ ...containerStyle, maxWidth: '800px' }} data-testid={TEST_IDS.confirmationScreen}>
+    <div className={className} style={{ ...containerStyle, maxWidth: '800px', margin: '40px auto' }} data-testid={TEST_IDS.confirmationScreen}>
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <div style={{ 
           width: '64px', 
@@ -128,7 +128,7 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
           marginBottom: '20px'
         }}>
           {/* Left side: Reservation Details */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
             <div style={labelStyle}>Reservation Details</div>
             {confirmation.productName && (
               <div style={{ 
@@ -178,7 +178,8 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
             flexDirection: 'column', 
             gap: '12px',
             textAlign: 'right',
-            alignItems: 'flex-end'
+            alignItems: 'flex-end',
+            minWidth: '200px'
           }}>
             <div>
               <div style={{ ...labelStyle, marginBottom: '4px' }}>Booking Reference</div>
@@ -186,7 +187,8 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
                 ...valueStyle, 
                 fontFamily: 'monospace', 
                 fontWeight: '600',
-                fontSize: '14px'
+                fontSize: '14px',
+                wordBreak: 'break-all'
               }} data-testid={TEST_IDS.confirmationReference}>
                 {confirmation.bookingId}
               </div>
