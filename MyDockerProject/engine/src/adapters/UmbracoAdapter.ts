@@ -346,8 +346,19 @@ export class UmbracoAdapter {
     try {
       const response = await fetch(`${UMBRACO_API_BASE}/hotels/${hotelId}/events`);
       if (response.ok) {
-        const events = await response.json() as Array<{ id: string; name: string; eventDate: string; price: number }>;
-        return events;
+        const events = await response.json() as Array<{ 
+          id: string; 
+          name: string; 
+          eventDate: string; 
+          price: number;
+          priceFrom?: number;
+        }>;
+        return events.map(e => ({
+          id: e.id,
+          name: e.name,
+          eventDate: e.eventDate,
+          price: e.price || e.priceFrom || 0
+        }));
       }
       return [];
     } catch (error) {
