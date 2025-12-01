@@ -51,7 +51,17 @@ curl -X POST http://localhost:44372/api/migration/ensure-tables
 # Should return: {"message": "Tables ensured successfully"}
 ```
 
-## Step 4: Import All Data
+## Step 4: Ensure Root Content Exists
+
+The import system requires root content to exist. When you first set up Umbraco, it should create a root content node automatically. If not, you may need to:
+
+1. Go to Umbraco Backoffice → Content
+2. Check if there's a root content node (usually a "Home" page or similar)
+3. If none exists, create one manually
+
+**Note:** The import will fail with "No root content found" if there's no root content. This is usually created during Umbraco's initial setup.
+
+## Step 5: Import All Data
 
 You have several options for importing data:
 
@@ -174,7 +184,7 @@ curl -X POST http://localhost:44372/api/importer/import-file \
   -F "file=@MyDockerProject/import-all-prices.json"
 ```
 
-## Step 5: Verify Import
+## Step 6: Verify Import
 
 Check that data was imported successfully:
 
@@ -221,7 +231,11 @@ curl -X POST http://localhost:44372/api/seed/create-document-types || {
 echo "Creating database tables..."
 curl -X POST http://localhost:44372/api/migration/ensure-tables
 
-# Step 4: Import data
+# Step 4: Wait a bit more for root content
+echo "Waiting for Umbraco to initialize root content..."
+sleep 10
+
+# Step 5: Import data
 echo "Importing data..."
 
 # Import comprehensive data
@@ -285,17 +299,33 @@ curl -X POST http://localhost:44372/api/seed/create-document-types
 
 ## What Gets Imported
 
-The import system creates/updates:
-- ✅ **Hotels** - All hotel information (name, description, location, etc.)
-- ✅ **Rooms** - Room details (name, description, features, etc.)
-- ✅ **Events** - Event information (name, date, location, price, capacity)
-- ✅ **Offers** - Special offers (name, discount, validity period)
+The import system creates/updates **Umbraco content nodes** that appear in the backoffice:
+
+- ✅ **Hotels** - All hotel information (name, description, location, etc.) - Created as root-level content nodes
+- ✅ **Rooms** - Room details (name, description, features, etc.) - Created as child content under hotels
+- ✅ **Events** - Event information (name, date, location, price, capacity) - Created as child content under hotels
+- ✅ **Offers** - Special offers (name, discount, validity period) - Created as child content under hotels
 - ✅ **Prices** - Date-specific pricing for rooms (stored in Inventory table)
 - ✅ **Availability** - Room availability per date (stored in Inventory table)
 
-**Note:** Images and user accounts are NOT imported. You'll need to:
-- Upload images manually through Umbraco backoffice
-- Create user accounts through the registration system or backoffice
+**What appears in Umbraco Backoffice:**
+- All hotels will appear in the Content tree as root-level items
+- Each hotel will have its rooms, events, and offers as child nodes
+- You can edit all imported content through the backoffice
+- All content is automatically published and visible on the frontend
+
+**What is NOT imported:**
+- ❌ **Homepage** - You'll need to create a homepage manually in Umbraco backoffice
+- ❌ **Other pages** - Any additional pages (About, Contact, etc.) need to be created manually
+- ❌ **Images** - Image URLs in import data are not downloaded; you'll need to upload images manually
+- ❌ **User accounts** - User accounts are not imported; create them through registration or backoffice
+
+**Creating a Homepage:**
+After importing, you may want to create a homepage:
+1. Go to Umbraco Backoffice → Content
+2. Right-click on the root → Create
+3. Create a "Home" page (or use your homepage document type)
+4. Set it as the homepage/start node in Umbraco settings
 
 ## Next Steps
 
