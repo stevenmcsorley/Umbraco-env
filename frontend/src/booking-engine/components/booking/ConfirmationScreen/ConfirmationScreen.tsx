@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useBookingStore } from '../../../app/state/bookingStore';
 import { TEST_IDS } from '../../../constants/testids';
 import { formatPrice } from '../../../utils/priceUtils';
-import { useProduct } from '../../../hooks/useProduct';
 
 export interface ConfirmationScreenProps {
   className?: string;
@@ -27,7 +26,8 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         productName: confirmation.productName,
         hotelName: confirmation.hotelName,
         hotelLocation: confirmation.hotelLocation,
-        bookingId: confirmation.bookingId
+        bookingId: confirmation.bookingId,
+        roomImage: confirmation.roomImage
       });
     }
   }, [confirmation]);
@@ -139,7 +139,7 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
           }
         `}</style>
         {/* Room Image - Small image on left, matching My Account */}
-        {roomImage && (
+        {confirmation.roomImage && (
           <div style={{ width: '100%', maxWidth: '200px', flexShrink: 0 }}>
             <div style={{
               aspectRatio: '4/3',
@@ -149,7 +149,7 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
               maxWidth: '200px'
             }}>
               <img 
-                src={roomImage} 
+                src={confirmation.roomImage} 
                 alt={confirmation.productName || 'Room'}
                 style={{
                   width: '100%',

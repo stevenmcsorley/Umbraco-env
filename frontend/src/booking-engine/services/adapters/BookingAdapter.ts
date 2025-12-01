@@ -21,6 +21,7 @@ export class BookingAdapter {
       productName: data.productName,
       hotelName: data.hotelName,
       hotelLocation: data.hotelLocation,
+      roomImage: data.roomImage,
       from: data.checkIn ? new Date(data.checkIn) : new Date(data.from),
       to: data.checkOut ? new Date(data.checkOut) : (data.to ? new Date(data.to) : new Date(data.from)),
       guestDetails: data.guestDetails || {

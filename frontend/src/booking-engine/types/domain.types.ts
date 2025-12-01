@@ -71,6 +71,7 @@ export interface BookingResponse {
   productName?: string;
   hotelName?: string;
   hotelLocation?: string;
+  roomImage?: string;
   from: Date | string;
   to: Date | string;
   guestDetails: GuestDetails;

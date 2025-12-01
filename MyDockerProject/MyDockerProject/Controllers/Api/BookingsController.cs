@@ -211,6 +211,7 @@ public class BookingsController : ControllerBase
             string? productName = null;
             string? hotelName = null;
             string? hotelLocation = null;
+            string? roomImage = null;
             
             try
             {
@@ -220,6 +221,10 @@ public class BookingsController : ControllerBase
                     productName = productContent.GetValue<string>("roomName") 
                         ?? productContent.GetValue<string>("eventName") 
                         ?? productContent.Name;
+                    
+                    // Get room image (heroImage)
+                    var heroImageValue = productContent.GetValue("heroImage");
+                    roomImage = GetMediaUrl(heroImageValue);
                     
                     // Get hotel (parent of room/event)
                     if (productContent.ParentId > 0)
@@ -236,6 +241,140 @@ public class BookingsController : ControllerBase
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[BookingsController] Error fetching product/hotel details");
+            }
+            
+            // Helper method to get media URL (similar to HotelsController)
+            string? GetMediaUrl(object? mediaValue)
+            {
+                if (mediaValue == null) return null;
+                
+                // Handle string that might be JSON (MediaPicker3 format)
+                if (mediaValue is string jsonString)
+                {
+                    // Try to parse as JSON array
+                    if (jsonString.TrimStart().StartsWith("["))
+                    {
+                        try
+                        {
+                            var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(jsonString);
+                            if (json != null && json.Length > 0)
+                            {
+                                var firstItem = json[0];
+                                if (firstItem.TryGetProperty("mediaKey", out var mediaKeyElement) && Guid.TryParse(mediaKeyElement.GetString(), out var mediaGuid))
+                                {
+                                    var publishedMediaItem = _publishedContentQuery.Media(mediaGuid);
+                                    if (publishedMediaItem != null)
+                                    {
+                                        return publishedMediaItem.Url();
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                    // Try to parse as GUID string
+                    if (Guid.TryParse(jsonString, out var guid))
+                    {
+                        var publishedMediaItem = _publishedContentQuery.Media(guid);
+                        if (publishedMediaItem != null)
+                        {
+                            return publishedMediaItem.Url();
+                        }
+                        
+                        var media = _mediaService.GetById(guid);
+                        if (media != null)
+                        {
+                            var fileValue = media.GetValue<string>("umbracoFile");
+                            if (!string.IsNullOrEmpty(fileValue))
+                            {
+                                if (fileValue.TrimStart().StartsWith("{"))
+                                {
+                                    try
+                                    {
+                                        var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(fileValue);
+                                        if (json.TryGetProperty("src", out var src))
+                                        {
+                                            return src.GetString();
+                                        }
+                                    }
+                                    catch { }
+                                }
+                                return fileValue;
+                            }
+                        }
+                    }
+                    // Assume it's a direct URL string
+                    if (Uri.IsWellFormedUriString(jsonString, UriKind.RelativeOrAbsolute))
+                    {
+                        return jsonString;
+                    }
+                }
+                
+                // Handle GUID directly
+                if (mediaValue is Guid mediaGuidDirect)
+                {
+                    var publishedMediaItem = _publishedContentQuery.Media(mediaGuidDirect);
+                    if (publishedMediaItem != null)
+                    {
+                        return publishedMediaItem.Url();
+                    }
+                    
+                    var media = _mediaService.GetById(mediaGuidDirect);
+                    if (media != null)
+                    {
+                        var fileValue = media.GetValue<string>("umbracoFile");
+                        if (!string.IsNullOrEmpty(fileValue))
+                        {
+                            if (fileValue.TrimStart().StartsWith("{"))
+                            {
+                                try
+                                {
+                                    var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(fileValue);
+                                    if (json.TryGetProperty("src", out var src))
+                                    {
+                                        return src.GetString();
+                                    }
+                                }
+                                catch { }
+                            }
+                            return fileValue;
+                        }
+                    }
+                }
+                
+                // Handle Udi
+                if (mediaValue is Udi mediaUdi && mediaUdi is GuidUdi guidUdi2)
+                {
+                    var publishedMediaItem = _publishedContentQuery.Media(guidUdi2.Guid);
+                    if (publishedMediaItem != null)
+                    {
+                        return publishedMediaItem.Url();
+                    }
+                    
+                    var media = _mediaService.GetById(guidUdi2.Guid);
+                    if (media != null)
+                    {
+                        var fileValue = media.GetValue<string>("umbracoFile");
+                        if (!string.IsNullOrEmpty(fileValue))
+                        {
+                            if (fileValue.TrimStart().StartsWith("{"))
+                            {
+                                try
+                                {
+                                    var json = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(fileValue);
+                                    if (json.TryGetProperty("src", out var src))
+                                    {
+                                        return src.GetString();
+                                    }
+                                }
+                                catch { }
+                            }
+                            return fileValue;
+                        }
+                    }
+                }
+                
+                return null;
             }
             
             // Log booking creation for debugging
