@@ -340,6 +340,23 @@ export class UmbracoAdapter {
   }
 
   /**
+   * Gets events for a hotel
+   */
+  async getEvents(hotelId: string): Promise<Array<{ id: string; name: string; eventDate: string; price: number }>> {
+    try {
+      const response = await fetch(`${UMBRACO_API_BASE}/hotels/${hotelId}/events`);
+      if (response.ok) {
+        const events = await response.json() as Array<{ id: string; name: string; eventDate: string; price: number }>;
+        return events;
+      }
+      return [];
+    } catch (error) {
+      console.error('[UmbracoAdapter] Error fetching events:', error);
+      return [];
+    }
+  }
+
+  /**
    * Gets add-ons for a hotel/product
    */
   async getAddOns(hotelId: string): Promise<AddOn[]> {
