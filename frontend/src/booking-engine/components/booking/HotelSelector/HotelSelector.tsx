@@ -5,8 +5,11 @@ export interface Hotel {
   id: string;
   name: string;
   location?: string;
+  city?: string;
+  country?: string;
   description?: string;
-  image?: string;
+  heroImage?: string;
+  image?: string; // Keep for backward compatibility
   priceFrom?: number;
 }
 
@@ -158,34 +161,67 @@ export const HotelSelector = () => {
                 width: '100%',
                 height: '200px',
                 backgroundColor: isSelected ? '#111827' : '#f3f4f6',
-                backgroundImage: hotel.image ? `url(${hotel.image})` : 'none',
+                backgroundImage: (hotel.heroImage || hotel.image) ? `url(${hotel.heroImage || hotel.image})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                overflow: 'hidden'
               }}>
-                {!hotel.image && (
-                  <svg style={{ width: '48px', height: '48px', color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                )}
-                {isSelected && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    backgroundColor: '#111827',
-                    color: 'white',
-                    padding: '6px 12px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    letterSpacing: '0.5px'
-                  }}>
-                    SELECTED
-                  </div>
+                {(hotel.heroImage || hotel.image) ? (
+                  <>
+                    {/* Image overlay for better text readability */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 100%)'
+                    }}></div>
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#111827',
+                        color: 'white',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        letterSpacing: '0.5px',
+                        zIndex: 10,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                      }}>
+                        SELECTED
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <svg style={{ width: '48px', height: '48px', color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#111827',
+                        color: 'white',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        letterSpacing: '0.5px'
+                      }}>
+                        SELECTED
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               
@@ -201,7 +237,7 @@ export const HotelSelector = () => {
                 }}>
                   {hotel.name}
                 </h3>
-                {hotel.location && (
+                {(hotel.location || hotel.city || hotel.country) && (
                   <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -218,7 +254,7 @@ export const HotelSelector = () => {
                       margin: 0,
                       fontWeight: '400'
                     }}>
-                      {hotel.location}
+                      {hotel.location || [hotel.city, hotel.country].filter(Boolean).join(', ')}
                     </p>
                   </div>
                 )}
