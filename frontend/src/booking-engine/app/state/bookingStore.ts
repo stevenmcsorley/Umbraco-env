@@ -15,6 +15,7 @@ export interface SelectedEvent {
 }
 
 export interface BookingState {
+  selectedHotelId: string | null;
   selectedProductId: string | null;
   selectedDateRange: { from: Date | null; to: Date | null };
   availabilityResult: AvailabilityResponse | null;
@@ -28,6 +29,7 @@ export interface BookingState {
     loading: boolean;
     errorMessage: string | null;
   };
+  setSelectedHotelId: (id: string | null) => void;
   setSelectedProductId: (id: string | null) => void;
   setSelectedDateRange: (from: Date | null, to: Date | null) => void;
   setAvailabilityResult: (result: AvailabilityResponse) => void;
@@ -43,6 +45,7 @@ export interface BookingState {
 }
 
 const initialState = {
+  selectedHotelId: null,
   selectedProductId: null,
   selectedDateRange: { from: null, to: null },
   availabilityResult: null,
@@ -60,6 +63,7 @@ const initialState = {
 
 export const useBookingStore = create<BookingState>((set) => ({
   ...initialState,
+  setSelectedHotelId: (id) => set({ selectedHotelId: id, selectedProductId: null }), // Clear product when hotel changes
   setSelectedProductId: (id) => set({ selectedProductId: id }),
   setSelectedDateRange: (from, to) => set({ selectedDateRange: { from, to } }),
   setAvailabilityResult: (result) => set({ availabilityResult: result }),

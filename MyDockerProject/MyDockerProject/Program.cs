@@ -80,6 +80,11 @@ app.UseUmbraco()
         // Register custom routes BEFORE Umbraco website endpoints
         // These MUST come before UseWebsiteEndpoints() to prevent Umbraco from trying to match them as documents
         u.EndpointRouteBuilder.MapControllerRoute(
+            name: "book",
+            pattern: "book",
+            defaults: new { controller = "Booking", action = "Book" });
+        
+        u.EndpointRouteBuilder.MapControllerRoute(
             name: "hotels",
             pattern: "hotels",
             defaults: new { controller = "Hotel", action = "HotelList" });
