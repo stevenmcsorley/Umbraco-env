@@ -60,6 +60,9 @@ export interface BookingRequest {
     addOnId: string;
     quantity: number;
   }>;
+  events?: Array<{
+    eventId: string;
+  }>;
 }
 
 export interface BookingResponse {
@@ -77,6 +80,12 @@ export interface BookingResponse {
     name: string;
     quantity: number;
     price: number;
+  }>;
+  events?: Array<{
+    eventId: string;
+    name?: string;
+    date?: string;
+    price?: number;
   }>;
 }
 
