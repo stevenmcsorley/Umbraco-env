@@ -156,11 +156,73 @@ public class AccountController : Controller
                     var additionalDataJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(booking.AdditionalData);
                     if (additionalDataJson.TryGetProperty("events", out var eventsElement) && eventsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
                     {
-                        events = new List<object>();
+                        events = new List<Models.EventDetail>();
                         foreach (var eventItem in eventsElement.EnumerateArray())
                         {
-                            var eventJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(eventItem.GetRawText());
-                            events.Add(eventJson);
+                            string? eventId = null;
+                            
+                            // Extract eventId from different formats
+                            if (eventItem.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                eventId = eventItem.GetString();
+                            }
+                            else if (eventItem.ValueKind == System.Text.Json.JsonValueKind.Object)
+                            {
+                                if (eventItem.TryGetProperty("eventId", out var eventIdProp))
+                                {
+                                    eventId = eventIdProp.GetString();
+                                }
+                                else if (eventItem.TryGetProperty("id", out var idProp))
+                                {
+                                    eventId = idProp.GetString();
+                                }
+                            }
+                            
+                            if (!string.IsNullOrEmpty(eventId) && Guid.TryParse(eventId, out var eventGuid))
+                            {
+                                // Fetch event details from Umbraco
+                                try
+                                {
+                                    var eventContent = _contentService.GetById(eventGuid);
+                                    if (eventContent != null)
+                                    {
+                                        var eventName = eventContent.GetValue<string>("eventName") ?? eventContent.Name;
+                                        var eventDate = eventContent.GetValue<DateTime?>("eventDate");
+                                        var eventPrice = eventContent.GetValue<decimal?>("price") ?? eventContent.GetValue<decimal?>("priceFrom");
+                                        
+                                        events.Add(new Models.EventDetail
+                                        {
+                                            EventId = eventId,
+                                            Name = eventName,
+                                            Date = eventDate,
+                                            Price = eventPrice
+                                        });
+                                    }
+                                    else
+                                    {
+                                        // Event not found, add with just ID
+                                        events.Add(new Models.EventDetail
+                                        {
+                                            EventId = eventId,
+                                            Name = null,
+                                            Date = null,
+                                            Price = null
+                                        });
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "[AccountController] Failed to fetch event details for {EventId}: {Error}", eventId, ex.Message);
+                                    // Add with just ID if fetch fails
+                                    events.Add(new Models.EventDetail
+                                    {
+                                        EventId = eventId,
+                                        Name = null,
+                                        Date = null,
+                                        Price = null
+                                    });
+                                }
+                            }
                         }
                     }
                     if (additionalDataJson.TryGetProperty("addOns", out var addOnsElement) && addOnsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
