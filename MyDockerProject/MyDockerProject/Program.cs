@@ -74,13 +74,8 @@ app.UseUmbraco()
             pattern: "engine/{**path}",
             defaults: new { controller = "Api/BookingEngineProxy", action = "Proxy" });
         
-        // Map API controllers
-        u.EndpointRouteBuilder.MapControllers();
-        
-        // Register custom routes BEFORE Umbraco website endpoints
-        // These MUST come before UseWebsiteEndpoints() to prevent Umbraco from trying to match them as documents
-        
-        // Auth routes - register FIRST to avoid conflicts with API routes
+        // Register auth routes BEFORE MapControllers to ensure they take precedence
+        // These use route attributes [HttpGet("/logout")] etc, but we register explicit routes to be safe
         u.EndpointRouteBuilder.MapControllerRoute(
             name: "logout",
             pattern: "logout",
@@ -95,6 +90,12 @@ app.UseUmbraco()
             name: "register",
             pattern: "register",
             defaults: new { controller = "Auth", action = "Register" });
+        
+        // Map API controllers (this will also register regular controllers with route attributes)
+        u.EndpointRouteBuilder.MapControllers();
+        
+        // Register custom routes BEFORE Umbraco website endpoints
+        // These MUST come before UseWebsiteEndpoints() to prevent Umbraco from trying to match them as documents
         
         u.EndpointRouteBuilder.MapControllerRoute(
             name: "book",
