@@ -149,6 +149,7 @@ export class BookingService {
         productName: bookingData.productName,
         hotelName: bookingData.hotelName,
         hotelLocation: bookingData.hotelLocation,
+        roomImage: bookingData.roomImage,
         from: new Date(bookingData.checkIn),
         to: bookingData.checkOut ? new Date(bookingData.checkOut) : new Date(bookingData.checkIn),
         guestDetails: guestDetails,
@@ -159,7 +160,12 @@ export class BookingService {
         addOns: addOnsDetails.length > 0 ? addOnsDetails : undefined
       };
 
-      console.log('Mapped booking response:', bookingResponse);
+      console.log('[BookingService] Mapped booking response with details:', {
+        productName: bookingResponse.productName,
+        hotelName: bookingResponse.hotelName,
+        hotelLocation: bookingResponse.hotelLocation,
+        roomImage: bookingResponse.roomImage
+      });
       return bookingResponse;
     } catch (error) {
       console.error('Error creating booking via Umbraco API:', error);
