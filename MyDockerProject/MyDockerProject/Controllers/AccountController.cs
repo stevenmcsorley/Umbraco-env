@@ -145,7 +145,7 @@ public class AccountController : Controller
             string? roomImage = null;
             string? hotelImage = null;
             List<string>? roomFeatures = null;
-            List<object>? events = null;
+            List<Models.EventDetail>? events = null;
             List<object>? addOns = null;
             
             // Parse AdditionalData to extract events and add-ons

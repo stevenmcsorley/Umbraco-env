@@ -282,51 +282,37 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         )}
       </div>
 
-      {(() => {
-        console.log('[ConfirmationScreen] Rendering events section:', {
-          hasEvents: !!confirmation.events,
-          eventsType: typeof confirmation.events,
-          eventsIsArray: Array.isArray(confirmation.events),
-          eventsLength: Array.isArray(confirmation.events) ? confirmation.events.length : 0,
-          events: confirmation.events
-        });
-        
-        if (confirmation.events && Array.isArray(confirmation.events) && confirmation.events.length > 0) {
-          return (
-            <div style={sectionStyle}>
-              <div style={labelStyle}>Events</div>
-              <div style={{ marginTop: '8px' }}>
-                {confirmation.events.map((event: any, index: number) => {
-                  console.log('[ConfirmationScreen] Rendering event:', { index, event });
-                  return (
-                    <div key={event.eventId || index} style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      marginBottom: '8px',
-                      fontSize: '14px'
-                    }}>
-                      <span>
-                        {event.name || event.eventId || 'Event'}
-                        {event.date && (
-                          <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>
-                            ({new Date(event.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
-                          </span>
-                        )}
-                      </span>
-                      {event.price !== undefined && (
-                        <span style={{ fontWeight: '500' }}>
-                          {formatPrice(event.price, confirmation.currency || 'GBP')}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+      {confirmation.events && Array.isArray(confirmation.events) && confirmation.events.length > 0 && (
+        <div style={sectionStyle}>
+          <div style={labelStyle}>Events</div>
+          <div style={{ marginTop: '8px' }}>
+            {confirmation.events.map((event: any, index: number) => (
+              <div key={event.eventId || index} style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '8px',
+                fontSize: '14px',
+                color: '#111827'
+              }}>
+                <span style={{ color: '#111827' }}>
+                  {event.name || event.eventId || 'Event'}
+                  {event.date && (
+                    <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>
+                      ({new Date(event.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
+                    </span>
+                  )}
+                </span>
+                {event.price !== undefined && (
+                  <span style={{ fontWeight: '500', color: '#111827' }}>
+                    {formatPrice(event.price, confirmation.currency || 'GBP')}
+                  </span>
+                )}
               </div>
-            </div>
-          );
-        }
-        return null;
-      })()}
+            ))}
+          </div>
+        </div>
+      )}
 
       {confirmation.addOns && confirmation.addOns.length > 0 && (
         <div style={sectionStyle}>
