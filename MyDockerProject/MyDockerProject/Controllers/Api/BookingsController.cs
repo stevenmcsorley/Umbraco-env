@@ -181,6 +181,9 @@ public class BookingsController : ControllerBase
                 });
             }
 
+            // Log AdditionalData for debugging
+            _logger.LogInformation("[BookingsController] AdditionalData received: {AdditionalData}", request.AdditionalData ?? "NULL");
+            
             var booking = await _bookingService.CreateBookingAsync(
                 request.ProductId,
                 request.ProductType,
@@ -200,6 +203,9 @@ public class BookingsController : ControllerBase
                 "Paid",
                 DateTime.UtcNow
             );
+            
+            // Log saved AdditionalData
+            _logger.LogInformation("[BookingsController] Booking created with AdditionalData: {AdditionalData}", booking.AdditionalData ?? "NULL");
 
             // Send confirmation email (fire and forget)
             _ = Task.Run(async () =>
@@ -393,11 +399,15 @@ public class BookingsController : ControllerBase
             List<object>? events = null;
             List<object>? addOns = null;
             
+            _logger.LogInformation("[BookingsController] Parsing AdditionalData for booking {BookingId}: {AdditionalData}", booking.Id, booking.AdditionalData ?? "NULL");
+            
             if (!string.IsNullOrEmpty(booking.AdditionalData))
             {
                 try
                 {
                     var additionalDataJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(booking.AdditionalData);
+                    _logger.LogInformation("[BookingsController] Parsed AdditionalData JSON, checking for events and addOns");
+                    
                     if (additionalDataJson.TryGetProperty("events", out var eventsElement) && eventsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
                     {
                         events = new List<object>();
@@ -407,8 +417,13 @@ public class BookingsController : ControllerBase
                             var eventJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(eventItem.GetRawText());
                             events.Add(eventJson);
                         }
-                        _logger.LogInformation("[BookingsController] Parsed {Count} events from AdditionalData", events.Count);
+                        _logger.LogInformation("[BookingsController] Parsed {Count} events from AdditionalData: {Events}", events.Count, System.Text.Json.JsonSerializer.Serialize(events));
                     }
+                    else
+                    {
+                        _logger.LogInformation("[BookingsController] No events property found in AdditionalData or it's not an array");
+                    }
+                    
                     if (additionalDataJson.TryGetProperty("addOns", out var addOnsElement) && addOnsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
                     {
                         addOns = new List<object>();
@@ -417,16 +432,17 @@ public class BookingsController : ControllerBase
                             var addOnJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(addOnItem.GetRawText());
                             addOns.Add(addOnJson);
                         }
+                        _logger.LogInformation("[BookingsController] Parsed {Count} addOns from AdditionalData", addOns.Count);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "[BookingsController] Failed to parse AdditionalData: {AdditionalData}", booking.AdditionalData);
+                    _logger.LogError(ex, "[BookingsController] Failed to parse AdditionalData: {AdditionalData}", booking.AdditionalData);
                 }
             }
             else
             {
-                _logger.LogInformation("[BookingsController] No AdditionalData found for booking {BookingId}", booking.Id);
+                _logger.LogWarning("[BookingsController] No AdditionalData found for booking {BookingId}", booking.Id);
             }
             
             // Log room image for debugging

@@ -77,10 +77,13 @@ export class BookingService {
     }
     if (request.events && request.events.length > 0) {
       additionalDataObj.events = request.events;
+      console.log('[BookingService] Including events in additionalData:', request.events);
     }
     const additionalData = Object.keys(additionalDataObj).length > 0
       ? JSON.stringify(additionalDataObj)
       : null;
+    
+    console.log('[BookingService] AdditionalData JSON:', additionalData);
 
     // If user is logged in, use userId; otherwise use guestDetails
     // If guestDetails is not provided but userId is, we'll need to fetch user details from Umbraco

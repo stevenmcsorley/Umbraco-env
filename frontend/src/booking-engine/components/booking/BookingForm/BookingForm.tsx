@@ -134,7 +134,11 @@ export const BookingForm = ({ className = '', hotelId, user }: BookingFormProps)
         from: selectedDateRange.from,
         to: selectedDateRange.to || selectedDateRange.from,
         userId: user?.userId,
-        hasGuestDetails: !user
+        hasGuestDetails: !user,
+        selectedEvents: selectedEvents,
+        eventsCount: selectedEvents.length,
+        selectedAddOns: selectedAddOns,
+        addOnsCount: selectedAddOns.length
       });
 
       const booking = await submitBooking({
