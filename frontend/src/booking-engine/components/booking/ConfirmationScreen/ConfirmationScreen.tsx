@@ -126,7 +126,16 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
           borderBottom: '1px solid #e5e7eb',
           textAlign: 'left',
           marginBottom: '20px'
-        }}>
+        }}
+        className="confirmation-details-row"
+        >
+          <style>{`
+            @media (max-width: 768px) {
+              .confirmation-details-row {
+                flex-direction: column !important;
+              }
+            }
+          `}</style>
           {/* Left side: Reservation Details */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
             <div style={labelStyle}>Reservation Details</div>
