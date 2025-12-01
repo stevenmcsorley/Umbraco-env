@@ -2,6 +2,8 @@
 
 This guide explains how to set up the Umbraco booking system on a new Linux machine and import all hotels, rooms, events, offers, and pricing data.
 
+**⚠️ Important:** If you already have a working Umbraco installation on another computer, use the **[Export/Import Guide](../EXPORT_IMPORT_GUIDE.md)** instead. It will export your complete installation (database, content, document types, media, views) and import it on the new machine, preserving everything including your homepage and all pages.
+
 ## Prerequisites
 
 - Docker and Docker Compose installed
