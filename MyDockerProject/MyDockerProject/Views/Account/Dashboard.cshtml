@@ -134,6 +134,55 @@
                                         }
                                     </div>
                                 }
+                                
+                                @* Events - Display if any *@
+                                @if (bookingItem.Events != null && bookingItem.Events.Count > 0)
+                                {
+                                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                                        <p style="font-size: 12px; color: #6b7280; font-weight: 500; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">Events</p>
+                                        @foreach (var eventObj in bookingItem.Events)
+                                        {
+                                            var eventJson = System.Text.Json.JsonSerializer.Serialize(eventObj);
+                                            var eventElement = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(eventJson);
+                                            var eventId = eventElement.TryGetProperty("eventId", out var eventIdProp) ? eventIdProp.GetString() : null;
+                                            <p style="font-size: 13px; color: #374151; margin: 4px 0;">
+                                                @if (!string.IsNullOrEmpty(eventId))
+                                                {
+                                                    <span>Event: @eventId</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Event included</span>
+                                                }
+                                            </p>
+                                        }
+                                    </div>
+                                }
+                                
+                                @* Add-ons - Display if any *@
+                                @if (bookingItem.AddOns != null && bookingItem.AddOns.Count > 0)
+                                {
+                                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                                        <p style="font-size: 12px; color: #6b7280; font-weight: 500; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">Add-ons</p>
+                                        @foreach (var addOnObj in bookingItem.AddOns)
+                                        {
+                                            var addOnJson = System.Text.Json.JsonSerializer.Serialize(addOnObj);
+                                            var addOnElement = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(addOnJson);
+                                            var addOnId = addOnElement.TryGetProperty("addOnId", out var addOnIdProp) ? addOnIdProp.GetString() : null;
+                                            var quantity = addOnElement.TryGetProperty("quantity", out var quantityProp) ? quantityProp.GetInt32() : 1;
+                                            <p style="font-size: 13px; color: #374151; margin: 4px 0;">
+                                                @if (!string.IsNullOrEmpty(addOnId))
+                                                {
+                                                    <span>Add-on: @addOnId (x@quantity)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Add-on included</span>
+                                                }
+                                            </p>
+                                        }
+                                    </div>
+                                }
                             </div>
                             
                             @* Right side: Booking Reference and Price *@

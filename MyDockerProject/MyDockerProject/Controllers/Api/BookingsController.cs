@@ -403,15 +403,19 @@ public class BookingsController : ControllerBase
                         events = new List<object>();
                         foreach (var eventItem in eventsElement.EnumerateArray())
                         {
-                            events.Add(System.Text.Json.JsonSerializer.Deserialize<object>(eventItem.GetRawText()) ?? new object());
+                            // Keep the raw JSON structure so Node.js can parse it
+                            var eventJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(eventItem.GetRawText());
+                            events.Add(eventJson);
                         }
+                        _logger.LogInformation("[BookingsController] Parsed {Count} events from AdditionalData", events.Count);
                     }
                     if (additionalDataJson.TryGetProperty("addOns", out var addOnsElement) && addOnsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
                     {
                         addOns = new List<object>();
                         foreach (var addOnItem in addOnsElement.EnumerateArray())
                         {
-                            addOns.Add(System.Text.Json.JsonSerializer.Deserialize<object>(addOnItem.GetRawText()) ?? new object());
+                            var addOnJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(addOnItem.GetRawText());
+                            addOns.Add(addOnJson);
                         }
                     }
                 }
@@ -419,6 +423,10 @@ public class BookingsController : ControllerBase
                 {
                     _logger.LogWarning(ex, "[BookingsController] Failed to parse AdditionalData: {AdditionalData}", booking.AdditionalData);
                 }
+            }
+            else
+            {
+                _logger.LogInformation("[BookingsController] No AdditionalData found for booking {BookingId}", booking.Id);
             }
             
             // Log room image for debugging

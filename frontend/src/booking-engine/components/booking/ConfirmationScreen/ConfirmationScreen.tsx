@@ -27,7 +27,11 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         hotelName: confirmation.hotelName,
         hotelLocation: confirmation.hotelLocation,
         bookingId: confirmation.bookingId,
-        roomImage: confirmation.roomImage
+        roomImage: confirmation.roomImage,
+        events: confirmation.events,
+        eventsCount: confirmation.events?.length || 0,
+        addOns: confirmation.addOns,
+        addOnsCount: confirmation.addOns?.length || 0
       });
     }
   }, [confirmation]);

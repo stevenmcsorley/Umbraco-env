@@ -11,5 +11,7 @@ public class BookingWithDetails
     public string? RoomImage { get; set; }
     public string? HotelImage { get; set; }
     public List<string>? RoomFeatures { get; set; }
+    public List<object>? Events { get; set; }
+    public List<object>? AddOns { get; set; }
 }
 

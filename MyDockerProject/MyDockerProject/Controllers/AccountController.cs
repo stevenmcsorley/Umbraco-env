@@ -145,6 +145,39 @@ public class AccountController : Controller
             string? roomImage = null;
             string? hotelImage = null;
             List<string>? roomFeatures = null;
+            List<object>? events = null;
+            List<object>? addOns = null;
+            
+            // Parse AdditionalData to extract events and add-ons
+            if (!string.IsNullOrEmpty(booking.AdditionalData))
+            {
+                try
+                {
+                    var additionalDataJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(booking.AdditionalData);
+                    if (additionalDataJson.TryGetProperty("events", out var eventsElement) && eventsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        events = new List<object>();
+                        foreach (var eventItem in eventsElement.EnumerateArray())
+                        {
+                            var eventJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(eventItem.GetRawText());
+                            events.Add(eventJson);
+                        }
+                    }
+                    if (additionalDataJson.TryGetProperty("addOns", out var addOnsElement) && addOnsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        addOns = new List<object>();
+                        foreach (var addOnItem in addOnsElement.EnumerateArray())
+                        {
+                            var addOnJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(addOnItem.GetRawText());
+                            addOns.Add(addOnJson);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[AccountController] Failed to parse AdditionalData for booking {BookingId}: {Error}", booking.Id, ex.Message);
+                }
+            }
             
             try
             {
@@ -258,7 +291,9 @@ public class AccountController : Controller
                 HotelLocation = hotelLocation,
                 RoomImage = roomImage,
                 HotelImage = hotelImage,
-                RoomFeatures = roomFeatures
+                RoomFeatures = roomFeatures,
+                Events = events,
+                AddOns = addOns
             });
         }
         

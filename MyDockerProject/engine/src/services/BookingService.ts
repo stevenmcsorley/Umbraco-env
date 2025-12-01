@@ -151,7 +151,15 @@ export class BookingService {
 
       // Parse events from API response if available
       const eventsDetails: BookingResponse['events'] = [];
+      console.log('[BookingService] Checking for events in bookingData:', { 
+        hasEvents: !!bookingData.events, 
+        eventsType: typeof bookingData.events,
+        eventsIsArray: Array.isArray(bookingData.events),
+        eventsLength: Array.isArray(bookingData.events) ? bookingData.events.length : 0
+      });
+      
       if (bookingData.events && Array.isArray(bookingData.events) && bookingData.events.length > 0) {
+        console.log('[BookingService] Processing events:', bookingData.events);
         // Fetch event details from Umbraco to get names and prices
         const { UmbracoAdapter } = await import('../adapters/UmbracoAdapter');
         const umbracoAdapter = new UmbracoAdapter();
@@ -159,22 +167,40 @@ export class BookingService {
         
         try {
           const allEvents = await umbracoAdapter.getEvents(hotelId);
+          console.log('[BookingService] Fetched events from Umbraco:', allEvents);
+          
           for (const eventItem of bookingData.events) {
-            const eventId = typeof eventItem === 'object' && eventItem !== null && 'eventId' in eventItem
-              ? (eventItem as any).eventId
-              : eventItem;
-            const event = allEvents.find(e => e.id === eventId);
-            if (event) {
-              eventsDetails.push({
-                eventId: event.id,
-                name: event.name,
-                date: event.eventDate,
-                price: event.price
-              });
+            let eventId: string | null = null;
+            
+            // Handle different event item formats
+            if (typeof eventItem === 'string') {
+              eventId = eventItem;
+            } else if (typeof eventItem === 'object' && eventItem !== null) {
+              // Try different property names
+              eventId = (eventItem as any).eventId || (eventItem as any).id || (eventItem as any).event_id;
+            }
+            
+            console.log('[BookingService] Processing event item:', { eventItem, eventId });
+            
+            if (eventId) {
+              const event = allEvents.find(e => e.id === eventId);
+              if (event) {
+                eventsDetails.push({
+                  eventId: event.id,
+                  name: event.name,
+                  date: event.eventDate,
+                  price: event.price
+                });
+                console.log('[BookingService] Added event to details:', { eventId: event.id, name: event.name });
+              } else {
+                console.warn('[BookingService] Event not found in Umbraco:', eventId);
+              }
             }
           }
+          
+          console.log('[BookingService] Final eventsDetails:', eventsDetails);
         } catch (err) {
-          console.warn('[BookingService] Failed to fetch event details:', err);
+          console.error('[BookingService] Failed to fetch event details:', err);
         }
       }
       
