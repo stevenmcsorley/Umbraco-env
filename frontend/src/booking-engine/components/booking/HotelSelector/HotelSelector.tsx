@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useBookingStore } from '../../../app/state/bookingStore';
 
 export interface Hotel {
@@ -14,30 +14,72 @@ export interface Hotel {
 }
 
 export const HotelSelector = () => {
-  const { selectedHotelId, setSelectedHotelId } = useBookingStore();
+  const { selectedHotelId, setSelectedHotelId, setSelectedDateRange } = useBookingStore();
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const [searchTown, setSearchTown] = useState('');
+  const [searchFrom, setSearchFrom] = useState('');
+  const [searchTo, setSearchTo] = useState('');
+  const [searchGuests, setSearchGuests] = useState('2');
+
+  const loadHotels = async (url: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch hotels');
+      }
+      const data = await response.json();
+      setHotels(data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load hotels');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchHotels = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/hotels');
-        if (!response.ok) {
-          throw new Error('Failed to fetch hotels');
-        }
-        const data = await response.json();
-        setHotels(data || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load hotels');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHotels();
+    // Initial load: all hotels
+    loadHotels('/api/hotels');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleSearch = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const params = new URLSearchParams();
+    if (searchTown.trim()) {
+      params.append('town', searchTown.trim());
+    }
+    if (searchFrom) {
+      params.append('from', searchFrom);
+    }
+    if (searchTo) {
+      params.append('to', searchTo);
+    }
+    if (searchGuests) {
+      params.append('guests', searchGuests);
+    }
+
+    // If dates are provided, also push into booking store so the calendar is pre-filled
+    if (searchFrom) {
+      const fromDate = new Date(searchFrom);
+      const toDate = searchTo ? new Date(searchTo) : new Date(searchFrom);
+      setSelectedDateRange(fromDate, toDate);
+    }
+
+    const url = params.toString()
+      ? `/api/hotels/search?${params.toString()}`
+      : '/api/hotels';
+
+    setIsSearching(true);
+    await loadHotels(url);
+    setIsSearching(false);
+  };
 
   if (loading) {
     return (
@@ -97,24 +139,181 @@ export const HotelSelector = () => {
 
   return (
     <div style={{ marginBottom: '48px' }}>
-      <div style={{ marginBottom: '32px' }}>
+      {/* Search panel */}
+      <div
+        style={{
+          marginBottom: '32px',
+          padding: '20px',
+          borderRadius: '16px',
+          background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
+        }}
+      >
         <h2 style={{ 
           fontSize: '28px', 
           fontWeight: '600', 
-          marginBottom: '8px', 
+          marginBottom: '4px', 
           color: '#111827',
           fontFamily: "'Playfair Display', serif",
           letterSpacing: '-0.02em'
         }}>
-          Select a Hotel
+          Plan your stay
         </h2>
         <p style={{ 
           fontSize: '16px', 
           color: '#6b7280',
           margin: 0,
+          fontWeight: '300',
+          marginBottom: '20px'
+        }}>
+          Search by town, dates, and number of guests to see available hotels.
+        </p>
+
+        <form
+          onSubmit={handleSearch}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 2fr) repeat(3, minmax(0, 1.3fr)) minmax(0, 1.3fr)',
+            gap: '12px',
+            alignItems: 'end',
+          }}
+        >
+          {/* Destination */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b7280', fontWeight: 500 }}>
+              Destination / Town
+            </label>
+            <input
+              type="text"
+              value={searchTown}
+              onChange={(e) => setSearchTown(e.target.value)}
+              placeholder="e.g. Edinburgh, London"
+              style={{
+                padding: '10px 12px',
+                borderRadius: '999px',
+                border: '1px solid #d1d5db',
+                fontSize: '14px',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
+          </div>
+
+          {/* Check-in */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b7280', fontWeight: 500 }}>
+              Check-in
+            </label>
+            <input
+              type="date"
+              value={searchFrom}
+              onChange={(e) => setSearchFrom(e.target.value)}
+              style={{
+                padding: '10px 12px',
+                borderRadius: '999px',
+                border: '1px solid #d1d5db',
+                fontSize: '14px',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
+          </div>
+
+          {/* Check-out */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b7280', fontWeight: 500 }}>
+              Check-out
+            </label>
+            <input
+              type="date"
+              value={searchTo}
+              onChange={(e) => setSearchTo(e.target.value)}
+              style={{
+                padding: '10px 12px',
+                borderRadius: '999px',
+                border: '1px solid #d1d5db',
+                fontSize: '14px',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
+          </div>
+
+          {/* Guests */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b7280', fontWeight: 500 }}>
+              Guests
+            </label>
+            <select
+              value={searchGuests}
+              onChange={(e) => setSearchGuests(e.target.value)}
+              style={{
+                padding: '10px 12px',
+                borderRadius: '999px',
+                border: '1px solid #d1d5db',
+                fontSize: '14px',
+                outline: 'none',
+                width: '100%',
+                backgroundColor: 'white',
+              }}
+            >
+              <option value="1">1 guest</option>
+              <option value="2">2 guests</option>
+              <option value="3">3 guests</option>
+              <option value="4">4 guests</option>
+              <option value="5">5 guests</option>
+            </select>
+          </div>
+
+          {/* Submit */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="submit"
+              style={{
+                padding: '12px 22px',
+                borderRadius: '999px',
+                border: 'none',
+                backgroundColor: '#111827',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                letterSpacing: '0.12em',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                minWidth: '140px',
+              }}
+            >
+              {isSearching ? 'Searching...' : 'Search'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div style={{ marginBottom: '24px' }}>
+        <h3 style={{ 
+          fontSize: '20px', 
+          fontWeight: '600', 
+          marginBottom: '4px', 
+          color: '#111827',
+          fontFamily: "'Playfair Display', serif",
+          letterSpacing: '-0.01em'
+        }}>
+          Select a Hotel
+        </h3>
+        <p style={{ 
+          fontSize: '14px', 
+          color: '#6b7280',
+          margin: 0,
           fontWeight: '300'
         }}>
-          Choose your destination to begin your booking
+          {isSearching
+            ? 'Searching for available hotels...'
+            : `Showing ${hotels.length} hotel${hotels.length === 1 ? '' : 's'}${searchTown ? ` in “${searchTown.trim()}”` : ''}`}
         </p>
       </div>
       <div style={{ 

@@ -63,3 +63,4 @@ GO
 PRINT 'Bookings and Inventory tables created successfully!'
 GO
 
+

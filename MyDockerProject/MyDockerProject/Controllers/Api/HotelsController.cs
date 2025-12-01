@@ -6,6 +6,7 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Extensions;
 using MyDockerProject.Helpers;
 using MyDockerProject.Services;
+using System.Globalization;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -371,6 +372,163 @@ public class HotelsController : ControllerBase
         }).ToList();
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Searches for hotels by town/city and optional date/guest criteria.
+    /// Returns hotels that have at least one room that can host the requested number
+    /// of guests and has inventory available for the given date range.
+    /// </summary>
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchHotels(
+        [FromQuery] string? town,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] int? guests)
+    {
+        var contentType = _contentTypeService.Get("hotel");
+        if (contentType == null)
+        {
+            return Ok(new List<object>());
+        }
+
+        var allHotels = _contentService.GetPagedOfType(contentType.Id, 0, int.MaxValue, out var total, null);
+
+        // Normalise search town
+        var townNormalized = string.IsNullOrWhiteSpace(town)
+            ? null
+            : town.Trim().ToLowerInvariant();
+
+        // Filter hotels by town/city if provided (match against city, address, hotel name)
+        var filteredHotels = allHotels.Where(h =>
+        {
+            if (string.IsNullOrEmpty(townNormalized))
+                return true;
+
+            var hotelName = (h.GetValue<string>("hotelName") ?? h.Name ?? string.Empty).ToLowerInvariant();
+            var city = (h.GetValue<string>("city") ?? string.Empty).ToLowerInvariant();
+            var address = (h.GetValue<string>("address") ?? string.Empty).ToLowerInvariant();
+            var country = (h.GetValue<string>("country") ?? string.Empty).ToLowerInvariant();
+
+            return hotelName.Contains(townNormalized)
+                   || city.Contains(townNormalized)
+                   || address.Contains(townNormalized)
+                   || country.Contains(townNormalized);
+        }).ToList();
+
+        // Resolve date range & guest count
+        var fromDate = from ?? DateTime.Today;
+        var toDate = to ?? fromDate.AddDays(1);
+        if (fromDate.Date >= toDate.Date)
+        {
+            toDate = fromDate.AddDays(1);
+        }
+
+        var guestCount = guests.GetValueOrDefault(1);
+        if (guestCount < 1)
+        {
+            guestCount = 1;
+        }
+
+        var results = new List<object>();
+
+        foreach (var h in filteredHotels)
+        {
+            // Get rooms for hotel
+            var rooms = _contentService.GetPagedChildren(h.Id, 0, int.MaxValue, out _)
+                .Where(c => c.ContentType.Alias == "room")
+                .ToList();
+
+            var availableRooms = new List<object>();
+
+            foreach (var r in rooms)
+            {
+                var maxOccupancy = r.GetValue<int?>("maxOccupancy") ?? 0;
+
+                // Basic guest filter: only rooms that can host the requested guests
+                if (maxOccupancy > 0 && maxOccupancy < guestCount)
+                {
+                    continue;
+                }
+
+                var hasAvailability = false;
+                try
+                {
+                    var inventory = await _inventoryService.GetInventoryAsync(r.Key, fromDate, toDate);
+
+                    if (inventory != null && inventory.Any())
+                    {
+                        // Consider room available if all days in the range have availability
+                        hasAvailability = inventory.All(i => i.IsAvailable && i.AvailableQuantity > 0);
+                    }
+                }
+                catch
+                {
+                    // If inventory lookup fails, treat as not available for search purposes
+                    hasAvailability = false;
+                }
+
+                if (hasAvailability)
+                {
+                    var roomName = r.GetValue<string>("roomName") ?? r.Name;
+                    var priceFrom = r.GetValue<decimal?>("priceFrom");
+
+                    availableRooms.Add(new
+                    {
+                        id = r.Key,
+                        name = roomName,
+                        maxOccupancy,
+                        priceFrom
+                    });
+                }
+            }
+
+            // Only include hotels with at least one available room
+            if (availableRooms.Any())
+            {
+                var hotelName = h.GetValue<string>("hotelName") ?? h.Name;
+                var slug = UrlHelper.ToSlug(hotelName);
+
+                // Get MediaPicker3 values directly from Properties collection
+                object? heroImageValue = null;
+                object? galleryImagesValue = null;
+
+                var heroImageProp = h.Properties.FirstOrDefault(p => p.Alias == "heroImage");
+                if (heroImageProp != null)
+                {
+                    heroImageValue = heroImageProp.GetValue();
+                }
+
+                var galleryImagesProp = h.Properties.FirstOrDefault(p => p.Alias == "galleryImages");
+                if (galleryImagesProp != null)
+                {
+                    galleryImagesValue = galleryImagesProp.GetValue();
+                }
+
+                results.Add(new
+                {
+                    id = h.Key,
+                    name = hotelName,
+                    slug = slug,
+                    description = h.GetValue<string>("description"),
+                    shortDescription = h.GetValue<string>("shortDescription"),
+                    heroImage = GetMediaUrl(heroImageValue),
+                    galleryImages = GetMediaUrls(galleryImagesValue),
+                    address = h.GetValue<string>("address"),
+                    city = h.GetValue<string>("city"),
+                    country = h.GetValue<string>("country"),
+                    phone = h.GetValue<string>("phone"),
+                    email = h.GetValue<string>("email"),
+                    amenities = h.GetValue<string>("amenities"),
+                    highlights = h.GetValue<string>("highlights"),
+                    features = h.GetValue<string>("features"),
+                    url = $"/hotels/{slug}",
+                    availableRooms
+                });
+            }
+        }
+
+        return Ok(results);
     }
 
     [HttpGet("{identifier}")]
