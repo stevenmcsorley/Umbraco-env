@@ -122,14 +122,14 @@ public class AccountController : Controller
         var userIdStr = HttpContext.Session.GetString("UserId");
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
         {
-            return RedirectToAction("Login", "Auth");
+            return Redirect("/login");
         }
 
         var user = await _userService.GetUserByIdAsync(userId);
         if (user == null)
         {
             HttpContext.Session.Clear();
-            return RedirectToAction("Login", "Auth");
+            return Redirect("/login");
         }
 
         var bookings = await _userService.GetUserBookingsAsync(userId);

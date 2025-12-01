@@ -79,6 +79,23 @@ app.UseUmbraco()
         
         // Register custom routes BEFORE Umbraco website endpoints
         // These MUST come before UseWebsiteEndpoints() to prevent Umbraco from trying to match them as documents
+        
+        // Auth routes - register FIRST to avoid conflicts with API routes
+        u.EndpointRouteBuilder.MapControllerRoute(
+            name: "logout",
+            pattern: "logout",
+            defaults: new { controller = "Auth", action = "Logout" });
+        
+        u.EndpointRouteBuilder.MapControllerRoute(
+            name: "login",
+            pattern: "login",
+            defaults: new { controller = "Auth", action = "Login" });
+        
+        u.EndpointRouteBuilder.MapControllerRoute(
+            name: "register",
+            pattern: "register",
+            defaults: new { controller = "Auth", action = "Register" });
+        
         u.EndpointRouteBuilder.MapControllerRoute(
             name: "book",
             pattern: "book",
@@ -119,22 +136,6 @@ app.UseUmbraco()
             name: "room",
             pattern: "hotels/{hotelSlug}/rooms/{roomSlug}",
             defaults: new { controller = "Hotel", action = "Room" });
-        
-        // Auth routes
-        u.EndpointRouteBuilder.MapControllerRoute(
-            name: "register",
-            pattern: "register",
-            defaults: new { controller = "Auth", action = "Register" });
-        
-        u.EndpointRouteBuilder.MapControllerRoute(
-            name: "login",
-            pattern: "login",
-            defaults: new { controller = "Auth", action = "Login" });
-        
-        u.EndpointRouteBuilder.MapControllerRoute(
-            name: "logout",
-            pattern: "logout",
-            defaults: new { controller = "Auth", action = "Logout" });
         
         u.EndpointRouteBuilder.MapControllerRoute(
             name: "account",
