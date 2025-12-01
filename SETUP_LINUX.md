@@ -4,6 +4,36 @@ This guide explains how to set up the Umbraco booking system on a new Linux mach
 
 **⚠️ Important:** If you already have a working Umbraco installation on another computer, use the **[Export/Import Guide](../EXPORT_IMPORT_GUIDE.md)** instead. It will export your complete installation (database, content, document types, media, views) and import it on the new machine, preserving everything including your homepage and all pages.
 
+### Quick Import (If You Have an Existing Installation)
+
+If you have a working Umbraco installation, the export is already in the repository. Simply:
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd UmbraccoEnv/MyDockerProject
+
+# Make import script executable
+chmod +x import-umbraco.sh
+
+# Import everything (database, media, views)
+./import-umbraco.sh "../umbraco-export-20251201-225510" "Password1234"
+```
+
+This will restore your complete installation including:
+- ✅ All content (hotels, rooms, events, offers)
+- ✅ All document types
+- ✅ Homepage and all pages
+- ✅ All media files
+- ✅ All custom views
+- ✅ Database with bookings and inventory
+
+**That's it!** Access Umbraco at `https://localhost:44372/umbraco`
+
+---
+
+**Continue below only if you're setting up a fresh installation from scratch.**
+
 ## Prerequisites
 
 - Docker and Docker Compose installed

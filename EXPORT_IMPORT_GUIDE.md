@@ -190,37 +190,60 @@ echo "Compressed export created: $exportDir.tar.gz"
 
 ## PART 2: IMPORT TO DESTINATION MACHINE
 
-### Step 1: Transfer Export Files
+**Note:** The export directory is included in the git repository, so you don't need to transfer files separately. Simply clone the repository and the export will be available.
 
-Copy the export directory (or compressed archive) to the destination machine:
+### Quick Start (Recommended)
 
-- **Via Network Share**: Copy to shared folder
-- **Via USB Drive**: Copy to external drive
-- **Via Git LFS**: If using Git, add large files to Git LFS
-- **Via Cloud Storage**: Upload to Dropbox, Google Drive, etc.
+The easiest way to import is using the automated import script:
 
-### Step 2: Extract Export (If Compressed)
-
-**Windows (PowerShell):**
-```powershell
-# If you have a ZIP file
-Expand-Archive -Path "umbraco-export-*.zip" -DestinationPath "." -Force
-$exportDir = Get-ChildItem -Directory -Filter "umbraco-export-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-```
-
-**Linux/Mac (Bash):**
-```bash
-# If you have a TAR.GZ file
-tar -xzf umbraco-export-*.tar.gz
-exportDir=$(ls -td umbraco-export-* | head -1)
-```
-
-### Step 3: Clone Repository and Start Services
-
+**Linux/Mac:**
 ```bash
 # Clone repository
 git clone <repository-url>
 cd UmbraccoEnv/MyDockerProject
+
+# Make script executable
+chmod +x import-umbraco.sh
+
+# Import (script handles everything automatically)
+./import-umbraco.sh "../umbraco-export-20251201-225510" "Password1234"
+```
+
+**Windows:**
+```powershell
+# Clone repository
+git clone <repository-url>
+cd UmbraccoEnv/MyDockerProject
+
+# Import (script handles everything automatically)
+.\import-umbraco.ps1 -ExportPath "..\umbraco-export-20251201-225510" -DbPassword "Password1234"
+```
+
+The script will:
+1. Stop Umbraco container
+2. Restore database from backup
+3. Copy all media files
+4. Restore all views
+5. Set correct permissions (Linux)
+6. Restart services
+
+**That's it!** Access Umbraco at `https://localhost:44372/umbraco`
+
+---
+
+### Manual Import Steps (If Needed)
+
+If you prefer to import manually or need to troubleshoot, follow these steps:
+
+### Step 1: Clone Repository and Start Services
+
+```bash
+# Clone repository (export directory is included)
+git clone <repository-url>
+cd UmbraccoEnv/MyDockerProject
+
+# The export directory is now available at: ../umbraco-export-YYYYMMDD-HHMMSS/
+# Or use the ZIP file: ../umbraco-export-YYYYMMDD-HHMMSS.zip
 
 # Start services (but don't access Umbraco yet)
 docker-compose up -d
@@ -230,7 +253,21 @@ echo "Waiting for database to initialize..."
 sleep 30
 ```
 
-### Step 4: Stop Umbraco Container (Important!)
+**Quick Import Option:** You can use the automated import script directly:
+```bash
+# Make scripts executable
+chmod +x import-umbraco.sh
+
+# Import using the export directory (recommended)
+./import-umbraco.sh "../umbraco-export-20251201-225510" "Password1234"
+
+# Or import using the ZIP file
+./import-umbraco.sh "../umbraco-export-20251201-225510.zip" "Password1234"
+```
+
+The script will handle all the steps below automatically. If you prefer manual import, continue with the steps below.
+
+### Step 2: Stop Umbraco Container (Important!)
 
 **Windows (PowerShell):**
 ```powershell
@@ -244,7 +281,27 @@ docker-compose stop mydockerproject
 
 **Why?** We need to restore the database before Umbraco tries to connect to it.
 
-### Step 5: Restore Database
+### Step 3: Locate Export Directory
+
+The export directory is in the repository root. Find the latest export:
+
+**Windows (PowerShell):**
+```powershell
+# Find the export directory
+$exportDir = Get-ChildItem -Path ".." -Directory -Filter "umbraco-export-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+Write-Host "Using export: $exportDir" -ForegroundColor Cyan
+```
+
+**Linux/Mac (Bash):**
+```bash
+# Find the export directory (or use the specific one from the repo)
+exportDir="../umbraco-export-20251201-225510"  # Update with actual export name
+# Or find the latest:
+# exportDir=$(ls -td ../umbraco-export-* | head -1)
+echo "Using export: $exportDir"
+```
+
+### Step 4: Restore Database
 
 **Windows (PowerShell):**
 ```powershell
@@ -279,7 +336,7 @@ docker exec mydockerproject_database /opt/mssql-tools/bin/sqlcmd \
 - `RECOVERY` brings the database online immediately
 - The database password must match what's in your `docker-compose.yml` or `.env` file
 
-### Step 6: Restore Media Files
+### Step 5: Restore Media Files
 
 **Windows (PowerShell):**
 ```powershell
@@ -315,7 +372,7 @@ chmod -R 755 "$mediaDest"
 chown -R $(id -u):$(id -g) "$mediaDest" 2>/dev/null || true
 ```
 
-### Step 7: Restore Custom Views (If Exported)
+### Step 6: Restore Custom Views (If Exported)
 
 **Windows (PowerShell):**
 ```powershell
@@ -345,7 +402,7 @@ if [ -d "$exportDir/Views" ]; then
 fi
 ```
 
-### Step 8: Set Permissions on wwwroot (Linux Only)
+### Step 7: Set Permissions on wwwroot (Linux Only)
 
 **Linux/Mac (Bash):**
 ```bash
@@ -358,7 +415,7 @@ chown -R $(id -u):$(id -g) "$wwwrootPath" 2>/dev/null || true
 chmod -R 755 "$wwwrootPath/media"
 ```
 
-### Step 9: Restart Services
+### Step 8: Restart Services
 
 **Windows (PowerShell):**
 ```powershell
@@ -378,7 +435,7 @@ docker-compose restart
 docker-compose start mydockerproject
 ```
 
-### Step 10: Verify Import
+### Step 9: Verify Import
 
 1. **Check Database Connection:**
    ```bash
@@ -544,7 +601,11 @@ Write-Host "Access Umbraco: https://localhost:44372/umbraco" -ForegroundColor Cy
 **Usage:**
 ```powershell
 cd MyDockerProject
-.\import-umbraco.ps1 -ExportPath "..\umbraco-export-20250118-120000" -DbPassword "YourActualPassword"
+# Import from export directory in repository
+.\import-umbraco.ps1 -ExportPath "..\umbraco-export-20251201-225510" -DbPassword "Password1234"
+
+# Or import from ZIP file
+.\import-umbraco.ps1 -ExportPath "..\umbraco-export-20251201-225510.zip" -DbPassword "Password1234"
 ```
 
 ### Complete Export Script (Linux/Mac)
@@ -700,7 +761,11 @@ echo "Access Umbraco: https://localhost:44372/umbraco"
 ```bash
 chmod +x import-umbraco.sh
 cd MyDockerProject
-./import-umbraco.sh "../umbraco-export-20250118-120000" "YourActualPassword"
+# Import from export directory in repository
+./import-umbraco.sh "../umbraco-export-20251201-225510" "Password1234"
+
+# Or import from ZIP file
+./import-umbraco.sh "../umbraco-export-20251201-225510.zip" "Password1234"
 ```
 
 ---
@@ -771,11 +836,12 @@ This usually means the database restore didn't complete properly. Try:
 - [ ] Media files copied
 - [ ] Views copied (optional)
 - [ ] Manifest created
-- [ ] Files transferred to destination
+- [ ] Export committed to git repository (or transferred to destination)
 
 ### Import Checklist
-- [ ] Repository cloned
+- [ ] Repository cloned (export directory is included)
 - [ ] Services started (then Umbraco stopped)
+- [ ] Export directory located (or use import script)
 - [ ] Database restored
 - [ ] Media files restored
 - [ ] Permissions set (Linux)
@@ -788,9 +854,10 @@ This usually means the database restore didn't complete properly. Try:
 
 ## Notes
 
-- **Database Password**: Make sure the password matches between source and destination, or update `docker-compose.yml`/`.env` file
+- **Database Password**: Make sure the password matches between source and destination, or update `docker-compose.yml`/`.env` file. Default password is `Password1234`.
+- **Export in Repository**: The export directory (`umbraco-export-20251201-225510`) is included in the git repository, so no manual file transfer is needed. Just clone the repo.
 - **Port Conflicts**: If port 44372 is in use, change it in `docker-compose.yml`
-- **Large Exports**: For very large media libraries, consider using Git LFS or cloud storage
+- **Large Exports**: The current export is ~45MB. For very large media libraries, consider using Git LFS
 - **Version Compatibility**: This guide assumes Umbraco 14.x. For other versions, adjust accordingly
 - **Backup Before Import**: Always backup existing data before importing on destination machine
 
