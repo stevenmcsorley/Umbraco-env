@@ -105,7 +105,7 @@ export const BookingApp = ({
           )}
 
           <PageSection>
-            <BookingForm user={user} hotelId={hotelId} />
+            <BookingForm user={user} hotelId={hotelId || undefined} />
           </PageSection>
         </>
       )}
