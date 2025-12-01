@@ -577,6 +577,7 @@ Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST
 ## Documentation
 
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Quick start and setup instructions
+- **[Linux Setup Guide](SETUP_LINUX.md)** 🐧 - Complete guide for setting up on Linux and importing all data
 - **[Umbraco Site Kit Guide](docs/UMBRACO_SITE_KIT.md)** ⭐ - Complete guide to programmatic Document Type and Element Type creation (API endpoints, usage examples, troubleshooting)
 - **[Inventory and Import System](docs/INVENTORY_AND_IMPORT_SYSTEM.md)** - Data import system documentation and database setup
 - **[Architecture Documentation](docs/architecture.md)** - System architecture overview
