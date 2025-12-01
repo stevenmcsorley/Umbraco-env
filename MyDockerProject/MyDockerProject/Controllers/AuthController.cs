@@ -76,7 +76,7 @@ public class AuthController : Controller
     public IActionResult Logout()
     {
         HttpContext.Session.Clear();
-        return RedirectToAction("Login");
+        return Redirect("/login");
     }
 }
 
