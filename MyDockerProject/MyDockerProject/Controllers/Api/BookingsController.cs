@@ -512,8 +512,8 @@ public class BookingsController : ControllerBase
                 status = booking.Status,
                 createdAt = booking.CreatedAt,
                 userId = booking.UserId,
-                events = events,
-                addOns = addOns
+                events = events ?? new List<object>(),
+                addOns = addOns ?? new List<object>()
             });
         }
         catch (InvalidOperationException ex)
