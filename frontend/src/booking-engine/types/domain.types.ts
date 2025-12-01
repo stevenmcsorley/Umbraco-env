@@ -85,5 +85,11 @@ export interface BookingResponse {
     quantity: number;
     price: number;
   }>;
+  events?: Array<{
+    eventId: string;
+    name?: string;
+    date?: string;
+    price?: number;
+  }>;
 }
 

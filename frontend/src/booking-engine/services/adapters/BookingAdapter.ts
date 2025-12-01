@@ -34,7 +34,8 @@ export class BookingAdapter {
       createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
       totalPrice: data.totalPrice,
       currency: data.currency || 'GBP',
-      addOns: data.addOns || []
+      addOns: data.addOns || [],
+      events: data.events || []
     };
   }
 }

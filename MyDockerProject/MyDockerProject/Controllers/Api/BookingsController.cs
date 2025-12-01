@@ -389,6 +389,38 @@ public class BookingsController : ControllerBase
             _logger.LogInformation("[BookingsController] Booking created - Id: {BookingId}, UserId: {UserId}, ProductId: {ProductId}, Reference: {Reference}", 
                 booking.Id, booking.UserId?.ToString() ?? "NULL", booking.ProductId, booking.BookingReference);
 
+            // Parse AdditionalData to extract events and add-ons
+            List<object>? events = null;
+            List<object>? addOns = null;
+            
+            if (!string.IsNullOrEmpty(booking.AdditionalData))
+            {
+                try
+                {
+                    var additionalDataJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(booking.AdditionalData);
+                    if (additionalDataJson.TryGetProperty("events", out var eventsElement) && eventsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        events = new List<object>();
+                        foreach (var eventItem in eventsElement.EnumerateArray())
+                        {
+                            events.Add(System.Text.Json.JsonSerializer.Deserialize<object>(eventItem.GetRawText()) ?? new object());
+                        }
+                    }
+                    if (additionalDataJson.TryGetProperty("addOns", out var addOnsElement) && addOnsElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        addOns = new List<object>();
+                        foreach (var addOnItem in addOnsElement.EnumerateArray())
+                        {
+                            addOns.Add(System.Text.Json.JsonSerializer.Deserialize<object>(addOnItem.GetRawText()) ?? new object());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[BookingsController] Failed to parse AdditionalData: {AdditionalData}", booking.AdditionalData);
+                }
+            }
+            
             // Log room image for debugging
             _logger.LogInformation("[BookingsController] Room image: {RoomImage}", roomImage ?? "NULL");
             
@@ -413,7 +445,9 @@ public class BookingsController : ControllerBase
                 currency = booking.Currency,
                 status = booking.Status,
                 createdAt = booking.CreatedAt,
-                userId = booking.UserId
+                userId = booking.UserId,
+                events = events,
+                addOns = addOns
             });
         }
         catch (InvalidOperationException ex)

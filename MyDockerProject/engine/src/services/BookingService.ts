@@ -71,8 +71,15 @@ export class BookingService {
     const productType = product?.type === 'room' ? 'Room' : 'Event';
     
     // Prepare additional data (add-ons, events, offers) as JSON
-    const additionalData = request.addOns && request.addOns.length > 0
-      ? JSON.stringify({ addOns: request.addOns })
+    const additionalDataObj: any = {};
+    if (request.addOns && request.addOns.length > 0) {
+      additionalDataObj.addOns = request.addOns;
+    }
+    if (request.events && request.events.length > 0) {
+      additionalDataObj.events = request.events;
+    }
+    const additionalData = Object.keys(additionalDataObj).length > 0
+      ? JSON.stringify(additionalDataObj)
       : null;
 
     // If user is logged in, use userId; otherwise use guestDetails
@@ -142,6 +149,35 @@ export class BookingService {
         throw new Error('Booking response missing bookingId/bookingReference');
       }
 
+      // Parse events from API response if available
+      const eventsDetails: BookingResponse['events'] = [];
+      if (bookingData.events && Array.isArray(bookingData.events) && bookingData.events.length > 0) {
+        // Fetch event details from Umbraco to get names and prices
+        const { UmbracoAdapter } = await import('../adapters/UmbracoAdapter');
+        const umbracoAdapter = new UmbracoAdapter();
+        const hotelId = product?.hotelId || '';
+        
+        try {
+          const allEvents = await umbracoAdapter.getEvents(hotelId);
+          for (const eventItem of bookingData.events) {
+            const eventId = typeof eventItem === 'object' && eventItem !== null && 'eventId' in eventItem
+              ? (eventItem as any).eventId
+              : eventItem;
+            const event = allEvents.find(e => e.id === eventId);
+            if (event) {
+              eventsDetails.push({
+                eventId: event.id,
+                name: event.name,
+                date: event.eventDate,
+                price: event.price
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('[BookingService] Failed to fetch event details:', err);
+        }
+      }
+      
       // Map Umbraco response to BookingResponse format
       const bookingResponse = {
         bookingId: bookingId,
@@ -157,7 +193,8 @@ export class BookingService {
         createdAt: new Date(bookingData.createdAt),
         totalPrice: bookingData.totalPrice,
         currency: bookingData.currency || 'GBP',
-        addOns: addOnsDetails.length > 0 ? addOnsDetails : undefined
+        addOns: addOnsDetails.length > 0 ? addOnsDetails : undefined,
+        events: eventsDetails.length > 0 ? eventsDetails : undefined
       };
 
       console.log('[BookingService] Mapped booking response with details:', {

@@ -278,6 +278,36 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         )}
       </div>
 
+      {confirmation.events && confirmation.events.length > 0 && (
+        <div style={sectionStyle}>
+          <div style={labelStyle}>Events</div>
+          <div style={{ marginTop: '8px' }}>
+            {confirmation.events.map((event) => (
+              <div key={event.eventId} style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                marginBottom: '8px',
+                fontSize: '14px'
+              }}>
+                <span>
+                  {event.name || 'Event'}
+                  {event.date && (
+                    <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>
+                      ({new Date(event.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
+                    </span>
+                  )}
+                </span>
+                {event.price !== undefined && (
+                  <span style={{ fontWeight: '500' }}>
+                    {formatPrice(event.price, confirmation.currency || 'GBP')}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {confirmation.addOns && confirmation.addOns.length > 0 && (
         <div style={sectionStyle}>
           <div style={labelStyle}>Add-ons</div>
