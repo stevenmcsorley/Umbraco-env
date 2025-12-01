@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useBookingStore } from '../../../app/state/bookingStore';
 import { TEST_IDS } from '../../../constants/testids';
 import { formatPrice } from '../../../utils/priceUtils';
+import { useProduct } from '../../../hooks/useProduct';
 
 export interface ConfirmationScreenProps {
   className?: string;
@@ -117,7 +118,7 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         </p>
       </div>
 
-      {/* Reservation Details with Booking Reference and Price on the right */}
+      {/* Reservation Details with Image, Booking Reference and Price */}
       <div style={{
         display: 'flex',
         flexDirection: 'row',
@@ -137,6 +138,28 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
             }
           }
         `}</style>
+        {/* Room Image - Small image on left, matching My Account */}
+        {roomImage && (
+          <div style={{ width: '100%', maxWidth: '200px', flexShrink: 0 }}>
+            <div style={{
+              aspectRatio: '4/3',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              backgroundColor: '#f3f4f6',
+              maxWidth: '200px'
+            }}>
+              <img 
+                src={roomImage} 
+                alt={confirmation.productName || 'Room'}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+            </div>
+          </div>
+        )}
         {/* Left side: Reservation Details */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
           <div style={labelStyle}>Reservation Details</div>
