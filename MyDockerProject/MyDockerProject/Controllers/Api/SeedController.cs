@@ -363,6 +363,36 @@ public class SeedController : ControllerBase
         }
     }
 
+    [HttpPost("add-home-properties")]
+    public IActionResult AddHomeProperties()
+    {
+        try
+        {
+            var propertyService = new Services.DocumentTypePropertyService(
+                _contentTypeService,
+                _dataTypeService,
+                _shortStringHelper);
+            
+            propertyService.AddHomeProperties();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Home properties added successfully to 'content' group"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                stackTrace = ex.StackTrace,
+                innerException = ex.InnerException?.Message
+            });
+        }
+    }
+
     [HttpGet("check-room-document-type")]
     public IActionResult CheckRoomDocumentType()
     {

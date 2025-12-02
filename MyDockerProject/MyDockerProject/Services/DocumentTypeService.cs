@@ -498,8 +498,105 @@ public class DocumentTypeService
         _contentTypeService.Save(addOnType);
     }
 
+    public void CreateHomeDocumentType()
+    {
+        var existing = _contentTypeService.Get("home");
+        if (existing != null)
+        {
+            return; // Already exists
+        }
+
+        var allDataTypes = _dataTypeService.GetAll();
+        var textstringDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextBox");
+        var textareaDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextArea");
+        var mediaPickerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.MediaPicker3");
+        
+        if (textstringDataType == null || textareaDataType == null)
+        {
+            throw new Exception("Required data types not found.");
+        }
+
+        // Create Home document type
+        var homeType = new ContentType(_shortStringHelper, -1)
+        {
+            Name = "Home",
+            Alias = "home",
+            Icon = "icon-home",
+            AllowedAsRoot = true,
+            IsElement = false
+        };
+
+        // Add properties to match Windows version
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "heroHeading")
+        {
+            Name = "Hero Heading",
+            SortOrder = 1
+        });
+
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textareaDataType, "heroTagline")
+        {
+            Name = "Hero Tagline",
+            SortOrder = 2
+        });
+
+        if (mediaPickerDataType != null)
+        {
+            homeType.AddPropertyType(new PropertyType(_shortStringHelper, mediaPickerDataType, "heroImage")
+            {
+                Name = "Hero Image",
+                SortOrder = 3
+            });
+        }
+
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "mainHeading")
+        {
+            Name = "Main Heading",
+            SortOrder = 4
+        });
+
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textareaDataType, "mainDescription")
+        {
+            Name = "Main Description",
+            SortOrder = 5
+        });
+
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "mainButtonText")
+        {
+            Name = "Main Button Text",
+            SortOrder = 6
+        });
+
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "mainButtonLink")
+        {
+            Name = "Main Button Link",
+            SortOrder = 7
+        });
+
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "featuresTitle")
+        {
+            Name = "Features Title",
+            SortOrder = 8
+        });
+
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textareaDataType, "BodyText")
+        {
+            Name = "Body Text",
+            SortOrder = 9
+        });
+
+        homeType.AddPropertyType(new PropertyType(_shortStringHelper, textstringDataType, "layout")
+        {
+            Name = "Layout",
+            SortOrder = 0,
+            Description = "Choose page layout: Main, HolyGrail, Sidebar, Centered, FullWidth"
+        });
+
+        _contentTypeService.Save(homeType);
+    }
+
     public void CreateAllDocumentTypes()
     {
+        CreateHomeDocumentType();
         CreateHotelDocumentType();
         CreateRoomDocumentType();
         CreateOfferDocumentType();

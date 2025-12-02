@@ -587,4 +587,100 @@ public class DocumentTypePropertyService
             _contentTypeService.Save(contentType);
         }
     }
+
+    public void AddHomeProperties()
+    {
+        var homeType = _contentTypeService.Get("home");
+        if (homeType == null)
+        {
+            throw new Exception("Home document type does not exist. Please create it first.");
+        }
+
+        var allDataTypes = _dataTypeService.GetAll().ToList();
+        var textstringDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextBox");
+        var textareaDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.TextArea");
+        var mediaPickerDataType = allDataTypes.FirstOrDefault(dt => dt.EditorAlias == "Umbraco.MediaPicker3");
+
+        if (textstringDataType == null || textareaDataType == null)
+        {
+            throw new Exception("Required data types not found.");
+        }
+
+        // Ensure content group exists
+        const string groupAlias = "content";
+        const string groupName = "Content";
+        
+        var contentType = (ContentType)homeType;
+        var contentGroup = contentType.PropertyGroups.FirstOrDefault(g => g.Alias == groupAlias || g.Alias == "Content");
+        if (contentGroup == null)
+        {
+            contentType.AddPropertyGroup(groupName, groupAlias);
+            _contentTypeService.Save(contentType);
+            var reloaded = _contentTypeService.Get("home");
+            if (reloaded != null)
+            {
+                contentType = (ContentType)reloaded;
+                contentGroup = contentType.PropertyGroups.FirstOrDefault(g => g.Alias == groupAlias || g.Alias == "Content");
+            }
+        }
+
+        if (contentGroup == null)
+        {
+            throw new Exception($"Property group '{groupName}' not found for Home document type.");
+        }
+
+        // Define Home properties based on template
+        var homeProperties = new[]
+        {
+            new { Alias = "heroHeading", Name = "Hero Heading", DataType = textstringDataType, Mandatory = false, SortOrder = 1 },
+            new { Alias = "heroTagline", Name = "Hero Tagline", DataType = textareaDataType, Mandatory = false, SortOrder = 2 },
+            new { Alias = "heroImage", Name = "Hero Image", DataType = mediaPickerDataType ?? textstringDataType, Mandatory = false, SortOrder = 3 },
+            new { Alias = "featuresTitle", Name = "Features Title", DataType = textstringDataType, Mandatory = false, SortOrder = 4 },
+            new { Alias = "layout", Name = "Layout", DataType = textstringDataType, Mandatory = false, SortOrder = 0, Description = "Choose page layout: Main, HolyGrail, Sidebar, Centered, FullWidth" }
+        };
+
+        bool hasChanges = false;
+
+        foreach (var prop in homeProperties)
+        {
+            var existingProperty = contentType.PropertyTypes.FirstOrDefault(pt => pt.Alias == prop.Alias);
+            var isInGroup = contentGroup.PropertyTypes.Any(pt => pt.Alias == prop.Alias);
+
+            if (!isInGroup)
+            {
+                if (existingProperty != null)
+                {
+                    var propertyType = existingProperty as PropertyType;
+                    if (propertyType != null && !contentGroup.PropertyTypes.Any(pt => pt.Alias == prop.Alias))
+                    {
+                        contentGroup.PropertyTypes.Add(propertyType);
+                        hasChanges = true;
+                    }
+                }
+                else
+                {
+                    var propertyType = new PropertyType(_shortStringHelper, prop.DataType, prop.Alias)
+                    {
+                        Name = prop.Name,
+                        Mandatory = prop.Mandatory,
+                        SortOrder = prop.SortOrder
+                    };
+                    
+                    if (!string.IsNullOrEmpty(prop.Description))
+                    {
+                        propertyType.Description = prop.Description;
+                    }
+                    
+                    contentType.AddPropertyType(propertyType);
+                    contentGroup.PropertyTypes.Add(propertyType);
+                    hasChanges = true;
+                }
+            }
+        }
+
+        if (hasChanges)
+        {
+            _contentTypeService.Save(contentType);
+        }
+    }
 }
