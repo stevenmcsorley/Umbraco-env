@@ -1284,4 +1284,74 @@ public class SeedController : ControllerBase
             });
         }
     }
+
+    [HttpPost("create-home-template")]
+    public IActionResult CreateHomeTemplate()
+    {
+        try
+        {
+            // Check if template already exists
+            var existingTemplate = _fileService.GetTemplate("home");
+            if (existingTemplate != null)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = "Home template already exists",
+                    templateId = existingTemplate.Id,
+                    alias = existingTemplate.Alias
+                });
+            }
+
+            // Read the template file content from Views/home.cshtml
+            var templatePath = System.IO.Path.Combine(
+                System.IO.Directory.GetCurrentDirectory(),
+                "Views",
+                "home.cshtml"
+            );
+
+            string templateContent;
+            if (System.IO.File.Exists(templatePath))
+            {
+                templateContent = System.IO.File.ReadAllText(templatePath);
+            }
+            else
+            {
+                // Fallback: use embedded template content
+                templateContent = @"@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<Umbraco.Cms.Web.Common.PublishedModels.Home>
+@{
+    Layout = ""Layouts/Main.cshtml"";
+    ViewData[""Title""] = Model?.Name ?? ""Home"";
+}
+<h1>@Model?.Name ?? ""Home""</h1>";
+            }
+
+            // Create the template
+            var template = new Template(_shortStringHelper, "Home", "home")
+            {
+                Content = templateContent
+            };
+
+            // Save the template
+            _fileService.SaveTemplate(template);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Home template created successfully",
+                templateId = template.Id,
+                alias = template.Alias
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                stackTrace = ex.StackTrace,
+                innerException = ex.InnerException?.Message
+            });
+        }
+    }
 }
