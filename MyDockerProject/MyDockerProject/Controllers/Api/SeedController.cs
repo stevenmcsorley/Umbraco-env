@@ -1290,17 +1290,18 @@ public class SeedController : ControllerBase
     {
         try
         {
-            // Check if template already exists
+            // Check if template already exists - if it does, delete it first to recreate
             var existingTemplate = _fileService.GetTemplate("home");
             if (existingTemplate != null)
             {
-                return Ok(new
+                try
                 {
-                    success = true,
-                    message = "Home template already exists",
-                    templateId = existingTemplate.Id,
-                    alias = existingTemplate.Alias
-                });
+                    _fileService.DeleteTemplate("home");
+                }
+                catch
+                {
+                    // Ignore errors - will try to create anyway
+                }
             }
 
             // Read the template file content from Views/home.cshtml
