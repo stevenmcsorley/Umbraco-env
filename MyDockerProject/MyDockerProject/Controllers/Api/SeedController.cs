@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Scoping;
+using Umbraco.Cms.Core.Models;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -15,19 +16,22 @@ public class SeedController : ControllerBase
     private readonly IDataTypeService _dataTypeService;
     private readonly IShortStringHelper _shortStringHelper;
     private readonly IScopeProvider _scopeProvider;
+    private readonly IFileService _fileService;
 
     public SeedController(
         IContentService contentService,
         IContentTypeService contentTypeService,
         IDataTypeService dataTypeService,
         IShortStringHelper shortStringHelper,
-        IScopeProvider scopeProvider)
+        IScopeProvider scopeProvider,
+        IFileService fileService)
     {
         _contentService = contentService;
         _contentTypeService = contentTypeService;
         _dataTypeService = dataTypeService;
         _shortStringHelper = shortStringHelper;
         _scopeProvider = scopeProvider;
+        _fileService = fileService;
     }
 
     [HttpPost("create-document-types")]
