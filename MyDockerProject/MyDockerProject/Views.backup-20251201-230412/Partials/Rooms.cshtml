@@ -1,0 +1,47 @@
+@model dynamic
+@{
+    var title = Model?.title ?? "Rooms";
+    var items = Model?.items as System.Collections.IEnumerable ?? new List<dynamic>();
+    var hotelId = Model?.hotelId ?? "";
+}
+
+<section class="py-12">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">@title</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var room in items)
+            {
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    @if (!string.IsNullOrEmpty(room.image))
+                    {
+                        <img src="@room.image" alt="@(room.name ?? "")" class="w-full h-48 object-cover" />
+                    }
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">@(room.name ?? "")</h3>
+                        @if (!string.IsNullOrEmpty(room.description))
+                        {
+                            <p class="text-gray-600 mb-4 line-clamp-3">@room.description</p>
+                        }
+                        <div class="flex justify-between items-center mb-4">
+                            @if (room.priceFrom != null)
+                            {
+                                <p class="text-2xl font-bold text-blue-600">£@room.priceFrom <span class="text-sm text-gray-500">per night</span></p>
+                            }
+                            @if (room.maxOccupancy != null)
+                            {
+                                <p class="text-sm text-gray-500">Max @room.maxOccupancy guests</p>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(hotelId) && !string.IsNullOrEmpty(room.id))
+                        {
+                            <a href="/hotels/@hotelId/rooms/@room.id" class="inline-block w-full text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                Book Now
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+

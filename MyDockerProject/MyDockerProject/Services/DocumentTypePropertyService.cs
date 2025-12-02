@@ -629,13 +629,18 @@ public class DocumentTypePropertyService
             throw new Exception($"Property group '{groupName}' not found for Home document type.");
         }
 
-        // Define Home properties based on template
+        // Define Home properties based on Windows backoffice screenshot
         var homeProperties = new[]
         {
-            new { Alias = "heroHeading", Name = "Hero Heading", DataType = textstringDataType, Mandatory = false, SortOrder = 1 },
-            new { Alias = "heroTagline", Name = "Hero Tagline", DataType = textareaDataType, Mandatory = false, SortOrder = 2 },
-            new { Alias = "heroImage", Name = "Hero Image", DataType = mediaPickerDataType ?? textstringDataType, Mandatory = false, SortOrder = 3 },
-            new { Alias = "featuresTitle", Name = "Features Title", DataType = textstringDataType, Mandatory = false, SortOrder = 4 },
+            new { Alias = "heroHeading", Name = "Hero Heading", DataType = textstringDataType, Mandatory = false, SortOrder = 1, Description = (string?)null },
+            new { Alias = "heroTagline", Name = "Hero Tagline", DataType = textareaDataType, Mandatory = false, SortOrder = 2, Description = (string?)null },
+            new { Alias = "heroImage", Name = "Hero Image", DataType = mediaPickerDataType ?? textstringDataType, Mandatory = false, SortOrder = 3, Description = (string?)null },
+            new { Alias = "mainHeading", Name = "Main Heading", DataType = textstringDataType, Mandatory = false, SortOrder = 4, Description = (string?)null },
+            new { Alias = "mainDescription", Name = "Main Description", DataType = textareaDataType, Mandatory = false, SortOrder = 5, Description = (string?)null },
+            new { Alias = "mainButtonText", Name = "Main Button Text", DataType = textstringDataType, Mandatory = false, SortOrder = 6, Description = (string?)null },
+            new { Alias = "mainButtonLink", Name = "Main Button Link", DataType = textstringDataType, Mandatory = false, SortOrder = 7, Description = (string?)null },
+            new { Alias = "featuresTitle", Name = "Features Title", DataType = textstringDataType, Mandatory = false, SortOrder = 8, Description = (string?)null },
+            new { Alias = "BodyText", Name = "Body Text", DataType = textareaDataType, Mandatory = false, SortOrder = 9, Description = (string?)null },
             new { Alias = "layout", Name = "Layout", DataType = textstringDataType, Mandatory = false, SortOrder = 0, Description = "Choose page layout: Main, HolyGrail, Sidebar, Centered, FullWidth" }
         };
 

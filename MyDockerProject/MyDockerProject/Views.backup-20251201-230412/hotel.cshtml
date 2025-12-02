@@ -1,0 +1,526 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Core.Models.PublishedContent
+@{
+    var layoutFromContent = Model?.Value<string>("layout");
+    var layoutName = !string.IsNullOrEmpty(layoutFromContent) ? layoutFromContent : ViewData["Layout"] as string;
+    
+    var layoutPath = layoutName switch
+    {
+        "HolyGrail" => "Layouts/HolyGrail.cshtml",
+        "Sidebar" => "Layouts/Sidebar.cshtml",
+        "Centered" => "Layouts/Centered.cshtml",
+        "FullWidth" => "Layouts/FullWidth.cshtml",
+        _ => "Layouts/Main.cshtml"
+    };
+    
+    Layout = layoutPath;
+    ViewData["Title"] = Model?.Name ?? "Hotel Details";
+    
+    var hotelId = ViewBag.HotelSlug as string ?? ViewBag.HotelId as string ?? Model?.Key.ToString() ?? Context.Request.RouteValues["slug"]?.ToString() ?? Context.Request.RouteValues["id"]?.ToString();
+}
+
+<div id="hotel-page-content">
+    <div class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <p class="text-gray-600 mt-4 text-lg font-light">Loading hotel details...</p>
+    </div>
+</div>
+
+<script>
+    const hotelId = '@hotelId';
+    
+    Promise.all([
+        fetch(`/api/hotels/${hotelId}`).then(r => {
+            if (!r.ok) {
+                throw new Error(`Hotel API returned ${r.status}: ${r.statusText}`);
+            }
+            return r.json();
+        }).catch(err => {
+            console.error('Error fetching hotel:', err);
+            throw err;
+        }),
+        fetch(`/api/hotels/${hotelId}/rooms`).then(r => {
+            if (!r.ok) {
+                console.warn('Rooms API returned error:', r.status);
+                return [];
+            }
+            return r.json();
+        }).catch(err => {
+            console.warn('Error fetching rooms:', err);
+            return [];
+        }),
+        fetch(`/api/hotels/${hotelId}/offers`).then(r => {
+            if (!r.ok) {
+                console.warn('Offers API returned error:', r.status);
+                return [];
+            }
+            return r.json();
+        }).catch(err => {
+            console.warn('Error fetching offers:', err);
+            return [];
+        }),
+        fetch(`/api/hotels/${hotelId}/events`).then(r => {
+            if (!r.ok) {
+                console.warn('Events API returned error:', r.status);
+                return [];
+            }
+            return r.json();
+        }).catch(err => {
+            console.warn('Error fetching events:', err);
+            return [];
+        })
+    ])
+    .then(([hotel, rooms, offers, events]) => {
+        console.log('Hotel data received:', hotel);
+                    console.log('Rooms data received:', rooms);
+                    console.log('Offers data received:', offers);
+                    console.log('Events data received:', events);
+        
+        const container = document.getElementById('hotel-page-content');
+        
+        if (!hotel) {
+            throw new Error('Hotel data is null or undefined');
+        }
+        
+        if (!hotel.id && !hotel.name) {
+            throw new Error('Hotel data missing id and name fields');
+        }
+        
+        // Ensure rooms and offers are arrays
+        if (!Array.isArray(rooms)) rooms = [];
+        if (!Array.isArray(offers)) offers = [];
+        
+        const hotelSlug = hotel.slug || hotel.id;
+        let html = '';
+        
+        // Hero Section with Image
+        const heroImageUrl = Array.isArray(hotel.heroImage) ? hotel.heroImage[0] : hotel.heroImage;
+        html += `
+            <section class="relative h-[85vh] min-h-[700px] overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+                    ${heroImageUrl ? `<img src="${heroImageUrl}" alt="${hotel.name}" class="w-full h-full object-cover opacity-40" />` : ''}
+                    <div class="absolute inset-0 bg-black/50"></div>
+                </div>
+                <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 h-full flex items-center py-20">
+                    <div class="text-white max-w-3xl">
+                        <h1 class="text-5xl md:text-6xl lg:text-7xl font-serif mb-8 tracking-tight">${hotel.name || 'Hotel'}</h1>
+                        ${hotel.shortDescription ? `<p class="text-xl md:text-2xl mb-6 opacity-90 font-light leading-relaxed">${hotel.shortDescription}</p>` : ''}
+                        ${hotel.description ? `<p class="text-lg mb-8 opacity-80 font-light leading-relaxed">${hotel.description}</p>` : ''}
+                        ${hotel.address ? `
+                            <div class="flex flex-wrap gap-6 text-sm font-light mt-8">
+                                <span>📍 ${hotel.address}${hotel.city ? ', ' + hotel.city : ''}${hotel.country ? ', ' + hotel.country : ''}</span>
+                                ${hotel.phone ? `<span>📞 ${hotel.phone}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        // Highlights Section
+        if (hotel.highlights) {
+            const highlights = hotel.highlights.split('\n').filter(h => h.trim());
+            if (highlights.length > 0) {
+                const highlightsImages = (hotel.galleryImages && hotel.galleryImages.length > 0) 
+                    ? hotel.galleryImages 
+                    : (hotel.heroImage ? [hotel.heroImage] : []);
+                
+                html += `
+                    <section class="py-20 lg:py-28 bg-white">
+                        <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                            <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight">The Highlights</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                ${highlightsImages.length > 0 ? `
+                                <div class="aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden" id="highlights-slider-container">
+                                    <div id="slider-highlights" class="relative h-full w-full">
+                                        <div class="slider-container relative w-full h-full">
+                                            ${highlightsImages.map((img, idx) => `
+                                                <div class="slider-slide absolute inset-0 transition-opacity duration-1000 ${idx === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0'}">
+                                                    <img src="${img}" alt="${hotel.name} - Slide ${idx + 1}" class="w-full h-full object-cover" />
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                        ${highlightsImages.length > 1 ? `
+                                        <button class="slider-prev absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all" aria-label="Previous slide">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                            </svg>
+                                        </button>
+                                        <button class="slider-next absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all" aria-label="Next slide">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        </button>
+                                        <div class="slider-dots absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                                            ${highlightsImages.map((img, idx) => `
+                                                <button class="slider-dot w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-white w-6' : 'bg-white/50'}" data-slide="${idx}" aria-label="Go to slide ${idx + 1}"></button>
+                                            `).join('')}
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                ` : `
+                                <div class="aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden">
+                                    <div class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                                </div>
+                                `}
+                                <div class="flex flex-col justify-center">
+                                    <ul class="space-y-4 text-gray-700 font-light">
+                                        ${highlights.map(h => `<li class="flex items-start"><span class="mr-3 text-gray-400">•</span><span>${h.trim()}</span></li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                `;
+            }
+        }
+        
+        // Gallery Section
+        if (hotel.galleryImages && hotel.galleryImages.length > 0) {
+            html += `
+                <section class="py-20 lg:py-28 bg-gray-50">
+                    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight text-center">Gallery</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            ${hotel.galleryImages.map(img => `
+                                <div class="relative overflow-hidden aspect-[4/3] cursor-pointer group rounded-xl" onclick="window.openLightbox('${img}')">
+                                    <img src="${img}" alt="Gallery image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+        
+        // Features Section
+        if (hotel.features) {
+            const features = hotel.features.split('\n').filter(f => f.trim());
+            if (features.length > 0) {
+                html += `
+                    <section class="py-20 lg:py-28 bg-white">
+                        <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                            <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight text-center">Features & Amenities</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                ${features.map(f => `
+                                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                                        <p class="text-gray-700 font-light">${f.trim()}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </section>
+                `;
+            }
+        }
+        
+        // Rooms Preview Section
+        if (rooms && rooms.length > 0) {
+            html += `
+                <section class="py-20 lg:py-28 bg-white">
+                    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                        <div class="mb-12">
+                            <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-4 tracking-tight">Rooms & Suites</h2>
+                            <p class="text-gray-600 text-lg font-light max-w-3xl">Experience unparalleled luxury in our thoughtfully designed accommodations.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            ${rooms.slice(0, 6).map(room => {
+                                const roomImageUrl = Array.isArray(room.heroImage) ? room.heroImage[0] : (room.heroImage || (Array.isArray(room.roomImages) && room.roomImages.length > 0 ? room.roomImages[0] : null));
+                                return `
+                                <div class="group">
+                                    <div class="aspect-[4/3] overflow-hidden mb-6 rounded-xl">
+                                        ${roomImageUrl ? `<img src="${roomImageUrl}" alt="${room.name || 'Room'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />` : `<div class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center"><span class="text-gray-400 text-sm font-light">Room Image</span></div>`}
+                                    </div>
+                                    <h3 class="text-xl font-serif text-gray-900 mb-2 tracking-tight">${room.name || 'Room'}</h3>
+                                    ${room.description ? `<p class="text-gray-600 mb-4 line-clamp-2 text-sm font-light">${room.description}</p>` : ''}
+                                    <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                                        ${room.priceFrom ? `<span class="text-xl font-serif text-gray-900">From £${room.priceFrom}</span>` : ''}
+                                        <a href="/hotels/${hotelSlug}/rooms/${room.slug || room.id}" class="text-gray-900 hover:opacity-70 transition-opacity text-xs uppercase tracking-wide font-light">
+                                            View Details →
+                                        </a>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        ${rooms.length > 6 ? `
+                            <div class="text-center mt-12">
+                                <a href="/hotels/${hotelSlug}/rooms" class="bg-gray-900 text-white px-10 py-4 text-xs font-light tracking-widest uppercase hover:bg-gray-800 transition-colors inline-block">
+                                    View All Rooms & Suites
+                                </a>
+                            </div>
+                        ` : ''}
+                    </div>
+                </section>
+            `;
+        }
+        
+        // Offers Section
+        if (offers && offers.length > 0) {
+            html += `
+                <section class="py-20 lg:py-28 bg-gray-50">
+                    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight text-center">Special Offers</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            ${offers.map(offer => `
+                                <div class="bg-white rounded-xl shadow-sm p-8 hover:shadow-md transition-shadow">
+                                    ${offer.image ? `
+                                        <div class="aspect-[4/3] overflow-hidden mb-6 rounded-xl">
+                                            <img src="${offer.image}" alt="${offer.name || 'Offer'}" class="w-full h-full object-cover" />
+                                        </div>
+                                    ` : ''}
+                                    <h3 class="text-xl font-serif text-gray-900 mb-4 tracking-tight">${offer.name || 'Offer'}</h3>
+                                    ${offer.description ? `<p class="text-gray-600 mb-6 font-light text-sm leading-relaxed">${offer.description}</p>` : ''}
+                                    ${offer.discount ? `<p class="text-3xl font-serif text-gray-900 mb-4">${offer.discount}% Off</p>` : ''}
+                                    ${offer.validFrom && offer.validTo ? `
+                                        <p class="text-xs text-gray-500 font-light uppercase tracking-wide">Valid: ${new Date(offer.validFrom).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(offer.validTo).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                    ` : ''}
+                                    ${offer.url ? `
+                                        <a href="${offer.url}" class="inline-block mt-6 text-gray-900 text-xs font-light tracking-widest uppercase hover:opacity-70 transition-opacity">
+                                            Learn More →
+                                        </a>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+        
+        // Events Section
+        if (events && events.length > 0) {
+            html += `
+                <section class="py-20 lg:py-28 bg-white">
+                    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                        <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-12 tracking-tight text-center">Upcoming Events</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            ${events.map(event => `
+                                <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-gray-100">
+                                    ${event.image ? `
+                                        <div class="aspect-[4/3] overflow-hidden">
+                                            <img src="${event.image}" alt="${event.name || 'Event'}" class="w-full h-full object-cover" />
+                                        </div>
+                                    ` : ''}
+                                    <div class="p-8">
+                                        <h3 class="text-xl font-serif text-gray-900 mb-3 tracking-tight">${event.name || 'Event'}</h3>
+                                        ${event.description ? `<p class="text-gray-600 mb-4 font-light text-sm leading-relaxed">${event.description}</p>` : ''}
+                                        ${event.eventDate ? `
+                                            <p class="text-sm text-gray-500 mb-2 font-light flex items-center">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                ${new Date(event.eventDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </p>
+                                        ` : ''}
+                                        ${event.location ? `
+                                            <p class="text-sm text-gray-500 mb-2 font-light flex items-center">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                </svg>
+                                                ${event.location}
+                                            </p>
+                                        ` : ''}
+                                        ${event.price ? `
+                                            <p class="text-2xl font-serif text-gray-900 mb-4">£${parseFloat(event.price).toFixed(2)}</p>
+                                        ` : ''}
+                                        ${event.url ? `
+                                            <a href="${event.url}" class="inline-block mt-4 text-gray-900 text-xs font-light tracking-widest uppercase hover:opacity-70 transition-opacity">
+                                                Learn More →
+                                            </a>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+        
+        // Reserve Section
+        const reserveImageUrl = (hotel.galleryImages && hotel.galleryImages.length > 0) 
+            ? hotel.galleryImages[0] 
+            : (hotel.heroImage || null);
+        
+        html += `
+            <section class="py-20 lg:py-28 bg-gray-900 text-white">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <h2 class="text-4xl md:text-5xl font-serif mb-6 tracking-tight">Reserve Your Stay</h2>
+                            <p class="text-lg mb-8 opacity-90 font-light leading-relaxed">Contact our Reservations team to book your stay or check availability.</p>
+                            ${hotel.phone ? `<p class="text-xl mb-2 font-light">${hotel.phone}</p>` : ''}
+                            ${hotel.email ? `<p class="text-lg mb-8 opacity-80 font-light">${hotel.email}</p>` : ''}
+                            <a href="/hotels/${hotelSlug}/rooms" class="bg-white text-gray-900 px-10 py-4 text-xs font-light tracking-widest uppercase hover:bg-gray-100 transition-colors inline-block">
+                                Check Availability
+                            </a>
+                        </div>
+                        ${reserveImageUrl ? `
+                        <div class="aspect-[4/3] bg-gray-800 rounded-xl overflow-hidden">
+                            <img src="${reserveImageUrl}" alt="${hotel.name}" class="w-full h-full object-cover opacity-80" />
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </section>
+        `;
+        
+        container.innerHTML = html;
+        
+        // Initialize lightbox functionality if not already initialized
+        if (typeof window.galleryLightboxInitialized === 'undefined') {
+            window.galleryLightboxInitialized = true;
+            
+            // Define functions first
+            window.closeLightbox = function(event) {
+                if (event) {
+                    event.stopPropagation();
+                }
+                const modal = document.getElementById('lightbox-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+            };
+            
+            window.openLightbox = function(imageSrc) {
+                const modal = document.getElementById('lightbox-modal');
+                const img = document.getElementById('lightbox-image');
+                if (modal && img) {
+                    img.src = imageSrc;
+                    modal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                }
+            };
+            
+            // Create lightbox modal
+            const lightboxModal = document.createElement('div');
+            lightboxModal.id = 'lightbox-modal';
+            lightboxModal.className = 'hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center';
+            lightboxModal.onclick = window.closeLightbox;
+            lightboxModal.innerHTML = `
+                <div class="max-w-4xl max-h-full p-4 relative" onclick="event.stopPropagation()">
+                    <img id="lightbox-image" src="" alt="Lightbox" class="max-w-full max-h-full rounded-lg shadow-2xl" />
+                    <button onclick="window.closeLightbox(event)" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 font-bold bg-black/50 rounded-full w-10 h-10 flex items-center justify-center transition-colors">&times;</button>
+                </div>
+            `;
+            document.body.appendChild(lightboxModal);
+            
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    window.closeLightbox();
+                }
+            });
+        }
+        
+        // Initialize image slider for highlights section
+        if (typeof window.initImageSlider === 'undefined') {
+            window.initImageSlider = function(sliderId) {
+                const slider = document.getElementById(sliderId);
+                if (!slider) return;
+                
+                const slides = slider.querySelectorAll('.slider-slide');
+                if (slides.length <= 1) return;
+                
+                const prevBtn = slider.querySelector('.slider-prev');
+                const nextBtn = slider.querySelector('.slider-next');
+                const dots = slider.querySelectorAll('.slider-dot');
+                
+                let currentSlide = 0;
+                let autoplayTimer = null;
+                
+                function showSlide(index) {
+                    if (index < 0) index = slides.length - 1;
+                    if (index >= slides.length) index = 0;
+                    
+                    slides.forEach((slide, i) => {
+                        slide.classList.remove('opacity-100', 'z-10');
+                        slide.classList.add('opacity-0', 'z-0');
+                    });
+                    
+                    slides[index].classList.remove('opacity-0', 'z-0');
+                    slides[index].classList.add('opacity-100', 'z-10');
+                    
+                    dots.forEach((dot, i) => {
+                        if (i === index) {
+                            dot.classList.remove('bg-white/50');
+                            dot.classList.add('bg-white', 'w-6');
+                        } else {
+                            dot.classList.remove('bg-white', 'w-6');
+                            dot.classList.add('bg-white/50');
+                        }
+                    });
+                    
+                    currentSlide = index;
+                }
+                
+                function nextSlide() {
+                    showSlide(currentSlide + 1);
+                    resetAutoplay();
+                }
+                
+                function prevSlide() {
+                    showSlide(currentSlide - 1);
+                    resetAutoplay();
+                }
+                
+                function resetAutoplay() {
+                    if (autoplayTimer) {
+                        clearInterval(autoplayTimer);
+                    }
+                    autoplayTimer = setInterval(nextSlide, 5000);
+                }
+                
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', nextSlide);
+                }
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', prevSlide);
+                }
+                
+                dots.forEach((dot, i) => {
+                    dot.addEventListener('click', () => {
+                        showSlide(i);
+                        resetAutoplay();
+                    });
+                });
+                
+                slider.addEventListener('mouseenter', () => {
+                    if (autoplayTimer) {
+                        clearInterval(autoplayTimer);
+                    }
+                });
+                
+                slider.addEventListener('mouseleave', () => {
+                    resetAutoplay();
+                });
+                
+                resetAutoplay();
+            };
+        }
+        
+        // Initialize highlights slider if it exists
+        setTimeout(() => {
+            if (document.getElementById('slider-highlights')) {
+                window.initImageSlider('slider-highlights');
+            }
+        }, 100);
+    })
+    .catch(error => {
+        console.error('Error loading hotel:', error);
+        console.error('Hotel ID used:', hotelId);
+        document.getElementById('hotel-page-content').innerHTML = `
+            <div class="text-center py-20">
+                <h1 class="text-4xl font-serif text-gray-900 mb-4 tracking-tight">Hotel Not Found</h1>
+                <p class="text-gray-600 mb-4">Unable to load hotel details. Please check the console for more information.</p>
+                <p class="text-sm text-gray-500 mb-8">Hotel ID: ${hotelId}</p>
+                <a href="/hotels" class="text-gray-900 hover:opacity-70 transition-opacity text-sm uppercase tracking-wide">← Back to Hotels</a>
+            </div>
+        `;
+    });
+</script>

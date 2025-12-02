@@ -131,12 +131,39 @@ public class DataImportService
                 return result;
             }
             
-            // Get root content
+            // Get root content - try published first, then any content at root level
             var rootContent = _contentService.GetRootContent().FirstOrDefault();
+            
+            // If no published root content, try to find any content and use its parent (which should be root)
+            if (rootContent == null)
+            {
+                // Try to find any hotel and use its parent as root
+                var hotels = _contentService.GetPagedOfType(hotelType.Id, 0, 1, out _, null);
+                var firstHotel = hotels.FirstOrDefault();
+                if (firstHotel != null)
+                {
+                    // Get the parent (should be root)
+                    rootContent = _contentService.GetById(firstHotel.ParentId);
+                }
+                else
+                {
+                    // If no hotels exist, try to get root by ID (-1 is typically root)
+                    try
+                    {
+                        rootContent = _contentService.GetById(-1);
+                    }
+                    catch
+                    {
+                        // If that fails, try to create a root content node
+                        // For now, we'll return an error
+                    }
+                }
+            }
+            
             if (rootContent == null)
             {
                 result.Success = false;
-                result.Message = "No root content found. Please set up Umbraco first.";
+                result.Message = "No root content found. Please create a homepage or root content node in Umbraco backoffice first.";
                 return result;
             }
             

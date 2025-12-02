@@ -1,0 +1,227 @@
+@model List<MyDockerProject.Models.Booking>
+@{
+    Layout = "~/Views/Layouts/FullWidth.cshtml";
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="admin-dashboard">
+    <h1>Admin Dashboard</h1>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Bookings</h3>
+            <p class="stat-value">@ViewBag.TotalBookings</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Revenue</h3>
+            <p class="stat-value">£@ViewBag.TotalRevenue.ToString("N2")</p>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Payments</h3>
+            <p class="stat-value">@ViewBag.PendingBookings</p>
+        </div>
+        <div class="stat-card">
+            <h3>Cancelled</h3>
+            <p class="stat-value">@ViewBag.CancelledBookings</p>
+        </div>
+    </div>
+
+    <div class="admin-actions">
+        <a href="/admin/bookings" class="btn btn-primary">View All Bookings</a>
+        <a href="/admin/inventory" class="btn btn-secondary">View Inventory</a>
+        <a href="/api/admin/inventory/summary" class="btn btn-info" target="_blank">Inventory API</a>
+    </div>
+
+    <h2>Recent Bookings</h2>
+    <table class="bookings-table">
+        <thead>
+            <tr>
+                <th>Reference</th>
+                <th>Guest</th>
+                <th>Product</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var booking in Model)
+            {
+                <tr>
+                    <td>@booking.BookingReference</td>
+                    <td>@booking.GuestFirstName @booking.GuestLastName<br/><small>@booking.GuestEmail</small></td>
+                    <td>@booking.ProductType</td>
+                    <td>@booking.CheckIn.ToString("dd MMM yyyy")</td>
+                    <td>@(booking.CheckOut?.ToString("dd MMM yyyy") ?? "N/A")</td>
+                    <td>@booking.Currency @booking.TotalPrice.ToString("N2")</td>
+                    <td>
+                        <span class="status-badge status-@booking.Status.ToLower()">@booking.Status</span>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(booking.PaymentStatus))
+                        {
+                            <span class="status-badge status-@booking.PaymentStatus.ToLower()">@booking.PaymentStatus</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge">Pending</span>
+                        }
+                    </td>
+                    <td>
+                        <a href="/api/bookings/@booking.BookingReference" target="_blank" class="btn btn-sm">View</a>
+                        @if (booking.Status != "Cancelled")
+                        {
+                            <form method="post" action="/admin/bookings/@booking.BookingReference/cancel" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Cancel this booking?')">Cancel</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<style>
+.admin-dashboard {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: normal;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.admin-actions {
+    margin: 2rem 0;
+    display: flex;
+    gap: 1rem;
+}
+
+.bookings-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.bookings-table th {
+    background: #f5f5f5;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+}
+
+.bookings-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.bookings-table tr:hover {
+    background: #f9f9f9;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-confirmed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-paid {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+</style>
+

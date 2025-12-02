@@ -1,0 +1,91 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    // Try to get from ViewData first, then from Model
+    var images = ViewData["GalleryImages"] as System.Collections.IEnumerable 
+                 ?? ViewData["images"] as System.Collections.IEnumerable
+                 ?? (Model != null ? (Model.GetType().GetProperty("images")?.GetValue(Model) as System.Collections.IEnumerable) : null)
+                 ?? new List<string>();
+    
+    var title = ViewData["GalleryTitle"]?.ToString() 
+                ?? ViewData["title"]?.ToString()
+                ?? (Model != null ? (Model.GetType().GetProperty("title")?.GetValue(Model)?.ToString()) : null)
+                ?? "Gallery";
+}
+
+<section class="py-20 lg:py-28 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+        <div class="mb-16">
+            <h2 class="text-4xl md:text-5xl font-serif text-gray-900 mb-4 tracking-tight">@title</h2>
+            <p class="text-gray-600 text-lg font-light">Explore our beautiful properties</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="gallery-container">
+            @foreach (var image in images)
+            {
+                <div class="relative overflow-hidden aspect-[4/3] cursor-pointer group" onclick="openLightbox('@image')">
+                    <img src="@image" alt="Gallery image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Lightbox Modal (only render once per page) -->
+@if (ViewData["LightboxModalRendered"] == null)
+{
+    ViewData["LightboxModalRendered"] = true;
+    <div id="lightbox-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center" onclick="closeLightbox(event)">
+        <div class="max-w-4xl max-h-full p-4 relative" onclick="event.stopPropagation()">
+            <img id="lightbox-image" src="" alt="Lightbox" class="max-w-full max-h-full rounded-lg shadow-2xl" />
+            <button onclick="closeLightbox(event)" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 font-bold bg-black/50 rounded-full w-10 h-10 flex items-center justify-center transition-colors">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        // Only initialize once
+        if (typeof window.galleryLightboxInitialized === 'undefined') {
+            window.galleryLightboxInitialized = true;
+            
+            function openLightbox(imageSrc) {
+                const modal = document.getElementById('lightbox-modal');
+                const img = document.getElementById('lightbox-image');
+                if (modal && img) {
+                    img.src = imageSrc;
+                    modal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                }
+            }
+            
+            function closeLightbox(event) {
+                if (event) {
+                    event.stopPropagation();
+                }
+                const modal = document.getElementById('lightbox-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = ''; // Restore scrolling
+                }
+            }
+            
+            // Make functions globally available
+            window.openLightbox = openLightbox;
+            window.closeLightbox = closeLightbox;
+            
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                }
+            });
+            
+            // Close when clicking outside image (but inside modal)
+            document.addEventListener('click', function(e) {
+                const modal = document.getElementById('lightbox-modal');
+                if (modal && !modal.classList.contains('hidden') && e.target === modal) {
+                    closeLightbox();
+                }
+            });
+        }
+    </script>
+}
+

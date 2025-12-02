@@ -1,0 +1,49 @@
+@model dynamic
+@{
+    var title = Model?.title ?? "";
+    var items = Model?.items as System.Collections.IEnumerable ?? new List<dynamic>();
+}
+
+@if (!string.IsNullOrEmpty(title))
+{
+    <h2 class="text-3xl font-bold mb-8 text-center">@title</h2>
+}
+
+<div class="space-y-4">
+    @foreach (var item in items)
+    {
+        <div class="bg-white rounded-lg shadow-md overflow-hidden accordion-item">
+            <button class="w-full text-left p-6 flex justify-between items-center hover:bg-gray-50 transition-colors accordion-button" onclick="toggleAccordionItem(this)">
+                <span class="font-bold text-lg">@(item.title ?? "")</span>
+                <span class="text-2xl accordion-icon">+</span>
+            </button>
+            <div class="hidden p-6 pt-0 accordion-content">
+                <div class="text-gray-700">
+                    @Html.Raw(item.content ?? "")
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    function toggleAccordionItem(button) {
+        const content = button.nextElementSibling;
+        const icon = button.querySelector('.accordion-icon');
+        const isOpen = !content.classList.contains('hidden');
+        
+        // Close all accordions in this container
+        const container = button.closest('.space-y-4') || button.closest('section');
+        if (container) {
+            container.querySelectorAll('.accordion-content').forEach(el => el.classList.add('hidden'));
+            container.querySelectorAll('.accordion-icon').forEach(el => el.textContent = '+');
+        }
+        
+        // Open clicked one if it was closed
+        if (isOpen) {
+            content.classList.remove('hidden');
+            icon.textContent = '−';
+        }
+    }
+</script>
+

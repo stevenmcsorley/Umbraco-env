@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyDockerProject.Data;
 using MyDockerProject.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,17 @@ if (!string.IsNullOrEmpty(connectionString))
     }
 }
 
+// Configure forwarded headers for Cloudflare/proxy
+// Cloudflare uses these headers, so we need to trust all proxies
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+    // Trust all proxies (Cloudflare)
+    options.ForwardLimit = null;
+});
+
 builder.CreateUmbracoBuilder()
     .AddBackOffice()
     .AddWebsite()
@@ -52,6 +64,9 @@ builder.CreateUmbracoBuilder()
     .Build();
 
 WebApplication app = builder.Build();
+
+// Use forwarded headers FIRST (before Umbraco boot) so it knows about HTTPS from Cloudflare
+app.UseForwardedHeaders();
 
 await app.BootUmbracoAsync();
 

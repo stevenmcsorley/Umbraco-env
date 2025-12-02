@@ -33,11 +33,11 @@ RUN dotnet publish "MyDockerProject.csproj" -c $BUILD_CONFIGURATION -o /app/publ
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-# We need to make sure that the user running the app has write access to the umbraco folder, in order to write logs and other files.
+# We need to make sure that the user running the app has write access to the umbraco folder and wwwroot, in order to write logs and other files.
 # Since these are volumes they are created as root by the docker daemon.
 USER root
-RUN mkdir umbraco
-RUN mkdir umbraco/Logs
-RUN chown $APP_UID umbraco --recursive
+RUN mkdir -p umbraco umbraco/Logs wwwroot/css wwwroot/media
+RUN chown -R $APP_UID:$APP_UID umbraco wwwroot
+RUN chmod -R 755 wwwroot
 USER $APP_UID
 ENTRYPOINT ["dotnet", "MyDockerProject.dll"]

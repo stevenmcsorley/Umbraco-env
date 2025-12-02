@@ -1,0 +1,219 @@
+@{
+    Layout = "~/Views/Layouts/FullWidth.cshtml";
+    ViewData["Title"] = "My Account";
+    var bookingsWithDetails = ViewBag.Bookings as List<MyDockerProject.Models.BookingWithDetails> ?? new List<MyDockerProject.Models.BookingWithDetails>();
+    var user = ViewBag.User as MyDockerProject.Models.User;
+}
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-serif mb-8">My Account</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Account Information</h2>
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @if (user != null)
+            {
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Name</dt>
+                    <dd class="mt-1 text-sm text-gray-900">@user.FirstName @user.LastName</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Email</dt>
+                    <dd class="mt-1 text-sm text-gray-900">@user.Email</dd>
+                </div>
+                @if (!string.IsNullOrEmpty(user.Phone))
+                {
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Phone</dt>
+                        <dd class="mt-1 text-sm text-gray-900">@user.Phone</dd>
+                    </div>
+                }
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Member Since</dt>
+                    <dd class="mt-1 text-sm text-gray-900">@user.CreatedAt.ToString("MMMM yyyy")</dd>
+                </div>
+            }
+        </dl>
+        <div class="mt-6">
+            <a href="/logout" class="text-sm text-gray-600 hover:text-gray-900">Sign Out</a>
+        </div>
+    </div>
+
+    <h2 class="text-2xl font-serif mb-6">My Bookings</h2>
+    
+    @if (bookingsWithDetails == null || bookingsWithDetails.Count == 0)
+    {
+        <div class="bg-white rounded-lg shadow p-8 text-center">
+            <p class="text-gray-500">You don't have any bookings yet.</p>
+            <a href="/hotels" class="mt-4 inline-block bg-gray-900 text-white px-6 py-2 rounded hover:bg-gray-800">Browse Hotels</a>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-4">
+            @foreach (var bookingItem in bookingsWithDetails)
+            {
+                var booking = bookingItem.Booking;
+                var productName = bookingItem.ProductName;
+                var hotelName = bookingItem.HotelName;
+                var hotelLocation = bookingItem.HotelLocation;
+                var roomImage = bookingItem.RoomImage;
+                var hotelImage = bookingItem.HotelImage;
+                var nights = booking.CheckOut.HasValue ? (booking.CheckOut.Value - booking.CheckIn).Days : 0;
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <style>
+                        @@media (min-width: 768px) {
+                            .booking-card-row {
+                                display: flex !important;
+                                flex-direction: row !important;
+                                gap: 20px !important;
+                                align-items: start !important;
+                            }
+                        }
+                    </style>
+                    <div class="booking-card-row" style="display: flex; flex-direction: column; gap: 20px; align-items: start;">
+                        @* Room/Hotel Image - Small image on left, matching pricing summary (max 200px) *@
+                        @if (!string.IsNullOrEmpty(roomImage) || !string.IsNullOrEmpty(hotelImage))
+                        {
+                            <div style="width: 100%; max-width: 200px; flex-shrink: 0;">
+                                <div class="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100" style="max-width: 200px;">
+                                    <img 
+                                        src="@(roomImage ?? hotelImage)" 
+                                        alt="@(productName ?? hotelName ?? "Booking")"
+                                        class="w-full h-full object-cover"
+                                    />
+                                </div>
+                            </div>
+                        }
+                        
+                        @* Booking Details - Matching pricing summary layout exactly *@
+                        <div style="flex: 1; display: flex; flex-direction: row; gap: 20px; min-width: 0; width: 100%; align-items: flex-start;">
+                            @* Left side: Room details *@
+                            <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+                                @* Room Name *@
+                                @if (!string.IsNullOrEmpty(productName))
+                                {
+                                    <h3 style="font-size: 22px; font-weight: 500; color: #111827; font-family: 'Playfair Display', serif; letter-spacing: -0.02em; margin: 0;">
+                                        @productName
+                                    </h3>
+                                }
+                                
+                                @* Hotel Name and Location *@
+                                @if (!string.IsNullOrEmpty(hotelName))
+                                {
+                                    <p style="font-size: 14px; color: #6b7280; font-weight: 300; margin: 0;">
+                                        @hotelName
+                                        @if (!string.IsNullOrEmpty(hotelLocation))
+                                        {
+                                            <span> • @hotelLocation</span>
+                                        }
+                                    </p>
+                                }
+                                
+                                @* Dates *@
+                                <div style="font-size: 13px; color: #374151; font-weight: 300; margin-top: 4px;">
+                                    <span style="font-weight: 400;">Check-in:</span> @booking.CheckIn.ToString("dd MMM yyyy")
+                                    @if (booking.CheckOut.HasValue)
+                                    {
+                                        <span style="margin: 0 8px; color: #d1d5db;">•</span>
+                                        <span style="font-weight: 400;">Check-out:</span> @booking.CheckOut.Value.ToString("dd MMM yyyy")
+                                        <span style="margin-left: 8px; color: #6b7280;">(@nights @(nights == 1 ? "night" : "nights"))</span>
+                                    }
+                                </div>
+                                
+                                @* Room Features - Display as individual tags *@
+                                @if (bookingItem.RoomFeatures != null && bookingItem.RoomFeatures.Count > 0)
+                                {
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                                        @foreach (var feature in bookingItem.RoomFeatures.Take(3))
+                                        {
+                                            <span style="font-size: 11px; color: #6b7280; background-color: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-weight: 300;">
+                                                @feature
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                
+                                @* Events - Display if any *@
+                                @if (bookingItem.Events != null && bookingItem.Events.Count > 0)
+                                {
+                                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                                        <p style="font-size: 12px; color: #6b7280; font-weight: 500; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">Events</p>
+                                        @foreach (var eventDetail in bookingItem.Events)
+                                        {
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin: 4px 0; font-size: 13px; color: #374151;">
+                                                <span>
+                                                    @(eventDetail.Name ?? "Event")
+                                                    @if (eventDetail.Date.HasValue)
+                                                    {
+                                                        <span style="color: #6b7280; font-size: 12px; margin-left: 8px;">
+                                                            (@eventDetail.Date.Value.ToString("dd MMM yyyy"))
+                                                        </span>
+                                                    }
+                                                </span>
+                                                @if (eventDetail.Price.HasValue)
+                                                {
+                                                    <span style="font-weight: 500; color: #111827;">
+                                                        @booking.Currency @eventDetail.Price.Value.ToString("N2")
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                
+                                @* Add-ons - Display if any *@
+                                @if (bookingItem.AddOns != null && bookingItem.AddOns.Count > 0)
+                                {
+                                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                                        <p style="font-size: 12px; color: #6b7280; font-weight: 500; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">Add-ons</p>
+                                        @foreach (var addOnObj in bookingItem.AddOns)
+                                        {
+                                            var addOnJson = System.Text.Json.JsonSerializer.Serialize(addOnObj);
+                                            var addOnElement = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(addOnJson);
+                                            var addOnId = addOnElement.TryGetProperty("addOnId", out var addOnIdProp) ? addOnIdProp.GetString() : null;
+                                            var quantity = addOnElement.TryGetProperty("quantity", out var quantityProp) ? quantityProp.GetInt32() : 1;
+                                            <p style="font-size: 13px; color: #374151; margin: 4px 0;">
+                                                @if (!string.IsNullOrEmpty(addOnId))
+                                                {
+                                                    <span>Add-on: @addOnId (x@quantity)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Add-on included</span>
+                                                }
+                                            </p>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            
+                            @* Right side: Booking Reference and Price *@
+                            <div style="flex: 0 0 auto; display: flex; flex-direction: column; gap: 12px; text-align: right; align-items: flex-end;">
+                                <div>
+                                    <p style="font-size: 12px; color: #6b7280; margin: 0 0 4px 0;">Booking Reference</p>
+                                    <p style="font-size: 14px; font-weight: 500; color: #111827; margin: 0;">@booking.BookingReference</p>
+                                </div>
+                                <div>
+                                    <p style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">@booking.Currency @booking.TotalPrice.ToString("N2")</p>
+                                    <span class="inline-block px-3 py-1 rounded text-xs font-medium
+                                        @(booking.Status == "Confirmed" || booking.Status == "Paid" ? "bg-green-100 text-green-800" : 
+                                          booking.Status == "Cancelled" ? "bg-red-100 text-red-800" : 
+                                          "bg-gray-100 text-gray-800")">
+                                        @booking.Status
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(booking.PaymentStatus))
+                                    {
+                                        <p style="font-size: 12px; color: #6b7280; margin: 4px 0 0 0;">Payment: @booking.PaymentStatus</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
