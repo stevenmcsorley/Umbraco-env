@@ -641,7 +641,7 @@ public class DocumentTypePropertyService
             new { Alias = "mainButtonLink", Name = "Main Button Link", DataType = textstringDataType, Mandatory = false, SortOrder = 7, Description = (string?)null },
             new { Alias = "featuresTitle", Name = "Features Title", DataType = textstringDataType, Mandatory = false, SortOrder = 8, Description = (string?)null },
             new { Alias = "BodyText", Name = "Body Text", DataType = textareaDataType, Mandatory = false, SortOrder = 9, Description = (string?)null },
-            new { Alias = "layout", Name = "Layout", DataType = textstringDataType, Mandatory = false, SortOrder = 0, Description = "Choose page layout: Main, HolyGrail, Sidebar, Centered, FullWidth" }
+            new { Alias = "layout", Name = "Layout", DataType = textstringDataType, Mandatory = false, SortOrder = 0, Description = (string?)"Choose page layout: Main, HolyGrail, Sidebar, Centered, FullWidth" }
         };
 
         bool hasChanges = false;
