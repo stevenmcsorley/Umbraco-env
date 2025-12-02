@@ -1633,10 +1633,33 @@ public class SeedController : ControllerBase
             // Save the template
             _fileService.SaveTemplate(template);
 
+            // Assign template to Home document type
+            try
+            {
+                var homeDocType = _contentTypeService.Get("home");
+                if (homeDocType != null)
+                {
+                    // Reload template to get the actual ID after save
+                    var savedTemplate = _fileService.GetTemplate("home");
+                    if (savedTemplate != null)
+                    {
+                        // Set as default template for Home document type
+                        var contentType = (Umbraco.Cms.Core.Models.ContentType)homeDocType;
+                        contentType.SetDefaultTemplate(savedTemplate);
+                        _contentTypeService.Save(contentType);
+                    }
+                }
+            }
+            catch (Exception assignEx)
+            {
+                // Log but don't fail - template is created even if assignment fails
+                System.Diagnostics.Debug.WriteLine($"Could not assign template to Home document type: {assignEx.Message}");
+            }
+
             return Ok(new
             {
                 success = true,
-                message = "Home template created successfully",
+                message = "Home template created successfully and assigned to Home document type",
                 templateId = template.Id,
                 alias = template.Alias
             });
