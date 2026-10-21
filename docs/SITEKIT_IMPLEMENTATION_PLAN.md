@@ -118,13 +118,19 @@ solution; each milestone records implementation and validation evidence here.
   typed properties, layout trees, tags, variants and metadata. `Build()` runs
   the same component schema/layout validator used by Component Studio. The
   output saves to the shared registry and uses the existing validated export
-  and import contract for reuse across installations.
+  and import contract for reuse across installations. The component registry
+  now resolves dependency aliases, rejects missing dependencies/cycles, and
+  blocks removal of the last version required by another component.
 - Validation: the SDK contract test builds an FAQ definition, exports it from
   one registry, imports it into another, validates it and renders the imported
-  version with project data. The Release suite passes 27 tests.
+  version with project data. It also verifies missing dependency, dependency
+  cycle and required-dependency removal rejection. The full Release suite
+  passes 27 tests.
 - Boundaries: this is a C# code-first authoring path for declarative schemas,
   not a compiled custom renderer. Razor assemblies, React/TypeScript bundles,
   backend service hooks and controlled compilation/deployment remain planned.
+  Component dependencies target the latest alias version; version ranges and
+  transactional installation of dependency sets are not implemented.
 
 ## M3 progress
 
@@ -206,7 +212,7 @@ solution; each milestone records implementation and validation evidence here.
 | 2026-10-21 | M3/M7 | Release suite passed 24/24 tests, including first-run generation and build through the Agent Host tool after restore; generated screen editing and relationship control contracts are asserted. Live ChatGPT orchestration and browser-driven generated-screen editing remain unverified. |
 | 2026-10-22 | M5 | Release suite passed 25/25 tests. A schema migration regression proves existing record data remains intact through an optional field addition and that a required-field addition is rejected without changing the stored schema. |
 | 2026-10-22 | M2/M8 | Release suite passed 26/26 tests, including accessible accordion rendering and HTML-encoding assertions. Rebuilt the Docker Umbraco host with 0 errors and 164 existing warnings; OpenIddict discovery returned HTTP 200 over local HTTPS. |
-| 2026-10-22 | M1/M2 | Release suite passed 27/27 tests, including C# code-first component definition, export/import across registries, validation, and rendering. |
+| 2026-10-22 | M1/M2 | Release suite passed 27/27 tests, including C# code-first component definition, export/import across registries, validation/rendering, and component dependency checks for missing aliases, cycles and last-version removal. |
 
 
 ## Screenshot evidence

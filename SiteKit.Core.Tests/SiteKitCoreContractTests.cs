@@ -243,8 +243,14 @@ public sealed class SiteKitCoreContractTests
 
             var sourceRegistry = new JsonSiteKitComponentRegistry(Path.Combine(root, "source"));
             var destinationRegistry = new JsonSiteKitComponentRegistry(Path.Combine(root, "destination"));
+            var sharedLayout = SiteKitComponentDefinitionBuilder
+                .Create("shared-layout", "Shared layout", "layout")
+                .Property("title", "Title", "text", required: true)
+                .Build();
+            await sourceRegistry.SaveAsync(sharedLayout);
             await sourceRegistry.SaveAsync(definition);
             await using var package = new MemoryStream(await sourceRegistry.ExportAsync(definition.Alias, definition.Version));
+            await destinationRegistry.SaveAsync(sharedLayout);
             var imported = await destinationRegistry.ImportAsync(package);
 
             Assert.Empty(SiteKitComponentValidator.ValidateDefinition(imported));
@@ -256,6 +262,22 @@ public sealed class SiteKitCoreContractTests
             Assert.Contains("<details", rendered);
             Assert.Contains("How do I reuse this?", rendered);
             Assert.Contains("Install the exported component package.", rendered);
+
+            var missingDependency = SiteKitComponentDefinitionBuilder
+                .Create("missing-dependency", "Missing dependency", "content")
+                .Property("title", "Title", "text", required: true)
+                .DependsOn("not-installed")
+                .Build();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => sourceRegistry.SaveAsync(missingDependency));
+
+            var cycle = SiteKitComponentDefinitionBuilder
+                .Create("shared-layout", "Shared layout", "layout")
+                .Version("1.0.1")
+                .Property("title", "Title", "text", required: true)
+                .DependsOn("reusable-faq-card")
+                .Build();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => sourceRegistry.SaveAsync(cycle));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => sourceRegistry.DeleteAsync("shared-layout", "1.0.0"));
 
             Assert.Throws<ArgumentException>(() => SiteKitComponentDefinitionBuilder
                 .Create("Invalid alias", "Invalid", "content")

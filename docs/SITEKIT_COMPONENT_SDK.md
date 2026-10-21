@@ -37,9 +37,11 @@ the shared definition rather than copying its source. The Release contract test
 builds a definition, exports and imports it into a separate registry, and renders
 the imported version with project data.
 
-Tags and dependency aliases are validated for shape and duplicates. The current
-registry does not yet resolve dependency versions or install component
-dependencies as a transaction.
+Tags and dependency aliases are validated for shape and duplicates. The shared
+registry checks that dependencies exist, rejects cycles and prevents deleting
+the final version of a required component. Dependencies currently refer to the
+component alias's latest version; version ranges and transactional installation
+of dependency sets are not implemented.
 
 The SDK currently authors declarative C# definitions. It does not load custom
 Razor assemblies or execute React/TypeScript source. Those compiled renderer,
