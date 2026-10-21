@@ -141,6 +141,10 @@ solution; each milestone records implementation and validation evidence here.
   the local MCP protocol. The generated website built with .NET 10 and served a
   healthy `/health` response and HTTP 200 page. SQL CRUD, grant enforcement and
   schema behavior still require a running Umbraco/SQL environment.
+- Additional validation: the JSON record-store implementation completed
+  create/read/update/delete against disk and retained the original creator and
+  creation timestamp across an update. This validates the local fallback only;
+  it does not replace SQL Server or authenticated API verification.
 
 ## Validation record
 
