@@ -76,8 +76,11 @@ acceptance tests pass.
 ## Current implementation limits
 
 Consult `docs/SITEKIT_IMPLEMENTATION_PLAN.md` before starting a milestone. At
-the current checkpoint, project/entity/screen/module authoring works through
-local MCP, the JSON record store has CRUD smoke evidence, generated sites are
-independent but do not yet render application screens or CRUD, and live SIWC,
-Umbraco/SQL, Automate delivery and generated CRM acceptance checks remain
-unverified or incomplete.
+the current checkpoint, generated websites project shared component placements
+with independent data and appearance. Generated applications project model
+driven screens and SQLite CRUD, including token-based principals, operation
+grants, relationship validation and delete protection. Local MCP can author
+projects, components, entities, screens and modules. Live eligible SIWC,
+Umbraco/SQL, Automate workflow delivery, production identity federation,
+accessibility/performance, and deployment acceptance remain unverified or
+incomplete. See the ledger for the verified boundary of each feature.

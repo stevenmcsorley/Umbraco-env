@@ -1,616 +1,163 @@
-# SiteKit for Umbraco
+# SiteKit
 
-SiteKit is an open-source platform for building Umbraco websites and data-backed business applications with reusable components, project manifests and a user-controlled AI Agent Host. The existing hotel and booking experience remains available as a starter application. The current implementation includes dynamic declarative components, independent project generation, typed application entities and a local Sign in with ChatGPT integration; see the [implementation ledger](docs/SITEKIT_IMPLEMENTATION_PLAN.md) for verified status.
+[![Build](https://github.com/stevenmcsorley/Umbraco-env/actions/workflows/sitekit-build.yml/badge.svg)](https://github.com/stevenmcsorley/Umbraco-env/actions/workflows/sitekit-build.yml)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
+![Umbraco 17 LTS](https://img.shields.io/badge/Umbraco-17%20LTS-3544B1?logo=umbraco&logoColor=white)
+![Project status](https://img.shields.io/badge/status-active%20development-0B8F87)
 
-## Architecture
+### Build websites and business applications on Umbraco. Keep the building blocks.
 
-### Main Frontend: Razor Components + JavaScript ✅
-- **Technology**: Razor views, Razor partials/components
-- **Interactivity**: Vanilla JavaScript (no React)
-- **Components**: Hero, Gallery, FAQ, Features, Cards, etc.
-- **Location**: `MyDockerProject/Views/Partials/` 
-- **Purpose**: Universal, reusable Razor components for any site type (hotels, venues, stadiums, events, etc.)
+SiteKit is an open-source platform for creating **content-driven websites, internal business systems, and reusable software modules**. Compose validated components, model operational data, build application screens, install modules, and generate independently deployable .NET projects.
 
-### React: ONLY for Booking Engine ✅
-- **Technology**: React + TypeScript
-- **Location**: `frontend/src/booking-engine/`
-- **Purpose**: Standalone booking component
-- **Integration**: Embedded seamlessly in Razor pages via `BookingEngine.cshtml` partial
+The platform grows with what you make: a component, entity, screen, or module can become a building block for the next project. Umbraco remains the CMS for editorial content; operational records live in application data stores suited to transactional work.
 
-## Project Structure
+<p align="center">
+  <img src="output/playwright/sitekit-generated-crm-runtime.png" alt="Generated SiteKit CRM with customer records and an opportunity pipeline" width="920">
+</p>
 
+<p align="center"><strong>From reusable component to a working application—with persistent records and permission-checked operations.</strong></p>
+
+> **Project status:** SiteKit is under active development. The repository contains working platform capabilities and generated runtime evidence, alongside incomplete milestones. See the [implementation ledger](docs/SITEKIT_IMPLEMENTATION_PLAN.md) for exact status and verified results. The hotel and booking application remains in the repository as a working starter experience.
+
+## What you can build
+
+| Websites | Business applications | Reusable platform |
+| --- | --- | --- |
+| Marketing and corporate sites | CRMs and sales pipelines | Components and themes |
+| Blogs, directories, event sites | Portals and operations tools | Typed entities and screens |
+| Hotel and booking experiences | Data-backed forms and tables | Installable modules and workflows |
+| Generated independent .NET sites | Dashboards, kanban, calendar views | Imports, APIs, and project starters |
+
+SiteKit is not limited to a shipped component catalogue. Component definitions are versioned, validated data schemas rendered from safe primitives. Projects place shared definitions by reference and supply their own content and appearance values. Developer code belongs in a controlled package/build pipeline; it is not executed as untrusted request content.
+
+## See it working
+
+### Create once, use across projects
+
+The same registered component definition is rendered by two independent generated websites. Each project supplies its own placement data and appearance.
+
+| Site One | Site Two |
+| --- | --- |
+| ![Generated Site One uses the shared component with its own content and styling](output/playwright/sitekit-generated-shared-component-one.png) | ![Generated Site Two uses the same shared component with independent content and styling](output/playwright/sitekit-generated-shared-component-two.png) |
+
+### Build and work with an application
+
+![Generated CRM with a customer table and persisted opportunity pipeline](output/playwright/sitekit-generated-crm-runtime.png)
+
+The generated CRM runtime uses SQLite-backed CRUD, token-based principals, and entity-operation grants. The current integration evidence covers record creation, update, persistence across restart, permission denial, relationship checks, and guarded deletion. See [runtime scope and setup](docs/SITEKIT_GENERATED_RUNTIME.md).
+
+### Explore SiteKit Studio
+
+These Studio screens are **static visual previews** built from fixture data. They show the intended editing experience and are not screenshots of a live Umbraco backoffice.
+
+| Components | Application screens |
+| --- | --- |
+| ![Component Studio visual schema and layout builder preview](output/playwright/sitekit-components-static-preview.png) | ![Application screen builder preview](output/playwright/sitekit-screens-static-preview.png) |
+
+| Projects and data models | Modules |
+| --- | --- |
+| ![Projects and data model Studio preview](output/playwright/sitekit-projects-static-preview.png) | ![Verified module packages and version pins Studio preview](output/playwright/sitekit-modules-static-preview.png) |
+
+More images and their provenance: [screenshot guide](docs/SITEKIT_SCREENSHOTS.md).
+
+## How the pieces fit
+
+```mermaid
+flowchart LR
+    person[Builder] --> studio[Umbraco backoffice<br/>SiteKit Studio]
+    person --> agent[Local SiteKit Agent Host]
+    chatgpt[ChatGPT<br/>official sign-in flow] <--> agent
+    studio <--> platform[SiteKit platform services]
+    agent -->|typed, permission-checked tools| platform
+    platform --> components[Component registry<br/>schemas · versions · placements]
+    platform --> projects[Project and module registry]
+    platform --> appdata[Application data<br/>entities · permissions · records]
+    platform --> automate[Umbraco Automate<br/>triggers and actions]
+    platform --> cms[Umbraco CMS<br/>content · media · publishing]
+    projects --> generator[Project generator]
+    components --> generator
+    appdata --> generator
+    generator --> site[Independent .NET website]
+    generator --> application[Independent .NET application]
 ```
-├── MyDockerProject/              # Umbraco CMS project (Docker)
-│   ├── engine/                   # Booking Engine Backend (Node.js + TypeScript, Docker)
-│   ├── MyDockerProject/
-│   │   ├── Views/
-│   │   │   ├── Partials/         # Universal Razor components
-│   │   │   │   ├── Hero.cshtml
-│   │   │   │   ├── Gallery.cshtml
-│   │   │   │   ├── FAQ.cshtml
-│   │   │   │   ├── Features.cshtml
-│   │   │   │   ├── Cards.cshtml
-│   │   │   │   └── BookingEngine.cshtml  # Embeds React booking engine
-│   │   │   ├── hotelList.cshtml  # Hotel list page
-│   │   │   ├── hotel.cshtml      # Hotel details page
-│   │   │   └── room.cshtml       # Room page with booking
-│   │   ├── Controllers/
-│   │   │   ├── Api/              # API endpoints
-│   │   │   └── HotelController.cs
-│   │   ├── Services/             # Business logic
-│   │   └── wwwroot/scripts/      # Built React booking engine (booking-engine.js)
-│   └── docker-compose.yml
-├── frontend/                      # React Booking Engine source (build separately)
-│   └── src/booking-engine/       # React booking engine component
-└── docs/                          # Documentation
-```
 
-## Prerequisites
+The Agent Host runs on the user's machine or controlled environment and keeps credentials there. Sign in with ChatGPT plan sharing is subject to OpenAI eligibility and the official integration terms; it is not a promise of universal subscription access. SiteKit does not ask for ChatGPT passwords or cookies. The optional provider interface can support other providers; an OpenAI API key is not the mandatory path for an eligible, authorised plan-sharing user.
 
-- Docker and Docker Compose
-- Node.js 20+ (for local development)
-- .NET 10 SDK (for local Umbraco development; Umbraco 17 LTS)
+## Current capabilities
 
-ImageSharp 4 is used as a direct, patched dependency. Contributors need a
-Six Labors community license key for local Release builds; open-source projects
-can request one from the [Six Labors licensing portal](https://licensing.sixlabors.com/).
-Set `SIXLABORS_LICENSE_KEY` in the environment. Never commit the key. The
-GitHub Actions workflow reads it from the repository secret with that name.
-Debug builds do not require the key.
+- **Dynamic components:** versioned schema and data validation, safe rendering, property/layout editing, previews, variants, JSON import/export, registry search, project placements, and per-project appearance.
+- **Project generation:** independent .NET 10 website, application, combined, and API projects with Dockerfiles, manifests, and generated screen/runtime assets.
+- **Business data:** typed entities, additive schema evolution checks, SQLite persistence in generated apps, SQL Server record APIs in the Umbraco host, permission grants, audit data, and validated relationships.
+- **Application screens:** tables and forms plus search, kanban, calendar, and entity-count dashboard views in generated applications.
+- **Modules:** verified declarative packages with integrity checks, component/entity/screen assets, dependency version ranges, project pins, and explicit upgrades.
+- **Universal imports:** CSV, JSON, and XML parsing, field mappings, validation, repeatable upserts, preview, and import history.
+- **AI and MCP:** local Agent Host, typed SiteKit tools, stdio MCP, OAuth/PKCE Sign in with ChatGPT flow, and streamed Responses API orchestration. Live account eligibility and end-to-end subscription verification remain outstanding.
+- **Existing starter:** Umbraco hotel content, booking, pricing/inventory, payments, importing, and React/TypeScript booking UI are preserved.
 
-## Getting Started
+The [milestone ledger](docs/SITEKIT_IMPLEMENTATION_PLAN.md) distinguishes implemented, partial, planned, and runtime-verified work. Not every acceptance scenario in the long-term product direction is complete.
 
-### 1. Start All Services (Docker)
+## Quick start
 
-```bash
-cd MyDockerProject
-docker-compose up -d
-```
+### Prerequisites
 
-This starts:
-- SQL Server database (port 1433)
-- Umbraco CMS (port 44372)
-- Booking Engine Backend (port 3001)
+- .NET 10 SDK (Umbraco 17 LTS)
+- Docker Desktop with its Linux engine, for the full Umbraco/SQL Server stack
+- Node.js 20+, for the booking engine frontend
+- A Six Labors community license key for Release builds using ImageSharp 4.1.3; never commit the key
 
-**All services run in Docker - no local processes needed!**
-
-**Note**: The React booking engine must be built separately and copied to `wwwroot/scripts/` before starting Docker. See [BUILD_BOOKING_ENGINE.md](BUILD_BOOKING_ENGINE.md) for instructions.
-
-### 2. Access Services
-
-- **Umbraco Backoffice**: https://localhost:44372/umbraco
-- **Umbraco API**: http://localhost:44372/api/hotels
-- **Booking Engine API**: http://localhost:3001/health
-- **React Booking Engine**: Served from Umbraco at `/scripts/booking-engine.js`
-
-### 3. Create Content Types
-
-Management, import, migration and seed APIs require a signed-in customer account
-whose email is configured in `SITEKIT_ADMIN_EMAILS` in the local `.env` file. To
-create the first account for an allowlisted email, temporarily configure
-`SITEKIT_ADMIN_REGISTRATION_CODE`, submit it as `adminRegistrationCode`, then
-remove the code after registration.
-Keep `.env` private. Sign in at `/login`, then retain the session cookie when
-calling management endpoints. For example:
+### Build the platform
 
 ```powershell
-$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-$credentials = @{ email = "admin@example.com"; password = "your-password" } | ConvertTo-Json
-Invoke-RestMethod -Uri "http://localhost:44372/api/auth/login" -Method POST -WebSession $session -Body $credentials -ContentType "application/json"
-Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-document-types" -Method POST -WebSession $session
+dotnet restore UmbraccoEnv.sln
+dotnet build UmbraccoEnv.sln --no-restore
+dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --configuration Release
 ```
 
-**Option A: Create via API (Recommended)**
-```powershell
-# Create all document types at once
-Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-document-types" -Method POST -WebSession $session
+For Release builds, set `SIXLABORS_LICENSE_KEY` in your environment. Debug builds do not require it.
 
-# Or create individually:
-Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-addon-document-type" -Method POST -WebSession $session
-```
-
-**Option B: Create Manually**
-1. Go to Umbraco Backoffice: https://localhost:44372/umbraco
-2. Navigate to **Settings** → **Document Types**
-3. Create:
-   - **Hotel** (alias: `hotel`, allowed as root)
-   - **Room** (alias: `room`, child of Hotel)
-   - **Offer** (alias: `offer`, child of Hotel)
-   - **Event** (alias: `event`, child of Hotel) - optional
-   - **Add On** (alias: `addOn`, child of Hotel) - for booking add-ons
-
-See [Getting Started Guide](docs/GETTING_STARTED.md) for detailed instructions.
-
-### 4. Seed Demo Content
-
-Once content types exist:
-
-```bash
-curl -X POST http://localhost:44372/api/seed/create-demo-hotel
-```
-
-This creates:
-- "Grand Hotel Example" hotel
-- 4 example rooms
-- 3 example offers
-
-### 5. Create Database Tables (First Time Setup)
-
-Before importing data with prices, ensure the Inventory, Bookings, and Users tables exist:
+### Run the existing Umbraco starter
 
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:44372/api/migration/ensure-tables" -Method POST -WebSession $session
+Set-Location MyDockerProject
+docker compose up -d
 ```
 
-This creates:
-- **Bookings** table: Stores all bookings with guest details, payment info, and status
-- **Inventory** table: Tracks date-specific prices and availability
-- **Users** table: User accounts for authentication
+The compose stack exposes Umbraco at `https://localhost:44372` and the booking engine API at `http://localhost:3001`. Build the React booking bundle separately before starting the stack; see [booking engine build instructions](BUILD_BOOKING_ENGINE.md). The first Umbraco administrator must be provisioned through the documented allowlist/bootstrap flow; keep `.env` private and remove the temporary registration code after setup.
 
-**Note:** This only needs to be run once after initial setup.
+### Generate a project
 
-### 6. Import Data (Bulk Import)
+Use SiteKit Studio or the local Agent Host's project tools. Generated projects target .NET 10 and include their own project manifest, runnable ASP.NET Core host, and Dockerfile. The detailed generated runtime guide explains credentials, project files, and its current production boundaries: [Generated application runtime](docs/SITEKIT_GENERATED_RUNTIME.md).
 
-You can bulk import hotels, rooms, events, and offers using the import API:
+## Repository map
 
-**Using JSON in request body:**
-```powershell
-$jsonContent = Get-Content -Path "sample-import.json" -Raw
-$body = @{ ContentJson = $jsonContent } | ConvertTo-Json -Depth 10
-Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST -WebSession $session -Body $body -ContentType "application/json"
+```text
+SiteKit.Core/                         Contracts, validation, registries, generator, modules
+SiteKit.Core.Tests/                   Focused platform contract and generated-runtime tests
+SiteKit.AgentHost/                    Local ChatGPT orchestration, credentials, MCP tools
+MyDockerProject/MyDockerProject/      Umbraco 17 host, Studio, hotel app, APIs, Automate hooks
+frontend/                             React + TypeScript booking engine
+docs/                                 Implementation ledger, runtime guides, screenshots
+output/playwright/                    Committed screenshot evidence and Studio previews
 ```
-
-**Using file upload:**
-```powershell
-$filePath = "sample-import.json"
-$form = @{
-    file = Get-Item $filePath
-}
-Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import-file" -Method POST -WebSession $session -Form $form
-```
-
-**Import JSON Format:**
-```json
-{
-  "hotels": [
-    {
-      "name": "Hotel Name",
-      "slug": "hotel-slug",
-      "description": "Hotel description",
-      "address": "123 Street",
-      "city": "City",
-      "country": "Country",
-      "rooms": [
-        {
-          "name": "Room Name",
-          "slug": "room-slug",
-          "description": "Room description",
-          "maxOccupancy": 2,
-          "bedType": "King",
-          "size": "50 m²",
-          "prices": {
-            "2025-12-19": 200.00,
-            "2025-12-20": 200.00
-          },
-          "availability": {
-            "2025-12-19": 5,
-            "2025-12-20": 5
-          }
-        }
-      ],
-      "events": [
-        {
-          "name": "Event Name",
-          "slug": "event-slug",
-          "description": "Event description",
-          "eventDate": "2025-12-19T19:00:00Z",
-          "location": "Event Location",
-          "price": 50.00,
-          "capacity": 100
-        }
-      ],
-      "offers": [
-        {
-          "name": "Offer Name",
-          "slug": "offer-slug",
-          "description": "Offer description",
-          "discount": 15.00,
-          "validFrom": "2025-12-01T00:00:00Z",
-          "validTo": "2026-12-31T00:00:00Z"
-        }
-      ]
-    }
-  ]
-}
-```
-
-See `sample-import.json` and `test-import-multiple.json` for complete examples.
-
-**Update Existing Content:**
-- **Hotels**: If a hotel with the same name exists, it will be **updated** (not skipped)
-- **Rooms**: If a room with the same name exists under the hotel, it will be **updated**
-- **Events & Offers**: Existing items are **updated** by name
-- **Prices & Availability**: Inventory entries are **updated** if they exist, or **created** for new dates
-
-**Price Updates for Booking Engine:**
-- Prices in the `prices` object are stored in the Inventory table
-- The booking engine automatically uses these date-specific prices via `/api/hotels/inventory/{productId}`
-- You can update prices anytime by re-importing with new price data
-- Updated prices are immediately available to the booking engine
-- Each date can have its own price (dynamic pricing support)
-
-**Example: Update prices for existing room**
-```json
-{
-  "hotels": [
-    {
-      "name": "Existing Hotel Name",  // Will update existing hotel
-      "rooms": [
-        {
-          "name": "Existing Room",  // Will update existing room
-          "prices": {
-            "2025-12-19": 250.00,  // Updates existing price
-            "2025-12-20": 280.00,  // Updates existing price
-            "2025-12-29": 300.00   // Creates new inventory entry
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-### 7. View Pages
-
-- **Hotel List**: http://localhost:44372/hotels
-- **Hotel Details**: http://localhost:44372/hotels/{id}
-- **Room Page**: http://localhost:44372/hotels/{hotelId}/rooms/{roomId}
-
-## Razor Components
-
-Universal components available in `Views/Partials/`:
-
-### Hero
-```razor
-@await Html.PartialAsync("Partials/Hero", new {
-    heading = "Welcome",
-    tagline = "Your tagline here",
-    image = "/media/hero.jpg",
-    backgroundColor = "bg-blue-900",
-    textColor = "text-white"
-})
-```
-
-### Gallery
-```razor
-@await Html.PartialAsync("Partials/Gallery", new {
-    title = "Photo Gallery",
-    images = new[] { "/media/img1.jpg", "/media/img2.jpg" }
-})
-```
-
-### FAQ
-```razor
-@await Html.PartialAsync("Partials/FAQ", new {
-    title = "Frequently Asked Questions",
-    items = new[] {
-        new { question = "Question 1?", answer = "Answer 1" },
-        new { question = "Question 2?", answer = "Answer 2" }
-    }
-})
-```
-
-### Features
-```razor
-@await Html.PartialAsync("Partials/Features", new {
-    title = "Features",
-    items = new[] {
-        new { title = "Feature 1", description = "Description", icon = "⭐" },
-        new { title = "Feature 2", description = "Description", icon = "🏊" }
-    }
-})
-```
-
-### Cards
-```razor
-@await Html.PartialAsync("Partials/Cards", new {
-    title = "Our Services",
-    columns = 3,
-    items = new[] {
-        new { title = "Card 1", description = "Description", image = "/media/card1.jpg", link = "/service1" }
-    }
-})
-```
-
-### Booking Engine
-```razor
-@await Html.PartialAsync("Partials/BookingEngine", new {
-    productId = "room-123",
-    hotelId = "hotel-456",
-    apiBaseUrl = "/engine"
-})
-```
-
-## API Endpoints
-
-### Umbraco CMS APIs
-
-- `GET /api/hotels` - List all hotels
-- `GET /api/hotels/{id}` - Get hotel details
-- `GET /api/hotels/{id}/rooms` - Get rooms for a hotel
-- `GET /api/hotels/{id}/offers` - Get offers for a hotel
-- `GET /api/hotels/{id}/events` - Get events for a hotel
-- `GET /api/hotels/{id}/addons` - Get add-ons for a hotel
-- `GET /api/hotels/{id}/availability` - Get basic availability structure
-- `GET /api/hotels/inventory/{productId}?from=DATE&to=DATE` - Get date-specific prices and availability from Inventory table (used by booking engine)
-- `POST /api/migration/ensure-tables` - Create Bookings, Inventory, and Users database tables (run once after setup)
-- `POST /api/importer/import` - Bulk import hotels, rooms, events, and offers from JSON (updates existing content)
-- `POST /api/importer/import-file` - Bulk import from uploaded JSON file (updates existing content)
-- `POST /api/seed/create-demo-hotel` - Create demo hotel content
-- `POST /api/seed/create-document-types` - Create all document types (Hotel, Room, Offer, Event, AddOn)
-- `POST /api/seed/create-addon-document-type` - Create AddOn document type
-
-### Authentication APIs
-
-- `POST /api/auth/register` - Register new user account
-- `POST /api/auth/login` - Login and get authentication token
-- `GET /api/auth/user/{userId}` - Get user details
-- `GET /api/auth/user/{userId}/bookings` - Get user's booking history
-
-### Booking APIs
-
-- `POST /api/bookings` - Create new booking (includes payment processing)
-- `GET /api/bookings/{bookingReference}` - Get booking details
-- `POST /api/bookings/{bookingReference}/cancel` - Cancel a booking
-- `GET /api/bookings/user/{userId}` - Get bookings for a user
-
-### Admin APIs
-
-- `GET /api/admin/inventory` - Get all inventory entries (with optional filtering by productId, productType, date range)
-- `GET /api/admin/bookings` - Get all bookings (with optional filtering by productId, productType, status, date range)
-- `GET /api/admin/inventory/summary` - Get inventory and booking statistics summary
-
-### Admin Dashboard (UI)
-
-- `GET /admin` - Admin dashboard with statistics
-- `GET /admin/bookings` - Bookings management page
-- `GET /admin/inventory` - Inventory management page
-
-### Booking Engine APIs
-
-- `GET /engine/availability?productId={id}&from={date}&to={date}` - Check availability (uses Inventory API for date-specific prices)
-- `POST /engine/book` - Create booking (now persists to database via Umbraco API)
-- `GET /engine/health` - Health check
-
-**Note:** The booking engine automatically fetches date-specific prices from the Inventory table via `/api/hotels/inventory/{productId}`. Prices imported through the import system are immediately available to the booking engine.
-
-## Development
-
-### Local Development (Optional)
-
-For React booking engine development with hot-reload:
-
-1. Start Umbraco + Database + Booking Engine: `docker-compose up -d` in `MyDockerProject/`
-2. Start React dev server: `cd frontend && npm run dev`
-3. Update CSHTML files to use `http://localhost:5173/booking-engine.js` during development
-4. Remember to build and copy to `wwwroot/scripts/` for production
-
-### Rebuilding Services
-
-```bash
-# Rebuild specific service
-docker-compose up -d --build mydockerproject
-
-# Rebuild all
-docker-compose up -d --build
-```
-
-### Viewing Logs
-
-```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f mydockerproject
-docker-compose logs -f booking_engine
-```
-
-## Universal Components
-
-All Razor components are **universal** and work for:
-- Hotels
-- Event venues
-- Stadiums & arenas
-- Attractions
-- Multi-location businesses
-- Tourism boards
-- Any structured-content domain
-
-Components use vanilla JavaScript for interactivity (lightbox, accordion, etc.) - no React overhead for main site components.
-
-## Umbraco Site Kit - Programmatic Content Type Creation
-
-The Umbraco Site Kit allows you to programmatically create Document Types and Element Types with their properties via API endpoints, eliminating manual setup in the Umbraco backoffice.
-
-**📖 For complete documentation, see [Umbraco Site Kit Guide](docs/UMBRACO_SITE_KIT.md)**
-
-### Quick Start - Create Element Types
-
-```powershell
-# Create all 14 Element Types
-Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-partial-element-types" -Method POST
-
-# Add properties to Element Types
-Invoke-RestMethod -Uri "http://localhost:44372/api/seed/add-properties-to-element-types" -Method POST
-```
-
-### Available Element Types
-
-The system creates 14 reusable Element Types:
-- Hero, Gallery, Features, FAQ, Cards, CTA Panel, Events, Offers, Rooms, Rich Text, Testimonials, Accordion, Tabs, Map
-
-Each Element Type has properties automatically assigned to the "content" group for easy editing in Umbraco backoffice.
-
-### API Endpoints
-
-- `POST /api/seed/create-partial-element-types` - Create all Element Types
-- `POST /api/seed/add-properties-to-element-types` - Add properties to Element Types
-- `GET /api/seed/list-element-types` - List all Element Types
-- `POST /api/seed/create-document-types` - Create Document Types (Hotel, Room, Offer)
-- `POST /api/seed/add-hotel-properties` - Add properties to Hotel Document Type
-
-See **[docs/UMBRACO_SITE_KIT.md](docs/UMBRACO_SITE_KIT.md)** for complete API reference, usage examples, troubleshooting, and best practices.
-
-## Data Import System
-
-The system includes a comprehensive data import feature that allows you to bulk import hotels, rooms, events, and offers from JSON files, with full support for updating existing content and prices.
-
-**Features:**
-- ✅ Import multiple hotels in a single request
-- ✅ Import rooms with pricing and availability data
-- ✅ Import events with capacity and pricing
-- ✅ Import offers with discount and validity periods
-- ✅ **Update existing content** - Hotels, rooms, events, and offers are updated if they already exist
-- ✅ **Update prices** - Re-import to update room/event prices for any date
-- ✅ **Booking Engine Integration** - Prices are automatically used by the booking engine via Inventory API
-- ✅ Creates and publishes content automatically
-- ✅ Detailed import results with created/updated counts and error reporting
-
-**Price Updates & Booking Engine:**
-- Prices are stored in the Inventory table with date-specific pricing
-- The booking engine fetches prices from `/api/hotels/inventory/{productId}` endpoint
-- Re-importing with updated prices automatically updates the Inventory table
-- Updated prices are immediately available to the booking engine
-- Supports dynamic pricing (different prices for different dates)
-
-**How Prices Are Displayed:**
-
-1. **Hotel Cards & Room Listings** (`/api/hotels/{id}/rooms`):
-   - Shows `priceFrom` property from Umbraco content (if set)
-   - **Fallback**: If `priceFrom` is not set, automatically calculates minimum price from Inventory table (next 90 days)
-   - This ensures all rooms show prices even if the Umbraco property isn't set
-
-2. **Room Detail Pages** (`room.cshtml`):
-   - Displays `priceFrom` from the API response
-   - Uses the same fallback logic as room listings
-   - Shows "Price from £X per night" in the room overview section
-
-3. **Booking Engine** (`/engine/availability`):
-   - Fetches date-specific prices from `/api/hotels/inventory/{productId}`
-   - Shows actual prices for selected dates (not just "from" price)
-   - Supports dynamic pricing with different prices per date
-   - Applies offer discounts to the total price
-   - Includes add-ons and events in the final total
-
-**Updating Prices:**
-
-To update prices for existing rooms:
-1. Create or update your import JSON file with new prices:
-   ```json
-   {
-     "hotels": [
-       {
-         "name": "Existing Hotel Name",
-         "rooms": [
-           {
-             "name": "Existing Room Name",
-             "prices": {
-               "2025-12-19": 250.00,  // Updates existing price
-               "2025-12-20": 280.00,  // Updates existing price
-               "2025-12-29": 300.00   // Creates new inventory entry
-             },
-             "availability": {
-               "2025-12-19": 5,
-               "2025-12-20": 5
-             }
-           }
-         ]
-       }
-     ]
-   }
-   ```
-
-2. Import using the API:
-   ```powershell
-   $jsonContent = Get-Content -Path "updated-prices.json" -Raw
-   $body = @{ ContentJson = $jsonContent } | ConvertTo-Json -Depth 10
-   Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST -Body $body -ContentType "application/json"
-   ```
-
-3. The import will:
-   - Update existing inventory entries with new prices
-   - Create new inventory entries for new dates
-   - Update room content if properties changed
-   - **Not create duplicate hotels/rooms** (uses smart matching)
-
-4. Prices are immediately available:
-   - Hotel cards and room pages will show updated `priceFrom` (minimum from inventory)
-   - Booking engine will show actual date-specific prices
-   - No cache clearing needed
-
-**Generating Prices for All Hotels:**
-
-Use the included script to generate prices for all existing hotels:
-```powershell
-.\generate-prices.ps1
-```
-
-This creates `import-all-prices.json` with:
-- 90 days of pricing per room
-- Weekend surcharges (+20%)
-- Holiday surcharges (+30%)
-- Random variation for realistic pricing
-- Availability (2-8 units per day)
-
-Then import it:
-```powershell
-$jsonContent = Get-Content -Path "import-all-prices.json" -Raw
-$body = @{ ContentJson = $jsonContent } | ConvertTo-Json -Depth 10
-Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST -Body $body -ContentType "application/json"
-```
-
-**Sample Files:**
-- `sample-import.json` - Basic example with one hotel
-- `test-import-multiple.json` - Comprehensive example with 4 hotels, multiple rooms, events, and offers
-- `test-import-new-hotels.json` - Additional hotels with varied pricing examples
-
-**Import Response:**
-```json
-{
-  "success": true,
-  "message": "Import completed. 0 hotels created, 1 hotels updated, 0 rooms created, 1 rooms updated, 0 inventory entries created, 10 inventory entries updated",
-  "hotelsCreated": 0,
-  "hotelsUpdated": 1,
-  "roomsCreated": 0,
-  "roomsUpdated": 1,
-  "eventsCreated": 0,
-  "eventsUpdated": 0,
-  "offersCreated": 0,
-  "offersUpdated": 0,
-  "inventoryEntriesCreated": 0,
-  "inventoryEntriesUpdated": 10,
-  "errors": []
-}
-```
-
-**Note:** Inventory/pricing data requires the Inventory database table to be created. See [Inventory and Import System](docs/INVENTORY_AND_IMPORT_SYSTEM.md) for database setup.
 
 ## Documentation
 
-- **[Getting Started Guide](docs/GETTING_STARTED.md)** - Quick start and setup instructions
-- **[Linux Setup Guide](SETUP_LINUX.md)** 🐧 - Complete guide for setting up on Linux and importing all data
-- **[Export/Import Guide](EXPORT_IMPORT_GUIDE.md)** 📦 - Complete guide for exporting and importing your entire Umbraco installation (database, content, media, views) to another computer
-- **[Umbraco Site Kit Guide](docs/UMBRACO_SITE_KIT.md)** ⭐ - Complete guide to programmatic Document Type and Element Type creation (API endpoints, usage examples, troubleshooting)
-- **[Inventory and Import System](docs/INVENTORY_AND_IMPORT_SYSTEM.md)** - Data import system documentation and database setup
-- **[Architecture Documentation](docs/architecture.md)** - System architecture overview
-- **[Booking Engine Implementation](BOOKING_ENGINE_IMPLEMENTATION.md)** - Booking engine details and features
-- **[Build Booking Engine](BUILD_BOOKING_ENGINE.md)** - React booking engine build instructions
+- [Implementation plan and feature ledger](docs/SITEKIT_IMPLEMENTATION_PLAN.md)
+- [Getting started guide](docs/GETTING_STARTED.md)
+- [Generated application runtime](docs/SITEKIT_GENERATED_RUNTIME.md)
+- [Screenshot evidence and provenance](docs/SITEKIT_SCREENSHOTS.md)
+- [Umbraco Automate boundaries](docs/SITEKIT_AUTOMATION.md)
+- [Module package format](docs/SITEKIT_MODULE_PACKAGES.md)
+- [Hotel data import example](MyDockerProject/sample-import.json)
 
-## Summary
+## Validation snapshot
 
-✅ **Main Frontend**: Razor components + JavaScript (universal, reusable)
-✅ **React**: ONLY for booking engine (embeddable)
-✅ **Integration**: Seamless via Razor partials
-✅ **Data Import**: Bulk import hotels, rooms, events, and offers via JSON
-✅ **All Services**: Running in Docker
+At the current checkpoint, `SiteKit.Core.Tests` has **19 passing Release tests** and the solution builds with **0 errors**. The solution build still reports existing warnings. Local generated website and CRM screenshots are committed. Live Umbraco/SQL, eligible ChatGPT subscription, accessibility, performance, backup/restore, and deployment acceptance still need further verification; see the ledger before relying on any capability in production.
+
+## Contributing
+
+Keep Umbraco responsible for editorial content and use application entities for transactional records. Preserve the hotel/booking starter. Update the implementation ledger whenever behavior or validation changes, and describe whether evidence is unit, generated-runtime, or live Umbraco evidence. Read [AGENTS.md](AGENTS.md) before making changes.
+
+## License
+
+No top-level project license file is present yet. A license should be selected before redistributing SiteKit; third-party packages retain their own license terms.

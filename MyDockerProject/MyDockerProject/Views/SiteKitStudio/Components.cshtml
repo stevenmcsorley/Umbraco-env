@@ -20,6 +20,7 @@
                     <label>Category<input name="category" value="Content" required maxlength="60"/></label>
                     <label>Version<input name="version" value="1.0.0" required pattern="[0-9]+\.[0-9]+\.[0-9]+"/></label>
                     <label class="sitekit-wide">Description<textarea name="description" maxlength="2000"></textarea></label>
+                    <label class="sitekit-wide">Tags<input name="tags" maxlength="500" placeholder="marketing, cards, pricing" aria-describedby="tags-help"/><small id="tags-help">Separate searchable tags with commas.</small></label>
                     <label>Property alias<input name="propertyAlias" value="title" pattern="[a-z][a-z0-9-]{1,63}" required/></label>
                     <label>Property label<input name="propertyLabel" value="Title" required maxlength="100"/></label>
                     <label>Property type<select name="propertyType"><option>text</option><option>richText</option><option>number</option><option>boolean</option><option>color</option><option>media</option><option>link</option><option>reference</option></select></label>
@@ -70,13 +71,14 @@
     }
     function renderList() {
         const query = document.getElementById('component-search').value.toLowerCase();
-        const filtered = definitions.filter(x => `${x.name} ${x.category} ${x.tags.join(' ')}`.toLowerCase().includes(query));
+        const filtered = definitions.filter(x => `${x.name} ${x.category} ${(x.tags || []).join(' ')}`.toLowerCase().includes(query));
         list.innerHTML = filtered.length ? filtered.map(x => `<button class="sitekit-component-item" data-alias="${esc(x.alias)}"><strong>${esc(x.name)}</strong><small>${esc(x.category)} · v${esc(x.version)}</small></button>`).join('') : '<p>No components yet. Create the first one.</p>';
         list.querySelectorAll('[data-alias]').forEach(button => button.addEventListener('click', () => select(definitions.find(x => x.alias === button.dataset.alias))));
     }
     function select(definition) {
         selected = definition; form.hidden = false; document.getElementById('editor-title').textContent = definition.name;
         for (const key of ['name','alias','category','version','description']) form.elements[key].value = definition[key] ?? '';
+        form.elements.tags.value = (definition.tags || []).join(', ');
         const property = definition.properties[0] ?? {alias:'title',label:'Title',type:'text',required:true};
         form.elements.propertyAlias.value = property.alias; form.elements.propertyLabel.value = property.label; form.elements.propertyType.value = property.type;
         form.elements.required.checked = property.required; form.elements.primitive.value = definition.layout.type;
@@ -113,7 +115,8 @@
         const properties = form.elements.propertiesJson.value.trim() ? JSON.parse(form.elements.propertiesJson.value) : defaults.properties;
         const layout = form.elements.layoutJson.value.trim() ? JSON.parse(form.elements.layoutJson.value) : defaults.layout;
         const variants = form.elements.variantsJson.value.trim() ? JSON.parse(form.elements.variantsJson.value) : defaults.variants;
-        return {schemaVersion:1,alias:form.elements.alias.value,name:form.elements.name.value,category:form.elements.category.value,description:form.elements.description.value,version:form.elements.version.value,tags:[],dependencies:[],properties,layout,variants};
+        const tags = [...new Set(form.elements.tags.value.split(',').map(tag=>tag.trim()).filter(Boolean))];
+        return {schemaVersion:1,alias:form.elements.alias.value,name:form.elements.name.value,category:form.elements.category.value,description:form.elements.description.value,version:form.elements.version.value,tags,dependencies:[],properties,layout,variants};
     }
     function sample(property) {
         switch (property.type) {

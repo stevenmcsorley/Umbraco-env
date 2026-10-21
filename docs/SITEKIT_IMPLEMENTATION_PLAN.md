@@ -33,11 +33,11 @@ solution; each milestone records implementation and validation evidence here.
 | Content type generation | Implemented | Seed API creates document types and element types; administrative endpoint security is critical |
 | React/TypeScript booking UI | Implemented | Separate frontend and generated bundle |
 | Docker deployment | Partial | Compose includes SQL Server, Umbraco and engine; credentials and development configuration need hardening |
-| Component registry / Studio | Partial | Versioned declarative JSON registry, schema/data validation, import/export, safe primitive renderer, authenticated `/studio/components` editor, project registry and project-local placements/appearance in `/studio/projects`; reusable definitions are placed by reference with validated per-project overrides. Published page integration and developer package pipeline remain planned |
+| Component registry / Studio | Partial | Versioned declarative JSON registry, schema/data validation, import/export, safe primitive renderer, authenticated `/studio/components` editor with searchable persistent tags, project registry and project-local placements/appearance in `/studio/projects`; reusable definitions are projected by reference into generated websites with validated per-project overrides. Umbraco-published page integration and developer package pipeline remain planned |
 | Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, explicit grants and a basic data model/record editor; database-enforced relationships, screen composition and live SQL verification remain |
 | Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component, entity and screen definitions; official Umbraco Automate and a scoped SiteKit record-change trigger are integrated; record actions are missing and module workflow JSON remains inert |
 | ChatGPT plan sharing / Agent Host / MCP | Partial | Local Agent Host implements SIWC, Responses streaming, typed tools and local stdio MCP; live eligible account flow remains unverified |
-| Generated business application runtime | Partial | Project generator exports project and screen manifests and deployable shells; application screen routing, persistent CRUD APIs and authorization are not yet projected into each independently generated runtime |
+| Generated business application runtime | Partial | Project generator exports project and screen manifests with model-driven tables, forms, search, kanban, calendar, dashboard counts, SQLite CRUD, token principals, operation grants, relationship validation and delete protection; production identity federation and live external database integration remain |
 
 ## Architecture decisions
 
@@ -91,6 +91,8 @@ solution; each milestone records implementation and validation evidence here.
   including URL, media and color checks. The renderer uses a fixed primitive
   allowlist, HTML-encodes text and attributes, and does not execute component
   source or JavaScript.
+- Component Studio persists editable comma-separated tags as part of each
+  versioned definition; the tags remain searchable after reload.
 - Added administrator-authorized list/get/save/delete/import/export/data
   validation/preview API endpoints and the initial Component Studio route at
   `/studio/components`. The editor has quick fields, a repeatable visual
@@ -99,9 +101,10 @@ solution; each milestone records implementation and validation evidence here.
   Existing nested properties and layout metadata are preserved when visual
   controls are edited. Project
   manifest CRUD is exposed at `/api/sitekit/projects`. Project placements and project-local appearance overrides are implemented; a drag/drop canvas and developer package build pipeline remain.
-- Build verification after these changes: `dotnet build UmbraccoEnv.sln
-  --no-restore` succeeds with 0 errors and 154 warnings. No runtime UI or
-  database smoke check has been performed yet. Static Playwright previews use fixture data; see `SITEKIT_SCREENSHOTS.md`.
+- Build verification: the solution builds with 0 errors and 154 existing
+  warnings, and 19 Release core contract tests pass. Generated-site and CRM
+  browser evidence is recorded in `SITEKIT_SCREENSHOTS.md`; Studio previews
+  still use fixture data and are not a live SQL-backed backoffice capture.
 
 ## M3 progress
 
