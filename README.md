@@ -103,7 +103,7 @@ The Agent Host runs on the user's machine or controlled environment and keeps cr
 
 ## Current capabilities
 
-- **Dynamic components:** versioned schema and data validation, safe rendering, property/layout editing, previews, variants, JSON import/export, registry search, project placements, and per-project appearance.
+- **Dynamic components:** versioned schemas, visual property/layout editing, accessible interactive disclosure blocks, safe rendering, previews, variants, JSON import/export, registry search, shared project placements, and per-project appearance.
 - **Project generation:** independent .NET 10 website, application, combined, and API projects with Dockerfiles, manifests, and generated screen/runtime assets.
 - **Business data:** typed entities, additive schema evolution checks, SQLite persistence in generated apps, SQL Server record APIs in the Umbraco host, permission grants, audit data, and validated relationships.
 - **Application screens:** tables and forms plus search, kanban, calendar, and entity-count dashboard views in generated applications.
@@ -187,7 +187,7 @@ output/playwright/                    Committed generated-runtime screenshots
 
 ## Validation snapshot
 
-At the current checkpoint, `SiteKit.Core.Tests` has **25 passing Release tests** and the solution builds with **0 errors**. The Docker Umbraco host builds with 0 errors; SQL is healthy. An authenticated live Studio session created a component through the visual editor, saved its schema, and rendered the shared definition in two independent projects with different content and appearance. HTTPS metadata, the HTTP-to-HTTPS redirect, project placements, rendered previews, and a SQL-backed Customer record plus its permission grant were checked against the running host; both remained available after an application-container restart. The latest Docker build reports 164 existing warnings. Eligible ChatGPT subscription use, full authenticated Umbraco backoffice sign-in, broader multi-entity and relational SQL journeys, accessibility, performance, backup/restore, and production deployment acceptance still need further verification; see the ledger before relying on any capability in production.
+At the current checkpoint, `SiteKit.Core.Tests` has **26 passing Release tests** and the solution builds with **0 errors**. The Docker Umbraco host builds with 0 errors; SQL is healthy. An authenticated live Studio session created a component through the visual editor, saved its schema, and rendered the shared definition in two independent projects with different content and appearance. HTTPS metadata, the HTTP-to-HTTPS redirect, project placements, rendered previews, and a SQL-backed Customer record plus its permission grant were checked against the running host; both remained available after an application-container restart. The latest Docker build reports 164 existing warnings. Eligible ChatGPT subscription use, full authenticated Umbraco backoffice sign-in, broader multi-entity and relational SQL journeys, accessibility, performance, backup/restore, and production deployment acceptance still need further verification; see the ledger before relying on any capability in production.
 
 ## Contributing
 

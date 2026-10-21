@@ -38,7 +38,7 @@ public static class SiteKitComponentRenderer
         {
             "section" => "section", "container" => "div", "stack" => "div", "grid" => "div", "card" => "article",
             "heading" => "h" + node.HeadingLevel, "text" => "p", "button" => "a", "image" => "img",
-            "field" => "div", "list" => "ul", "repeat" => "div", _ => throw new InvalidOperationException("Unsupported primitive.")
+            "field" => "div", "list" => "ul", "repeat" => "div", "accordion" => "details", _ => throw new InvalidOperationException("Unsupported primitive.")
         };
         var classes = new List<string> { "sitekit-" + node.Type };
         if (!string.IsNullOrWhiteSpace(node.StyleClass)) classes.Add(node.StyleClass);
@@ -46,6 +46,16 @@ public static class SiteKitComponentRenderer
         if (node.Type == "grid") output.Append(" style=\"--sitekit-columns:").Append(node.Columns).Append("\"");
 
         var value = Resolve(node.Bind, data, scopes);
+        if (node.Type == "accordion")
+        {
+            output.Append("><summary>");
+            if (value is { ValueKind: JsonValueKind.String }) output.Append(WebUtility.HtmlEncode(value.Value.GetString()));
+            else if (!string.IsNullOrEmpty(node.Text)) output.Append(WebUtility.HtmlEncode(node.Text));
+            output.Append("</summary>");
+            foreach (var child in node.Children) RenderNode(output, child, data, scopes);
+            output.Append("</details>");
+            return;
+        }
         if (node.Type == "image" && value?.ValueKind == JsonValueKind.String && SiteKitComponentValidator.IsSafeMediaUrl(value.Value.GetString()))
         {
             output.Append(" src=\"").Append(WebUtility.HtmlEncode(value.Value.GetString())).Append("\" alt=\"\" loading=\"lazy\" />");

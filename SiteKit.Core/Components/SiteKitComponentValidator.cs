@@ -12,7 +12,7 @@ public static partial class SiteKitComponentValidator
 
     private static readonly HashSet<string> LayoutTypes = new(StringComparer.Ordinal)
     {
-        "section", "container", "stack", "grid", "card", "heading", "text", "button", "image", "field", "list", "repeat"
+        "section", "container", "stack", "grid", "card", "heading", "text", "button", "image", "field", "list", "repeat", "accordion"
     };
 
     private static readonly Regex AliasPattern = AliasRegex();
@@ -194,6 +194,13 @@ public static partial class SiteKitComponentValidator
         }
         if (node.Type is "text" or "heading" or "button" && node.Bind is null && string.IsNullOrWhiteSpace(node.Text))
             errors.Add($"{path} requires either bind or text.");
+        if (node.Type == "accordion")
+        {
+            if (node.Bind is null && string.IsNullOrWhiteSpace(node.Text))
+                errors.Add($"{path} requires a text binding or static summary text.");
+            if (node.Bind is not null && FindProperty(node.Bind, rootProperties, itemAliases)?.Type != "text")
+                errors.Add($"{path}.bind must reference a text property.");
+        }
         if (node.Type == "image" && FindProperty(node.Bind, rootProperties, itemAliases)?.Type != "media")
             errors.Add($"{path} requires a media property binding.");
         if (node.Type == "button" && node.Bind is not null && FindProperty(node.Bind, rootProperties, itemAliases)?.Type != "link")

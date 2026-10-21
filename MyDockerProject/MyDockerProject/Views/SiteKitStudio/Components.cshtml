@@ -24,7 +24,7 @@
                     <label>Property alias<input name="propertyAlias" value="title" pattern="[a-z][a-z0-9\-]{1,63}" required/></label>
                     <label>Property label<input name="propertyLabel" value="Title" required maxlength="100"/></label>
                     <label>Property type<select name="propertyType"><option>text</option><option>richText</option><option>number</option><option>boolean</option><option>color</option><option>media</option><option>link</option><option>reference</option></select></label>
-                    <label>Layout primitive<select name="primitive"><option>section</option><option>container</option><option>stack</option><option>grid</option><option>card</option><option>heading</option><option>text</option><option>button</option><option>image</option></select></label>
+                    <label>Layout primitive<select name="primitive"><option>section</option><option>container</option><option>stack</option><option>grid</option><option>card</option><option>heading</option><option>text</option><option>button</option><option>image</option><option>accordion</option></select></label>
                     <label class="sitekit-wide"><span><input name="required" type="checkbox" checked/> Required property</span></label>
                 </div>
                 <section class="sitekit-visual-builder" aria-labelledby="visual-schema-title">
@@ -32,7 +32,8 @@
                     <div class="sitekit-builder-heading"><h4>Editable properties</h4><button type="button" id="add-property">Add property</button></div>
                     <div id="visual-properties"></div>
                     <div class="sitekit-builder-heading"><h4>Layout composition</h4><button type="button" id="add-layout-child">Add layout item</button></div>
-                    <label>Root layout<select id="visual-layout-root"><option>section</option><option>container</option><option>stack</option><option>grid</option><option>card</option></select></label>
+                    <label>Root layout<select id="visual-layout-root"><option>section</option><option>container</option><option>stack</option><option>grid</option><option>card</option><option>accordion</option></select></label>
+                    <label>Accordion summary property<select id="visual-layout-bind"><option value="">Choose a text property</option></select></label>
                     <label>Grid columns<select id="visual-layout-columns"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
                     <div id="visual-layout-children" aria-live="polite"></div>
                 </section>
@@ -95,8 +96,9 @@
         propertyHost.innerHTML = properties.map((property,index) => `<div class="sitekit-property-row" data-property-row="${index}"><label>Alias<input data-property="alias" value="${esc(property.alias)}"></label><label>Label<input data-property="label" value="${esc(property.label)}"></label><label>Type<select data-property="type">${types.map(type=>`<option value="${type}" ${property.type===type?'selected':''}>${type}</option>`).join('')}</select></label><label>Required<input data-property="required" type="checkbox" ${property.required?'checked':''}></label><button type="button" data-property-remove="${index}" aria-label="Remove ${esc(property.label)}">Remove</button></div>`).join('') || '<p>Add a property to define component editing controls.</p>';
         const layout = readJson(form.elements.layoutJson.value, {type:'section',children:[]});
         const root = document.getElementById('visual-layout-root'); if ([...root.options].some(option=>option.value===layout.type)) root.value=layout.type;
+        const rootBind=document.getElementById('visual-layout-bind');rootBind.innerHTML='<option value="">Choose a text property</option>'+properties.filter(property=>property.type==='text').map(property=>`<option value="${esc(property.alias)}" ${layout.bind===property.alias?'selected':''}>${esc(property.label)}</option>`).join('');
         document.getElementById('visual-layout-columns').value=String(layout.columns||2);
-        const layoutHost=document.getElementById('visual-layout-children'), nodes=layout.children||[], typesForLayout=['heading','text','button','image','card','stack','grid'];
+        const layoutHost=document.getElementById('visual-layout-children'), nodes=layout.children||[], typesForLayout=['heading','text','button','image','card','stack','grid','accordion'];
         layoutHost.innerHTML=nodes.map((node,index)=>`<div class="sitekit-layout-row" data-layout-row="${index}"><label>Item<select data-layout="type">${typesForLayout.map(type=>`<option value="${type}" ${node.type===type?'selected':''}>${type}</option>`).join('')}</select></label><label>Bind property<select data-layout="bind"><option value="">No binding</option>${properties.map(property=>`<option value="${esc(property.alias)}" ${node.bind===property.alias?'selected':''}>${esc(property.label)}</option>`).join('')}</select></label><label>Static text<input data-layout="text" value="${esc(node.text||'')}"></label><button type="button" data-layout-up="${index}" aria-label="Move item up">↑</button><button type="button" data-layout-down="${index}" aria-label="Move item down">↓</button><button type="button" data-layout-remove="${index}">Remove</button></div>`).join('') || '<p>No layout items yet. Add headings, text, buttons, images and containers.</p>';
     }
     function syncVisualProperties(refresh=true) {
@@ -108,10 +110,10 @@
     }
     function syncVisualLayout(refresh=true) {
         const properties=readJson(form.elements.propertiesJson.value,[]),previous=readJson(form.elements.layoutJson.value,{type:'section',children:[]}), nodes=[...document.querySelectorAll('[data-layout-row]')].map((row,index)=>{const type=row.querySelector('[data-layout="type"]').value,bind=row.querySelector('[data-layout="bind"]').value,text=row.querySelector('[data-layout="text"]').value,original=previous.children?.[index]||{};const node={...original,type,bind:bind||undefined,text:text||undefined,children:original.children||[]};if(type==='grid')node.columns=original.columns||2;if(type==='heading')node.headingLevel=original.headingLevel||2;if(type==='image'&&!bind){const media=properties.find(property=>property.type==='media');if(media)node.bind=media.alias;}return node;});
-        const rootType=document.getElementById('visual-layout-root').value;form.elements.layoutJson.value=JSON.stringify({...previous,type:rootType,columns:rootType==='grid'?Number(document.getElementById('visual-layout-columns').value):previous.columns,children:nodes},null,2);if(refresh)renderVisualBuilder();
+        const rootType=document.getElementById('visual-layout-root').value,rootBind=document.getElementById('visual-layout-bind').value;form.elements.layoutJson.value=JSON.stringify({...previous,type:rootType,bind:rootType==='accordion'?(rootBind||undefined):previous.bind,columns:rootType==='grid'?Number(document.getElementById('visual-layout-columns').value):previous.columns,children:nodes},null,2);if(refresh)renderVisualBuilder();
     }
     function definitionFromForm() {
-        const defaults = {properties:[{alias:form.elements.propertyAlias.value,label:form.elements.propertyLabel.value,type:form.elements.propertyType.value,required:form.elements.required.checked}],layout:{type:form.elements.primitive.value,bind:['heading','text','button','image'].includes(form.elements.primitive.value)?form.elements.propertyAlias.value:null,text:null,children:[]},variants:[]};
+        const defaults = {properties:[{alias:form.elements.propertyAlias.value,label:form.elements.propertyLabel.value,type:form.elements.propertyType.value,required:form.elements.required.checked}],layout:{type:form.elements.primitive.value,bind:['heading','text','button','image','accordion'].includes(form.elements.primitive.value)?form.elements.propertyAlias.value:null,text:null,children:[]},variants:[]};
         const properties = form.elements.propertiesJson.value.trim() ? JSON.parse(form.elements.propertiesJson.value) : defaults.properties;
         const layout = form.elements.layoutJson.value.trim() ? JSON.parse(form.elements.layoutJson.value) : defaults.layout;
         const variants = form.elements.variantsJson.value.trim() ? JSON.parse(form.elements.variantsJson.value) : defaults.variants;
@@ -150,6 +152,7 @@
     document.getElementById('visual-layout-children').addEventListener('input',()=>syncVisualLayout(false));
     document.getElementById('visual-layout-children').addEventListener('change',()=>syncVisualLayout(false));
     document.getElementById('visual-layout-root').addEventListener('change',()=>syncVisualLayout(false));
+    document.getElementById('visual-layout-bind').addEventListener('change',()=>syncVisualLayout(false));
     document.getElementById('visual-layout-columns').addEventListener('change',()=>syncVisualLayout(false));
     document.getElementById('visual-layout-children').addEventListener('click',event=>{const host=event.currentTarget,layout=readJson(form.elements.layoutJson.value,{type:'section',children:[]}),up=event.target.dataset.layoutUp,down=event.target.dataset.layoutDown,remove=event.target.dataset.layoutRemove;let index;if(remove!==undefined){layout.children.splice(Number(remove),1);}else if(up!==undefined){index=Number(up);if(index>0)[layout.children[index-1],layout.children[index]]=[layout.children[index],layout.children[index-1]];}else if(down!==undefined){index=Number(down);if(index<layout.children.length-1)[layout.children[index+1],layout.children[index]]=[layout.children[index],layout.children[index+1]];}else return;form.elements.layoutJson.value=JSON.stringify(layout,null,2);renderVisualBuilder();});
     form.elements.propertiesJson.addEventListener('input',renderVisualBuilder);form.elements.layoutJson.addEventListener('input',renderVisualBuilder);

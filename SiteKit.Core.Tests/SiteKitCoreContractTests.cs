@@ -193,6 +193,32 @@ public sealed class SiteKitCoreContractTests
     }
 
     [Fact]
+    public void ComponentStudioCanAuthorAccessibleInteractiveAccordionPrimitive()
+    {
+        var component = new SiteKitComponentDefinition
+        {
+            Alias = "faq-disclosure", Name = "FAQ Disclosure", Category = "content",
+            Properties =
+            [
+                new() { Alias = "question", Label = "Question", Type = "text", Required = true },
+                new() { Alias = "answer", Label = "Answer", Type = "text", Required = true }
+            ],
+            Layout = new()
+            {
+                Type = "accordion", Bind = "question",
+                Children = [new() { Type = "text", Bind = "answer" }]
+            }
+        };
+        using var data = JsonDocument.Parse("{\"question\":\"<script>Q</script>\",\"answer\":\"<script>A</script>\"}");
+
+        var html = SiteKitComponentRenderer.Render(component, data.RootElement);
+
+        Assert.Contains("<div class=\"sitekit-component\"><details class=\"sitekit-accordion\"><summary>&lt;script&gt;Q&lt;/script&gt;</summary>", html);
+        Assert.Contains("&lt;script&gt;A&lt;/script&gt;", html);
+        Assert.DoesNotContain("<script>", html);
+    }
+
+    [Fact]
     public void KanbanScreenMustBindToDeclaredEntityFields()
     {
         var entity = CustomerEntity();
