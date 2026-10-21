@@ -15,7 +15,7 @@ solution; each milestone records implementation and validation evidence here.
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component and module projection remains |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
-| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative package builder/importer/exporter, project installation and Studio UI; workflow execution and Automate adapter remain |
+| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative package builder/importer/exporter, project installation, Studio UI and official Umbraco Automate 17.5.1 package; SiteKit operational-record providers and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Planned |
 | M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Planned |
 
@@ -35,7 +35,7 @@ solution; each milestone records implementation and validation evidence here.
 | Docker deployment | Partial | Compose includes SQL Server, Umbraco and engine; credentials and development configuration need hardening |
 | Component registry / Studio | Partial | Versioned declarative JSON registry, schema/data validation, import/export, safe primitive renderer, authenticated `/studio/components` editor, project registry and project-local placements/appearance in `/studio/projects`; reusable definitions are placed by reference with validated per-project overrides. Published page integration and developer package pipeline remain planned |
 | Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, explicit grants and a basic data model/record editor; database-enforced relationships, screen composition and live SQL verification remain |
-| Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component and entity definitions; workflow JSON is stored inertly; Automate execution adapter remains planned |
+| Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component, entity and screen definitions; official Umbraco Automate is installed; SiteKit record-event providers are not implemented and module workflow JSON remains inert |
 | ChatGPT plan sharing / Agent Host / MCP | Partial | Local Agent Host implements SIWC, Responses streaming, typed tools and local stdio MCP; live eligible account flow remains unverified |
 
 ## Architecture decisions
@@ -169,8 +169,14 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 - Validation: built/imported a `CRM Starter` package with one component and one
   entity, then installed it into two projects through the local MCP tool. Both
   project manifests include the module and entity/component references.
-- Workflow definitions are stored as inert JSON only. Umbraco Automate adapters,
-  runtime execution, retries and history are still outstanding.
+- Installed official `Umbraco.Automate` 17.5.1 in the Umbraco host, preserving
+  its native automation editor, persistence and built-in triggers/actions.
+  Pinned transitive `OpenTelemetry.Api` to patched 1.15.3 after the package
+  restore revealed vulnerable 1.1.0. The Umbraco project vulnerability scan is
+  clean. See [SITEKIT_AUTOMATION.md](SITEKIT_AUTOMATION.md).
+- SiteKit operational-record trigger/action providers remain outstanding, and
+  module workflow JSON is deliberately inert. Automate startup and run history
+  require live Umbraco plus database verification.
 
 ## M7 progress
 

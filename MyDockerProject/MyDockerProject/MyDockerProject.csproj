@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="OpenTelemetry.Api" Version="1.15.3" />
+    <PackageReference Include="Umbraco.Automate" Version="17.5.1" />
     <ProjectReference Include="..\..\SiteKit.Core\SiteKit.Core.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.13" />
     <PackageReference Include="Umbraco.Cms" Version="17.7.1" />
