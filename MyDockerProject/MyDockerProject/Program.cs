@@ -60,6 +60,11 @@ builder.Services.AddSingleton<ISiteKitImportMappingRegistry>(services =>
     var environment = services.GetRequiredService<IWebHostEnvironment>();
     return new JsonSiteKitImportMappingRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "imports"));
 });
+builder.Services.AddSingleton<ISiteKitImportRunRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitImportRunRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "import-runs"));
+});
 builder.Services.AddSingleton<SiteKitDataImportService>();
 
 // Add session support for authentication

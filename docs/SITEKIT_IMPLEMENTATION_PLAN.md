@@ -29,7 +29,7 @@ solution; each milestone records implementation and validation evidence here.
 | Booking and inventory | Implemented | EF Core `BookingDbContext`, services, API and TypeScript engine |
 | Payments | Partial | Mock and Stripe implementations; production configuration and end-to-end verification pending |
 | Customer login | Partial | Session based login with ASP.NET Identity password hashing and allowlisted administration; native backoffice identity integration remains separate work |
-| Data importer | Partial | Hotel importer preserved; universal project/entity mappings now support CSV/JSON/XML preview and idempotent upsert; queueing, audit history, media and live host verification remain |
+| Data importer | Partial | Hotel importer preserved; universal project/entity mappings now support CSV/JSON/XML preview, idempotent upsert and value-free execution history; queueing, media and live host verification remain |
 | Content type generation | Implemented | Seed API creates document types and element types; administrative endpoint security is critical |
 | React/TypeScript booking UI | Implemented | Separate frontend and generated bundle |
 | Docker deployment | Partial | Compose includes SQL Server, Umbraco and engine; credentials and development configuration need hardening |
@@ -238,8 +238,10 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 - Added authenticated import mapping APIs and `/studio/imports`. Preview
   requires entity read/manage access; execution requires import/manage and
   records the acting account. Mapping definitions are persisted for repeatable
-  runs. Added import navigation across Studio areas.
-- Validation: all 9 Release core tests pass, including CSV/JSON/XML import and
+  runs. Bounded history records run metadata and file hash without row values;
+  Studio displays the latest 100 previews/imports. Added import navigation
+  across Studio areas.
+- Validation: all 10 Release core tests pass, including CSV/JSON/XML import and
   preview, unique-key repeat updates, retention of omitted data and invalid-row
   reporting. The Umbraco Debug host compiles with 0 errors (154 existing
   warnings). Added a static fixture screenshot; live authenticated endpoint

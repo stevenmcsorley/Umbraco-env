@@ -39,11 +39,22 @@ continues after a malformed field conversion so other rows remain reviewable.
 Import continues past invalid rows and returns created/updated totals with row
 errors.
 
+## Execution history
+
+Each completed preview/import (including a run with row errors) stores one
+project- and mapping-scoped audit record with actor, start/end timestamps,
+mode/status, row/create/update/error totals and a SHA-256 hash of the uploaded
+bytes. Invalid files that are read but cannot be parsed also produce a failed
+run record. Files are stored under `umbraco/Data/SiteKit/import-runs` and the
+Studio displays the latest 100 executions for the selected mapping. The source
+file, file name, individual row values and error details are not copied into
+this history.
+
 ## Current boundaries
 
 The implementation does not yet provide media transfer, background/resumable
-jobs, automatic AI field mapping, import execution history, relationship-aware
-deduplication or configurable CSV delimiters in Studio. Imports execute during
+jobs, automatic AI field mapping, relationship-aware deduplication or
+configurable CSV delimiters in Studio. Imports execute during
 the authenticated request and should therefore stay within the documented
 size/row limits. SQL-backed entity validation and import endpoints need a live
 Umbraco/SQL installation for end-to-end verification.

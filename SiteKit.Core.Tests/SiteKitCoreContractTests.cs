@@ -193,6 +193,31 @@ public sealed class SiteKitCoreContractTests
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task ImportRunHistoryPersistsValueFreeAuditMetadata()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-import-run-tests", Guid.NewGuid().ToString("N"));
+        var registry = new JsonSiteKitImportRunRegistry(root);
+        var started = DateTimeOffset.UtcNow;
+        var run = new SiteKitImportRun
+        {
+            Id = Guid.NewGuid().ToString("N"), ProjectId = "crm-smoke", MappingAlias = "customers", EntityAlias = "customer",
+            Actor = "admin@example.test", Mode = "import", Status = "partial", ContentSha256 = new string('A', 64),
+            RowsRead = 4, Created = 2, Updated = 1, ErrorCount = 1, StartedAt = started, FinishedAt = started.AddSeconds(1)
+        };
+        try
+        {
+            await registry.SaveAsync(run);
+            var stored = Assert.Single(await registry.ListAsync(run.ProjectId, run.MappingAlias));
+            Assert.Equal(run.Id, stored.Id);
+            Assert.Equal("admin@example.test", stored.Actor);
+            Assert.Equal(1, stored.ErrorCount);
+            var json = await File.ReadAllTextAsync(Path.Combine(root, run.ProjectId, run.MappingAlias, run.Id + ".json"));
+            Assert.DoesNotContain("sensitive customer value", json, StringComparison.Ordinal);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
     private static SiteKitEntityDefinition CustomerEntity() => new()
     {
         ProjectId = "crm-smoke",

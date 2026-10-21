@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
 using MyDockerProject.Security;
 using SiteKit.Core.Data;
 using SiteKit.Core.Importing;
@@ -16,11 +17,12 @@ public sealed class SiteKitImportsController : ControllerBase
     private readonly ISiteKitPermissionRegistry _permissions;
     private readonly ISiteKitProjectRegistry _projects;
     private readonly SiteKitDataImportService _imports;
+    private readonly ISiteKitImportRunRegistry _runs;
     private const long MaxUploadBytes = SiteKitDataImportService.MaximumBytes;
 
     public SiteKitImportsController(ISiteKitImportMappingRegistry mappings, ISiteKitEntityRegistry entities,
-        ISiteKitPermissionRegistry permissions, ISiteKitProjectRegistry projects, SiteKitDataImportService imports)
-    { _mappings = mappings; _entities = entities; _permissions = permissions; _projects = projects; _imports = imports; }
+        ISiteKitPermissionRegistry permissions, ISiteKitProjectRegistry projects, SiteKitDataImportService imports, ISiteKitImportRunRegistry runs)
+    { _mappings = mappings; _entities = entities; _permissions = permissions; _projects = projects; _imports = imports; _runs = runs; }
 
     [HttpGet]
     public async Task<IActionResult> List(string projectId, CancellationToken ct)
@@ -40,6 +42,15 @@ public sealed class SiteKitImportsController : ControllerBase
         catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
     }
 
+    [HttpGet("{alias}/runs")]
+    public async Task<IActionResult> Runs(string projectId, string alias, CancellationToken ct)
+    {
+        var mapping = await GetMapping(projectId, alias, ct);
+        if (mapping is null) return NotFound();
+        if (!await Can("read", projectId, mapping.EntityAlias, ct)) return Forbid();
+        return Ok(await _runs.ListAsync(projectId, alias, ct));
+    }
+
     [HttpPost("{alias}/preview")]
     [RequestSizeLimit(MaxUploadBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadBytes)]
@@ -49,13 +60,18 @@ public sealed class SiteKitImportsController : ControllerBase
         if (mapping is null) return NotFound();
         if (file is null || file.Length is 0 or > MaxUploadBytes) return BadRequest(new { error = "Provide a file between 1 byte and 10 MiB." });
         if (!await Can("read", projectId, mapping.EntityAlias, ct)) return Forbid();
+        var startedAt = DateTimeOffset.UtcNow;
+        ReadOnlyMemory<byte> bytes = ReadOnlyMemory<byte>.Empty;
         try
         {
-            var bytes = await ReadFile(file, ct);
-            return Ok(await _imports.PreviewAsync(mapping, bytes, ct));
+            bytes = await ReadFile(file, ct);
+            var preview = await _imports.PreviewAsync(mapping, bytes, ct);
+            await SaveRun(mapping, "preview", preview.Errors.Count == 0 ? "complete" : "partial", SHA256.HashData(bytes.Span),
+                preview.RowsRead, 0, 0, preview.Errors.Count, startedAt, ct);
+            return Ok(preview);
         }
-        catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
-        catch (InvalidOperationException exception) { return Conflict(new { error = exception.Message }); }
+        catch (ArgumentException exception) { await SaveFailedRun(mapping, "preview", bytes, startedAt, ct); return BadRequest(new { error = exception.Message }); }
+        catch (InvalidOperationException exception) { await SaveFailedRun(mapping, "preview", bytes, startedAt, ct); return Conflict(new { error = exception.Message }); }
     }
 
     [HttpPost("{alias}/run")]
@@ -67,13 +83,18 @@ public sealed class SiteKitImportsController : ControllerBase
         if (mapping is null) return NotFound();
         if (file is null || file.Length is 0 or > MaxUploadBytes) return BadRequest(new { error = "Provide a file between 1 byte and 10 MiB." });
         if (!await Can("import", projectId, mapping.EntityAlias, ct)) return Forbid();
+        var startedAt = DateTimeOffset.UtcNow;
+        ReadOnlyMemory<byte> bytes = ReadOnlyMemory<byte>.Empty;
         try
         {
-            var bytes = await ReadFile(file, ct);
-            return Ok(await _imports.ImportAsync(mapping, bytes, HttpContext.Session.GetString("UserEmail")!, ct));
+            bytes = await ReadFile(file, ct);
+            var result = await _imports.ImportAsync(mapping, bytes, HttpContext.Session.GetString("UserEmail")!, ct);
+            await SaveRun(mapping, "import", result.Errors.Count == 0 ? "complete" : "partial", SHA256.HashData(bytes.Span),
+                result.RowsRead, result.Created, result.Updated, result.Errors.Count, startedAt, ct);
+            return Ok(result);
         }
-        catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
-        catch (InvalidOperationException exception) { return Conflict(new { error = exception.Message }); }
+        catch (ArgumentException exception) { await SaveFailedRun(mapping, "import", bytes, startedAt, ct); return BadRequest(new { error = exception.Message }); }
+        catch (InvalidOperationException exception) { await SaveFailedRun(mapping, "import", bytes, startedAt, ct); return Conflict(new { error = exception.Message }); }
     }
 
     private async Task<SiteKitImportMapping?> GetMapping(string projectId, string alias, CancellationToken ct)
@@ -88,6 +109,26 @@ public sealed class SiteKitImportsController : ControllerBase
         if (string.IsNullOrWhiteSpace(principal)) return false;
         var grant = await _permissions.GetAsync(projectId, entityAlias, principal, ct);
         return grant?.Operations.Contains(operation, StringComparer.Ordinal) == true || grant?.Operations.Contains("manage", StringComparer.Ordinal) == true;
+    }
+
+    private Task<SiteKitImportRun> SaveRun(SiteKitImportMapping mapping, string mode, string status, byte[] contentHash,
+        int rowsRead, int created, int updated, int errorCount, DateTimeOffset startedAt, CancellationToken ct)
+    {
+        var actor = HttpContext.Session.GetString("UserEmail")!;
+        return _runs.SaveAsync(new SiteKitImportRun
+        {
+            Id = Guid.NewGuid().ToString("N"), ProjectId = mapping.ProjectId, MappingAlias = mapping.Alias,
+            EntityAlias = mapping.EntityAlias, Actor = actor, Mode = mode, Status = status,
+            ContentSha256 = Convert.ToHexString(contentHash), RowsRead = rowsRead, Created = created, Updated = updated,
+            ErrorCount = errorCount, StartedAt = startedAt, FinishedAt = DateTimeOffset.UtcNow
+        }, ct);
+    }
+
+    private async Task SaveFailedRun(SiteKitImportMapping mapping, string mode, ReadOnlyMemory<byte> content,
+        DateTimeOffset startedAt, CancellationToken ct)
+    {
+        if (content.IsEmpty) return;
+        await SaveRun(mapping, mode, "failed", SHA256.HashData(content.Span), 0, 0, 0, 1, startedAt, ct);
     }
 
     private async Task<bool> ProjectExists(string projectId, CancellationToken ct)
