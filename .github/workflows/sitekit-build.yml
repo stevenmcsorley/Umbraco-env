@@ -17,7 +17,9 @@ jobs:
       - name: Restore solution
         run: dotnet restore UmbraccoEnv.sln
       - name: Check known vulnerable packages
-        run: dotnet list MyDockerProject/MyDockerProject/MyDockerProject.csproj package --vulnerable --include-transitive
+        run: |
+          dotnet list MyDockerProject/MyDockerProject/MyDockerProject.csproj package --vulnerable --include-transitive --format json > "$RUNNER_TEMP/sitekit-vulnerability-report.json"
+          python scripts/check_nuget_vulnerabilities.py "$RUNNER_TEMP/sitekit-vulnerability-report.json"
       - name: Build solution
         env:
           SIXLABORS_LICENSE_KEY: ${{ secrets.SIXLABORS_LICENSE_KEY }}

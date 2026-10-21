@@ -17,7 +17,7 @@ solution; each milestone records implementation and validation evidence here.
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative package builder/importer/exporter, project installation, Studio UI and official Umbraco Automate 17.5.1 package; SiteKit operational-record providers and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | In progress: patched dependency scan is clean, build workflow added, focused MCP/build evidence recorded; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | In progress: Release build workflow and failing NuGet vulnerability gate added; local dependency scan is clean; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
