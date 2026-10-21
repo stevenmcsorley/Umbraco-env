@@ -15,7 +15,7 @@ solution; each milestone records implementation and validation evidence here.
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component and module projection remains |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
-| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/importer/exporter and installer; official Automate 17.5.1 plus project/entity/operation-scoped SiteKit record-change trigger compile; operational actions and live runtime verification remain |
+| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/importer/exporter and installer; official Automate 17.5.1 plus scoped record-change trigger and permission-checked, idempotent update action compile; live runtime verification and create/delete actions remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
 | M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 7 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
 
@@ -185,12 +185,14 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   Pinned transitive `OpenTelemetry.Api` to patched 1.15.3 after the package
   restore revealed vulnerable 1.1.0. The Umbraco project vulnerability scan is
   clean. See [SITEKIT_AUTOMATION.md](SITEKIT_AUTOMATION.md).
-- SiteKit operational-record trigger/action providers remain outstanding, and
-  module workflow JSON is deliberately inert. A native record-changed trigger
-  now publishes project/entity/record IDs and operation without business field
-  data, with per-user permission checks at the entity API and idempotency keys.
-  Automate startup and run history still require live Umbraco/database
-  verification; no operational-record actions are registered yet.
+- A native record-changed trigger publishes project/entity/record IDs and
+  operation without business field data, with per-user permission checks at the
+  entity API and idempotency keys. Added a record-update action that resolves
+  the Automate workspace service account, checks its SiteKit entity grant,
+  validates and merges its JSON patch and emits the change event. The action
+  output contains identifiers and changed-field count only. Automate discovery
+  and run history still require live Umbraco/database verification; create and
+  delete actions are not yet registered, and module workflow JSON remains inert.
 
 ## M7 progress
 

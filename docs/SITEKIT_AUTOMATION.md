@@ -25,16 +25,23 @@ record identity and update timestamp.
 
 Automations are configured, published and reviewed in the native Automate
 backoffice. The SiteKit endpoint still enforces the initiating user's explicit
-entity permission before publishing an event. SiteKit has not yet added
-Automate actions for reading or changing operational records, and imported
-module `workflows/*.json` remain inert declarations; they are not installed as
-executable automations.
+entity permission before publishing an event. SiteKit now contributes an
+**Update SiteKit Operational Record** Automate action. Its JSON patch preserves
+fields that are not included, validates the entity schema and relationship
+targets, and emits the same record-change trigger after saving. The action
+resolves the workspace service account from Automate's execution context and
+requires an explicit SiteKit `update` or `manage` entity grant for that
+service-account email. Its step output includes IDs and an updated-field count,
+not business data. The update is safe to retry against the same record.
+
+Imported module `workflows/*.json` remain inert declarations; they are not
+installed as executable automations. No SiteKit create-record or delete-record
+actions are registered yet.
 
 Do not treat imported workflow JSON as executable instructions. The trigger
-compiles against Automate's extension API, but its delivery and run history
-have not been exercised in a live Umbraco/database runtime. The next
-integration step must add narrowly scoped actions with service-account and
-entity permission checks. External HTTP actions must retain Automate's SSRF
+and action compile against Automate's extension API, but discovery, execution
+and run history have not been exercised in a live Umbraco/database runtime.
+External HTTP actions must retain Automate's SSRF
 protections and require workspace-scoped credentials.
 
 ## Version and security
@@ -49,4 +56,6 @@ References checked 21 October 2026:
 - [Umbraco Automate 17 documentation](https://docs.umbraco.com/umbraco-automate/17)
 - [Umbraco Automate repository and provider overview](https://github.com/umbraco/Umbraco.Automate)
 - [Automate package 17.5.1](https://www.nuget.org/packages/Umbraco.Automate/17.5.1)
+- [Official custom action extension documentation](https://docs.umbraco.com/umbraco-automate/18/extending/custom-action)
+- [Automate action execution identity and permissions](https://github.com/umbraco/Umbraco.Automate/blob/v18/dev/docs/identity-ownership-permissions.md)
 - [OpenTelemetry.Api security advisory](https://github.com/advisories/GHSA-g94r-2vxg-569j)
