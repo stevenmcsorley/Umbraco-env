@@ -63,7 +63,7 @@ definition loaded from the exported manifest, the token-gated screen API
 returned the Customers table and create form, and the browser reported no
 JavaScript errors. The integration test also built the emitted project and
 verified unauthorized access, create/update/read/delete operations and record
-retention across an application restart. Storage is local JSON and access uses
+retention across an application restart in SQLite. Access uses
 one administrator bearer token; this is not evidence for production RBAC or SQL.
 
 Reproducible Studio fixture HTML pages are included beside the screenshots.

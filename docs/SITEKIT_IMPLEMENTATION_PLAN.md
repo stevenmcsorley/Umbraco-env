@@ -14,7 +14,7 @@ solution; each milestone records implementation and validation evidence here.
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, multi-property visual editor, composed/reorderable layout builder, preview and safe renderer implemented; drag/drop canvas and compiled developer SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component projection and full production hosting configuration remain |
-| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; generated apps now include model-driven screens and persistent token-protected CRUD, while generated storage is local JSON with one admin token; database-enforced relationships, RBAC and live SQL verification remain |
+| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; generated apps now include model-driven screens and SQLite-backed token-protected CRUD, while generated access uses one administrator token; database-enforced relationships, RBAC and live SQL verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade with project version pins and downgrade protection; official Automate 17.5.1 plus scoped record-change trigger and permission-checked update action compile; uninstall, version-ranged dependencies, executable workflow provisioning and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
 | M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 12 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
@@ -271,20 +271,21 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 ## M4/M5 generated application runtime update
 
 - Generated application and combined projects now include a screen runtime for
-  their exported screen definitions and JSON-backed persistent entity CRUD
+  their exported screen definitions and SQLite-backed persistent entity CRUD
   endpoints, including create, read, update and delete. Input rejects unknown
   fields and enforces required/type/length/unique constraints. API calls require
   a bearer token configured through `SITEKIT_ADMIN_TOKEN`; no token is embedded
-  in generated source. The starter README explains deployment secrets and
-  replacing the single-token/local-file defaults before production use.
+  in generated source. The starter README explains deployment secrets and the
+  single-token permission boundary. Schema migration 1 creates an entity-scoped
+  records table, migration ledger and update-time index; writes use transactions.
 - Validation: the generator contract test verifies project manifests, screen
   runtime assets and protected CRUD source, and invokes `dotnet build` on the
   emitted application. It starts the generated project and verifies unauthenticated
   denial, create/update/read/delete behavior, and record retention after an app
   restart. All 12 Release core tests pass; a live browser capture is documented
   in `SITEKIT_SCREENSHOTS.md`.
-- Boundaries: generated app CRUD currently uses local JSON files and a single
-  administrator token, with no record-level role grants, database transaction
-  support or multi-process write coordination. The shared SiteKit host retains
+- Boundaries: generated app CRUD currently uses local SQLite and a single
+  administrator token, with no record-level role grants or soft-delete. The
+  shared SiteKit host retains
   its separate SQL Server path and permission grants. These generated defaults
   are a deployable reference, not production-grade multi-user persistence.

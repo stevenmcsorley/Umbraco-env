@@ -345,6 +345,7 @@ public sealed class SiteKitCoreContractTests
                 using var created = JsonDocument.Parse(await createdResponse.Content.ReadAsStringAsync());
                 var id = created.RootElement.GetProperty("id").GetString()!;
                 Assert.Equal(id, created.RootElement.GetProperty("data").GetProperty("id").GetString());
+                Assert.True(File.Exists(Path.Combine(destination, "App_Data", "sitekit.db")));
                 var updateResponse = await client.PutAsJsonAsync($"/api/sitekit/records/customer/{id}", new { name = "Ada Byron" });
                 Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
                 app.Kill(entireProcessTree: true);
