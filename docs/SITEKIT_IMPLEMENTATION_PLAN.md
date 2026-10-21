@@ -239,7 +239,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   requires entity read/manage access; execution requires import/manage and
   records the acting account. Mapping definitions are persisted for repeatable
   runs. Added import navigation across Studio areas.
-- Validation: all 7 Release core tests pass, including CSV/JSON/XML import and
+- Validation: all 9 Release core tests pass, including CSV/JSON/XML import and
   preview, unique-key repeat updates, retention of omitted data and invalid-row
   reporting. The Umbraco Debug host compiles with 0 errors (154 existing
   warnings). Added a static fixture screenshot; live authenticated endpoint

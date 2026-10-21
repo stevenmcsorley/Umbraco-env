@@ -162,6 +162,37 @@ public sealed class SiteKitCoreContractTests
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task ImportPreviewContinuesAfterFieldConversionError()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-import-tests", Guid.NewGuid().ToString("N"));
+        var entities = new JsonSiteKitEntityRegistry(Path.Combine(root, "entities"));
+        var records = new JsonSiteKitRecordStore(Path.Combine(root, "records"));
+        var service = new SiteKitDataImportService(entities, records);
+        var entity = new SiteKitEntityDefinition
+        {
+            ProjectId = "crm-smoke", Alias = "invoice", Name = "Invoice",
+            Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true },
+                new() { Alias = "reference", Name = "Reference", Type = "text", Required = true, Unique = true },
+                new() { Alias = "total", Name = "Total", Type = "number", Required = true }]
+        };
+        await entities.SaveAsync(entity);
+        var mapping = new SiteKitImportMapping
+        {
+            ProjectId = entity.ProjectId, Alias = "invoices", Name = "Invoices", EntityAlias = entity.Alias,
+            Format = "json", Fields = new Dictionary<string, string> { ["reference"] = "reference", ["total"] = "total" }, MatchFields = ["reference"]
+        };
+        try
+        {
+            var preview = await service.PreviewAsync(mapping, System.Text.Encoding.UTF8.GetBytes("[{\"reference\":\"INV-1\",\"total\":\"12.5\"},{\"reference\":\"INV-2\",\"total\":\"not-a-number\"}]"));
+            Assert.Equal(2, preview.RowsRead);
+            Assert.Equal(1, preview.ValidRows);
+            Assert.Contains(preview.Errors, error => error.Row == 2 && error.Error.Contains("cannot be converted", StringComparison.Ordinal));
+            Assert.Single(preview.Samples);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
     private static SiteKitEntityDefinition CustomerEntity() => new()
     {
         ProjectId = "crm-smoke",

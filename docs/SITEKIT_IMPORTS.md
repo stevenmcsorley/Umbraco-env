@@ -34,8 +34,10 @@ protection from the existing SiteKit admin authorization filter.
 Preview requires the entity `read` or `manage` grant. Run requires `import` or
 `manage`. The authenticated account is recorded as the actor for saved rows.
 Uploads are limited to 10 MiB and 5,000 data rows. A preview returns row counts,
-up to ten converted samples and row-level validation errors. Import continues
-past invalid rows and returns created/updated totals with row errors.
+up to ten converted samples and row-level validation/conversion errors. Preview
+continues after a malformed field conversion so other rows remain reviewable.
+Import continues past invalid rows and returns created/updated totals with row
+errors.
 
 ## Current boundaries
 
@@ -49,7 +51,8 @@ Umbraco/SQL installation for end-to-end verification.
 ## Verification
 
 `SiteKit.Core.Tests` covers CSV, JSON and XML preview/import, unique-key
-upserts, retention of fields omitted by an input, invalid-row preview and the
-local JSON record-store behavior. The Admin API and Razor Studio compile in the
+upserts, retention of fields omitted by an input, invalid-row and conversion
+error preview, explicit import grants and the local JSON record-store behavior.
+The Admin API and Razor Studio compile in the
 Umbraco host. See [SITEKIT_SCREENSHOTS.md](SITEKIT_SCREENSHOTS.md) for the
 fixture screenshot and its runtime limitations.

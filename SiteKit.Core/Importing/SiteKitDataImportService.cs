@@ -27,11 +27,18 @@ public sealed class SiteKitDataImportService
         for (var index = 0; index < rows.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var converted = ConvertRow(mapping, entity, rows[index], index + 1);
-            var rowErrors = SiteKitEntityValidator.ValidateRecord(entity, converted);
-            if (rowErrors.Count == 0) valid++;
-            else errors.AddRange(rowErrors.Select(error => new SiteKitImportRowError(index + 1, error)));
-            if (samples.Count < 10) samples.Add(converted.Clone());
+            try
+            {
+                var converted = ConvertRow(mapping, entity, rows[index], index + 1);
+                var rowErrors = SiteKitEntityValidator.ValidateRecord(entity, converted);
+                if (rowErrors.Count == 0) valid++;
+                else errors.AddRange(rowErrors.Select(error => new SiteKitImportRowError(index + 1, error)));
+                if (samples.Count < 10) samples.Add(converted.Clone());
+            }
+            catch (ArgumentException exception)
+            {
+                errors.Add(new SiteKitImportRowError(index + 1, exception.Message));
+            }
         }
         return new SiteKitImportPreview(rows.Count, valid, errors, samples);
     }
