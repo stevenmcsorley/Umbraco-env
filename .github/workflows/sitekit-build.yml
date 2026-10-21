@@ -1,0 +1,24 @@
+name: SiteKit build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore solution
+        run: dotnet restore UmbraccoEnv.sln
+      - name: Check known vulnerable packages
+        run: dotnet list MyDockerProject/MyDockerProject/MyDockerProject.csproj package --vulnerable --include-transitive
+      - name: Build solution
+        env:
+          SIXLABORS_LICENSE_KEY: ${{ secrets.SIXLABORS_LICENSE_KEY }}
+        run: dotnet build UmbraccoEnv.sln --no-restore --configuration Release -p:SixLaborsLicenseKey="$SIXLABORS_LICENSE_KEY"

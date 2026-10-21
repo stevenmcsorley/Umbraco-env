@@ -16,8 +16,8 @@ solution; each milestone records implementation and validation evidence here.
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component and module projection remains |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative package builder/importer/exporter, project installation, Studio UI and official Umbraco Automate 17.5.1 package; SiteKit operational-record providers and live runtime verification remain |
-| M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Planned |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Planned |
+| M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | In progress: patched dependency scan is clean, build workflow added, focused MCP/build evidence recorded; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -37,6 +37,7 @@ solution; each milestone records implementation and validation evidence here.
 | Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, explicit grants and a basic data model/record editor; database-enforced relationships, screen composition and live SQL verification remain |
 | Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component, entity and screen definitions; official Umbraco Automate is installed; SiteKit record-event providers are not implemented and module workflow JSON remains inert |
 | ChatGPT plan sharing / Agent Host / MCP | Partial | Local Agent Host implements SIWC, Responses streaming, typed tools and local stdio MCP; live eligible account flow remains unverified |
+| Generated business application runtime | Partial | Project generator exports project and screen manifests and deployable shells; application screen routing, persistent CRUD APIs and authorization are not yet projected into each independently generated runtime |
 
 ## Architecture decisions
 
@@ -68,9 +69,11 @@ solution; each milestone records implementation and validation evidence here.
   login. HTML login, registration and booking cancellation forms use antiforgery
   tokens. Forwarded headers accept only configured proxy IPs.
 - The ImageSharp 4.1.2 security override removes a newly disclosed vulnerable
-  transitive version. ImageSharp 4 requires a Six Labors community/commercial
-  license setup for direct dependencies; this package/licensing impact needs
-  review before distribution to end users.
+  transitive version. Updated to 4.1.3 to include current security fixes.
+  ImageSharp 4 requires a Six Labors community/commercial key for direct
+  dependencies. The open-source project must apply for a community key; never
+  commit it. Release builds and GitHub CI consume `SIXLABORS_LICENSE_KEY` from
+  the environment/repository secret. Debug builds remain available without it.
 - No tests are present in the tracked solution. Validation will start with
   reproducible builds and focused smoke checks as features are implemented.
 - The previously committed database password is a test credential according to

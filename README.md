@@ -51,6 +51,13 @@ SiteKit is an open-source platform for building Umbraco websites and data-backed
 - Node.js 20+ (for local development)
 - .NET 10 SDK (for local Umbraco development; Umbraco 17 LTS)
 
+ImageSharp 4 is used as a direct, patched dependency. Contributors need a
+Six Labors community license key for local Release builds; open-source projects
+can request one from the [Six Labors licensing portal](https://licensing.sixlabors.com/).
+Set `SIXLABORS_LICENSE_KEY` in the environment. Never commit the key. The
+GitHub Actions workflow reads it from the repository secret with that name.
+Debug builds do not require the key.
+
 ## Getting Started
 
 ### 1. Start All Services (Docker)
