@@ -55,7 +55,7 @@ public sealed class SiteKitUpdateOperationalRecordAction : ActionBase<SiteKitUpd
             var records = services.GetRequiredService<ISiteKitRecordStore>();
             var permissions = services.GetRequiredService<ISiteKitPermissionRegistry>();
             var users = services.GetRequiredService<Umbraco.Cms.Core.Services.IUserService>();
-            var notifications = services.GetRequiredService<IScopedNotificationPublisher>();
+            var events = services.GetRequiredService<IEventAggregator>();
             var serviceAccount = await users.GetAsync(context.ExecutionContext.ServiceAccountKey);
             var actor = serviceAccount?.Email;
             if (string.IsNullOrWhiteSpace(actor))
@@ -92,7 +92,7 @@ public sealed class SiteKitUpdateOperationalRecordAction : ActionBase<SiteKitUpd
             }
             if (validationErrors.Count != 0) return ActionResult.Failed(new ArgumentException(string.Join(" ", validationErrors)), StepRunErrorCategory.Validation);
             var updated = await records.SaveAsync(entity, data, actor, record.Id, cancellationToken);
-            notifications.Publish(new SiteKitOperationalRecordChangedNotification(settings.ProjectId, settings.EntityAlias, updated.Id, "updated", updated.UpdatedAt));
+            events.Publish(new SiteKitOperationalRecordChangedNotification(settings.ProjectId, settings.EntityAlias, updated.Id, "updated", updated.UpdatedAt));
             return Success(new SiteKitUpdateOperationalRecordOutput
             { ProjectId = settings.ProjectId, EntityAlias = settings.EntityAlias, RecordId = updated.Id, UpdatedFieldCount = changed });
         }

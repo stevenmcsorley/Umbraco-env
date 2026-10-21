@@ -18,10 +18,10 @@ public sealed class SiteKitEntitiesController : ControllerBase
     private readonly ISiteKitRecordStore _records;
     private readonly ISiteKitPermissionRegistry _permissions;
     private readonly IConfiguration _configuration;
-    private readonly IScopedNotificationPublisher _notifications;
+    private readonly IEventAggregator _events;
 
-    public SiteKitEntitiesController(ISiteKitEntityRegistry entities, ISiteKitProjectRegistry projects, ISiteKitRecordStore records, ISiteKitPermissionRegistry permissions, IConfiguration configuration, IScopedNotificationPublisher notifications)
-    { _entities = entities; _projects = projects; _records = records; _permissions = permissions; _configuration = configuration; _notifications = notifications; }
+    public SiteKitEntitiesController(ISiteKitEntityRegistry entities, ISiteKitProjectRegistry projects, ISiteKitRecordStore records, ISiteKitPermissionRegistry permissions, IConfiguration configuration, IEventAggregator events)
+    { _entities = entities; _projects = projects; _records = records; _permissions = permissions; _configuration = configuration; _events = events; }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SiteKitEntityDefinition>>> List(string projectId, CancellationToken ct)
@@ -123,7 +123,7 @@ public sealed class SiteKitEntitiesController : ControllerBase
         if (entity is null) return NotFound();
         if (!await Can("delete", projectId, alias, ct)) return Forbid();
         if (!await _records.DeleteAsync(projectId, alias, id, HttpContext.Session.GetString("UserEmail")!, ct)) return NotFound();
-        _notifications.Publish(new SiteKitOperationalRecordChangedNotification(projectId, alias, id, "deleted", DateTimeOffset.UtcNow));
+        _events.Publish(new SiteKitOperationalRecordChangedNotification(projectId, alias, id, "deleted", DateTimeOffset.UtcNow));
         return NoContent();
     }
 
@@ -137,7 +137,7 @@ public sealed class SiteKitEntitiesController : ControllerBase
             var relationshipErrors = await ValidateRelationships(entity, data, ct);
             if (relationshipErrors.Count > 0) return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]> { ["relationships"] = relationshipErrors.ToArray() }));
             var record = await _records.SaveAsync(entity, data, HttpContext.Session.GetString("UserEmail")!, id, ct);
-            _notifications.Publish(new SiteKitOperationalRecordChangedNotification(projectId, alias, record.Id, id is null ? "created" : "updated", record.UpdatedAt));
+            _events.Publish(new SiteKitOperationalRecordChangedNotification(projectId, alias, record.Id, id is null ? "created" : "updated", record.UpdatedAt));
             return id is null ? CreatedAtAction(nameof(GetRecord), new { projectId, alias, id = record.Id }, record) : Ok(record);
         }
         catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }

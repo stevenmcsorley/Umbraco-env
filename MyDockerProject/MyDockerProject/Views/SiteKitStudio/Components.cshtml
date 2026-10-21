@@ -1,11 +1,11 @@
 @{
     ViewData["Title"] = "Component Studio";
-    Layout = "~/Views/Layouts/FullWidth.cshtml";
+    Layout = "~/Views/Layouts/SiteKitStudio.cshtml";
 }
 
 <div class="sitekit-studio" id="sitekit-studio">
     <header class="sitekit-studio__header">
-        <div><p class="sitekit-eyebrow">SITEKIT STUDIO</p><h1>Components</h1><p>Create reusable, data-driven components for this project.</p><nav><a href="/studio/projects">Projects</a> · <a href="/studio/screens">Screens</a> · <a href="/studio/imports">Imports</a> · <a href="/studio/modules">Modules</a></nav></div>
+        <div><p class="sitekit-eyebrow">SITEKIT STUDIO</p><h1>Components</h1><p>Create reusable, data-driven components for this project.</p></div>
         <button class="sitekit-primary" id="new-component">New component</button>
     </header>
     <div class="sitekit-studio__grid">
@@ -16,12 +16,12 @@
             <form id="component-form" hidden>
                 <div class="sitekit-fields">
                     <label>Name<input name="name" required maxlength="100"/></label>
-                    <label>Alias<input name="alias" required pattern="[a-z][a-z0-9-]{1,63}" title="Lowercase letters, numbers and hyphens"/></label>
+                    <label>Alias<input name="alias" required pattern="[a-z][a-z0-9\-]{1,63}" title="Lowercase letters, numbers and hyphens"/></label>
                     <label>Category<input name="category" value="Content" required maxlength="60"/></label>
                     <label>Version<input name="version" value="1.0.0" required pattern="[0-9]+\.[0-9]+\.[0-9]+"/></label>
                     <label class="sitekit-wide">Description<textarea name="description" maxlength="2000"></textarea></label>
                     <label class="sitekit-wide">Tags<input name="tags" maxlength="500" placeholder="marketing, cards, pricing" aria-describedby="tags-help"/><small id="tags-help">Separate searchable tags with commas.</small></label>
-                    <label>Property alias<input name="propertyAlias" value="title" pattern="[a-z][a-z0-9-]{1,63}" required/></label>
+                    <label>Property alias<input name="propertyAlias" value="title" pattern="[a-z][a-z0-9\-]{1,63}" required/></label>
                     <label>Property label<input name="propertyLabel" value="Title" required maxlength="100"/></label>
                     <label>Property type<select name="propertyType"><option>text</option><option>richText</option><option>number</option><option>boolean</option><option>color</option><option>media</option><option>link</option><option>reference</option></select></label>
                     <label>Layout primitive<select name="primitive"><option>section</option><option>container</option><option>stack</option><option>grid</option><option>card</option><option>heading</option><option>text</option><option>button</option><option>image</option></select></label>
@@ -142,7 +142,7 @@
         } catch { preview.textContent = 'Preview unavailable.'; }
     }
     document.getElementById('new-component').addEventListener('click', () => {selected=null;form.reset();form.hidden=false;form.elements.alias.value='new-component';form.elements.version.value='1.0.0';form.elements.propertiesJson.value='';form.elements.layoutJson.value='';form.elements.variantsJson.value='[]';document.getElementById('editor-title').textContent='New component';message.textContent='Define fields and compose a reusable component using the visual builder.';preview.replaceChildren();renderVisualBuilder();});
-    document.getElementById('add-property').addEventListener('click',()=>{const props=readJson(form.elements.propertiesJson.value,[]);props.push({alias:`field-${props.length+1}`,label:`Field ${props.length+1}`,type:'text',required:false});form.elements.propertiesJson.value=JSON.stringify(props,null,2);renderVisualBuilder();});
+    document.getElementById('add-property').addEventListener('click',()=>{const props=readJson(form.elements.propertiesJson.value,[{alias:form.elements.propertyAlias.value||'title',label:form.elements.propertyLabel.value||'Title',type:form.elements.propertyType.value||'text',required:form.elements.required.checked}]);props.push({alias:`field-${props.length+1}`,label:`Field ${props.length+1}`,type:'text',required:false});form.elements.propertiesJson.value=JSON.stringify(props,null,2);renderVisualBuilder();});
     document.getElementById('visual-properties').addEventListener('input',()=>syncVisualProperties(false));
     document.getElementById('visual-properties').addEventListener('change',()=>syncVisualProperties(false));
     document.getElementById('visual-properties').addEventListener('click',event=>{const index=event.target.dataset.propertyRemove;if(index===undefined)return;const props=readJson(form.elements.propertiesJson.value,[]);props.splice(Number(index),1);form.elements.propertiesJson.value=JSON.stringify(props,null,2);renderVisualBuilder();});

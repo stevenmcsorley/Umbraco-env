@@ -96,11 +96,4 @@ public sealed class SiteKitProjectsController : ControllerBase
         return Ok(new { valid = errors.Count == 0, errors });
     }
 
-    [HttpGet("{id}/entities")]
-    public async Task<IActionResult> ListEntities(string id, CancellationToken cancellationToken)
-    {
-        if (!SiteKitProjectValidator.IsValidId(id)) return BadRequest(new { error = "Project id is invalid." });
-        if (await _registry.GetAsync(id, cancellationToken) is null) return NotFound();
-        return Ok(await _entities.ListAsync(id, cancellationToken));
-    }
 }

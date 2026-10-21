@@ -37,7 +37,7 @@ services:
     volumes:
       - umb_media:/app/wwwroot/media
       - umb_logs:/app/umbraco/Logs
-      - umb_views:/app/Views
+      - ./MyDockerProject/Views:/app/Views:ro
       - umb_data:/app/umbraco
       - umb_models:/app/umbraco/models
     build:
@@ -107,12 +107,6 @@ volumes:
       device: ./MyDockerProject/wwwroot/media
       o: bind
   umb_logs:
-  umb_views:
-    driver: local
-    driver_opts:
-      type: none
-      device: ./MyDockerProject/Views
-      o: bind
   umb_data:
   umb_models:
     driver: local

@@ -1,0 +1,69 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Microsoft.AspNetCore.Http
+@{
+    var currentPath = Context.Request.Path.Value ?? string.Empty;
+}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f7fb" />
+    <title>@(ViewData["Title"] ?? "Studio") · SiteKit</title>
+    <link rel="stylesheet" href="~/css/output.css" />
+    <style>
+        :root{color-scheme:light;--sk-ink:#162231;--sk-muted:#637184;--sk-line:#e1e7ee;--sk-brand:#087f8c;--sk-paper:#f5f7fb}
+        *,*::before,*::after{box-sizing:border-box}
+        html{min-height:100%;background:var(--sk-paper)}
+        body{min-height:100vh;margin:0;color:var(--sk-ink);font:15px/1.5 Inter,"Segoe UI",system-ui,sans-serif;letter-spacing:normal;background:radial-gradient(ellipse at 78% -18%,#e6f3f3 0,transparent 38%),var(--sk-paper)}
+        a{color:inherit}
+        .sitekit-shell{min-height:100vh;display:flex;flex-direction:column}
+        .sitekit-topbar{position:sticky;top:0;z-index:50;background:#ffffffed;border-bottom:1px solid var(--sk-line);backdrop-filter:blur(16px)}
+        .sitekit-topbar__inner{max-width:1500px;min-height:72px;margin:auto;padding:0 clamp(1rem,3vw,2.5rem);display:flex;align-items:center;gap:2rem}
+        .sitekit-brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;white-space:nowrap}
+        .sitekit-brand__mark{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:white;font-size:.85rem;font-weight:850;letter-spacing:-.08em;background:linear-gradient(145deg,#19a79b,#176b82);box-shadow:0 5px 14px #087f8c30}
+        .sitekit-brand__name{font-size:1rem;font-weight:750;letter-spacing:-.035em}
+        .sitekit-brand__label{margin-left:.35rem;color:#8793a2;font-size:.62rem;font-weight:750;letter-spacing:.13em}
+        .sitekit-nav{display:flex;align-items:center;gap:.3rem;flex:1;overflow-x:auto;scrollbar-width:none}
+        .sitekit-nav::-webkit-scrollbar{display:none}
+        .sitekit-nav a{padding:.58rem .76rem;border-radius:8px;color:#5d6a7b;text-decoration:none;font-size:.84rem;font-weight:620;white-space:nowrap;transition:background .15s,color .15s}
+        .sitekit-nav a:hover,.sitekit-nav a[aria-current="page"]{background:#eaf4f4;color:#096d76}
+        .sitekit-account{display:flex;align-items:center;gap:.65rem;padding-left:1rem;border-left:1px solid var(--sk-line);white-space:nowrap}
+        .sitekit-account__email{max-width:190px;overflow:hidden;text-overflow:ellipsis;color:#718095;font-size:.76rem}
+        .sitekit-account a{color:#435266;font-size:.8rem;font-weight:650;text-decoration:none}
+        .sitekit-account a:hover{color:var(--sk-brand)}
+        .sitekit-content{width:100%;flex:1}
+        .sitekit-bottom{max-width:1500px;width:100%;margin:0 auto;padding:1.2rem clamp(1rem,3vw,2.5rem);display:flex;justify-content:space-between;gap:1rem;color:#8995a4;font-size:.73rem}
+        .sitekit-bottom strong{color:#637184;font-weight:650}
+        :focus-visible{outline:3px solid #59c5c7;outline-offset:3px}
+        @@media(max-width:900px){.sitekit-topbar__inner{flex-wrap:wrap;gap:.6rem 1rem;padding-top:.7rem;padding-bottom:.7rem}.sitekit-nav{order:3;flex-basis:100%}.sitekit-account{margin-left:auto}.sitekit-account__email{display:none}}
+        @@media(max-width:520px){.sitekit-brand__label{display:none}.sitekit-topbar__inner{padding-inline:.85rem}.sitekit-nav a{padding:.5rem .62rem;font-size:.79rem}.sitekit-bottom{flex-direction:column;gap:.2rem}}
+    </style>
+</head>
+<body>
+<div class="sitekit-shell">
+    <header class="sitekit-topbar">
+        <div class="sitekit-topbar__inner">
+            <a class="sitekit-brand" href="/studio/projects" aria-label="SiteKit Studio home">
+                <span class="sitekit-brand__mark" aria-hidden="true">SK</span>
+                <span class="sitekit-brand__name">SiteKit<span class="sitekit-brand__label">STUDIO</span></span>
+            </a>
+            <nav class="sitekit-nav" aria-label="SiteKit Studio">
+                <a href="/studio/projects" aria-current="@(currentPath.StartsWith("/studio/projects", StringComparison.OrdinalIgnoreCase) ? "page" : null)">Projects</a>
+                <a href="/studio/components" aria-current="@(currentPath.StartsWith("/studio/components", StringComparison.OrdinalIgnoreCase) ? "page" : null)">Components</a>
+                <a href="/studio/screens" aria-current="@(currentPath.StartsWith("/studio/screens", StringComparison.OrdinalIgnoreCase) ? "page" : null)">Screens</a>
+                <a href="/studio/imports" aria-current="@(currentPath.StartsWith("/studio/imports", StringComparison.OrdinalIgnoreCase) ? "page" : null)">Imports</a>
+                <a href="/studio/modules" aria-current="@(currentPath.StartsWith("/studio/modules", StringComparison.OrdinalIgnoreCase) ? "page" : null)">Modules</a>
+            </nav>
+            <div class="sitekit-account">
+                <span class="sitekit-account__email">@Context.Session.GetString("UserEmail")</span>
+                <a href="/umbraco" title="Open the Umbraco backoffice">Umbraco</a>
+                <a href="/logout">Sign out</a>
+            </div>
+        </div>
+    </header>
+    <div class="sitekit-content">@RenderBody()</div>
+    <footer class="sitekit-bottom"><span><strong>SiteKit Studio</strong> · Reusable software on Umbraco</span><span>Open source · Built for the web</span></footer>
+</div>
+</body>
+</html>

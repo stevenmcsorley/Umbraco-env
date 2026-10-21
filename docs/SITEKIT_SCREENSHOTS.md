@@ -1,9 +1,33 @@
 # SiteKit runtime screenshots
 
-These showcase captures come from independently generated .NET applications
-running locally. They demonstrate working project output; they are **not** a
+These captures come from local Docker and independently generated .NET
+applications. They demonstrate working project output; they are **not** a
 hosted SiteKit URL. The CRM uses its generated SQLite store and a local test
-access token. No fixture mockups are included in this gallery.
+access token. The Studio captures show a signed-in local SiteKit test account
+and live project/component registries. No fixture mockups are included.
+
+## Live Component Studio
+
+![Authenticated SiteKit Component Studio with a newly created reusable hero definition](../output/playwright/sitekit-component-studio-live.png)
+
+![Component Studio visual schema and layout composition controls](../output/playwright/sitekit-component-composer-live.png)
+
+The component was authored through the visual editor during a live Docker
+session. Its persisted definition has three typed properties (text, text, and
+link) and a composed stack layout with heading, text, and button primitives.
+The registry API returned the saved version on a subsequent Studio load.
+
+## One component, two project placements
+
+| Northstar Advisory | Modern Atelier |
+| --- | --- |
+| ![Northstar Advisory project with the shared hero component in teal](../output/playwright/sitekit-studio-projects-live.png) | ![Modern Atelier project with the shared hero component in sand](../output/playwright/sitekit-studio-projects-atelier.png) |
+
+Both project screens come from the running Umbraco host. The projects reference
+the same `northstar-editorial-hero` version, while their placement records hold
+different data and independent appearance overrides. The placement and preview
+API endpoints returned HTTP 200 for each project. The UI contrast fix ensures
+the descriptive text inherits the configured placement color.
 
 ## Generated CRM
 
@@ -33,8 +57,8 @@ the shared component receiving independent project data and appearance.
 
 Captured from the running Umbraco container at
 `http://localhost:44372/umbraco/login`. This verifies the real Umbraco login
-form is served by Docker; it does not show an authenticated SiteKit Studio
-view. The local Compose port is HTTP only, and OpenIddict rejects the sign-in
-authorization request until HTTPS is configured with a trusted local
-certificate. SQL Server was healthy and the booking-engine `/health` endpoint
-returned HTTP 200 during the same smoke check.
+form is served by Docker. It is separate from the SiteKit Studio session shown
+above. The default Compose stack is HTTP only; with the trusted HTTPS overlay
+active, requests to port 44372 redirect to HTTPS on port 44373. OpenIddict
+metadata returns HTTP 200 over HTTPS and rejects HTTP requests. SQL Server was
+healthy during the Studio smoke check.

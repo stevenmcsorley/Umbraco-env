@@ -46,15 +46,37 @@ The same registered component definition is rendered by two independent generate
 
 The generated CRM runtime uses SQLite-backed CRUD, token-based principals, and entity-operation grants. The current integration evidence covers record creation, update, persistence across restart, permission denial, relationship checks, and guarded deletion. See [runtime scope and setup](docs/SITEKIT_GENERATED_RUNTIME.md).
 
+### Create a component in Studio and reuse it
+
+The visual Component Studio created a new, editable hero definition with title,
+supporting copy, and link fields. The definition is shared; each project stores
+its own content and appearance.
+
+<p align="center">
+  <img src="output/playwright/sitekit-component-studio-live.png" alt="Authenticated SiteKit Component Studio editing a reusable hero component" width="920">
+</p>
+
+<p align="center">
+  <img src="output/playwright/sitekit-component-composer-live.png" alt="Visual component schema builder with typed fields and composed layout primitives" width="920">
+</p>
+
+The same `northstar-editorial-hero` version is placed in two separate SiteKit
+projects. Northstar Advisory uses a deep teal treatment and strategy copy;
+Modern Atelier uses warm sand tones and its own message. Both previews were
+rendered by the running Umbraco host from the shared component registry.
+
+| Northstar Advisory | Modern Atelier |
+| --- | --- |
+| ![Northstar Advisory with the shared hero component in teal](output/playwright/sitekit-studio-projects-live.png) | ![Modern Atelier with the same component in warm sand](output/playwright/sitekit-studio-projects-atelier.png) |
+
 ### Explore SiteKit Studio
 
-The authenticated Studio surfaces live inside the Umbraco backoffice at
-`/studio/projects`, `/studio/components`, `/studio/screens`, `/studio/imports`,
-and `/studio/modules`. The Docker-backed Umbraco and SQL services are now
-running, and the real Umbraco login form has been captured. Authenticated
-Studio screens are not shown because this capture has no provisioned admin
-session. See the [screenshot guide](docs/SITEKIT_SCREENSHOTS.md) for provenance
-and the local HTTPS requirement.
+SiteKit Studio runs in the Umbraco host at `/studio/projects`,
+`/studio/components`, `/studio/screens`, `/studio/imports`, and `/studio/modules`.
+The captures above come from an authenticated local Docker session, not a hosted
+demo. Follow the [HTTPS setup](#run-the-existing-umbraco-starter) to run the
+backoffice locally. See the [screenshot guide](docs/SITEKIT_SCREENSHOTS.md) for
+capture details and scope.
 
 ## How the pieces fit
 
@@ -86,7 +108,7 @@ The Agent Host runs on the user's machine or controlled environment and keeps cr
 - **Business data:** typed entities, additive schema evolution checks, SQLite persistence in generated apps, SQL Server record APIs in the Umbraco host, permission grants, audit data, and validated relationships.
 - **Application screens:** tables and forms plus search, kanban, calendar, and entity-count dashboard views in generated applications.
 - **Modules:** verified declarative packages with integrity checks, component/entity/screen assets, dependency version ranges, project pins, and explicit upgrades.
-- **Universal imports:** CSV, JSON, and XML parsing, field mappings, validation, repeatable upserts, preview, and import history.
+- **Universal imports:** CSV, JSON, XML, and allowlisted HTTPS REST JSON sources; field mappings, validation, repeatable upserts, preview, and import history.
 - **AI and MCP:** local Agent Host, typed SiteKit tools, stdio MCP, OAuth/PKCE Sign in with ChatGPT flow, and streamed Responses API orchestration. Live account eligibility and end-to-end subscription verification remain outstanding.
 - **Existing starter:** Umbraco hotel content, booking, pricing/inventory, payments, importing, and React/TypeScript booking UI are preserved.
 
@@ -122,7 +144,7 @@ docker compose up -d --build
 
 The compose stack exposes Umbraco at `http://localhost:44372` and the booking engine API at `http://localhost:3001`. Docker builds the React booking JavaScript and Tailwind CSS as part of the Umbraco image; ASP.NET Core data-protection keys persist in the existing Docker data volume, and Umbraco Automate shares the CMS SQL database. Session storage remains in memory, so active sessions reset when the app container restarts.
 
-The local stack serves HTTP only. The Umbraco login form is viewable, but OpenIddict rejects the sign-in flow over HTTP. Configure HTTPS with a trusted local certificate before signing in. Production also needs key encryption at rest and TLS termination. Provision the first SiteKit administrator through the documented allowlist/bootstrap flow; keep `.env` private and remove the temporary registration code after setup.
+The default local stack serves HTTP only. OpenIddict requires HTTPS for its sign-in endpoints. Configure the trusted local HTTPS overlay before using the Umbraco backoffice. When the overlay is active, requests to the HTTP development port redirect to the HTTPS port. Production also needs key encryption at rest and TLS termination. Provision the first SiteKit administrator through the documented allowlist/bootstrap flow; keep `.env` private and remove the temporary registration code after setup.
 
 For local authenticated backoffice work, an opt-in HTTPS Compose overlay is included. Export and trust a development certificate on your machine, then start the overlay:
 
@@ -165,7 +187,7 @@ output/playwright/                    Committed generated-runtime screenshots
 
 ## Validation snapshot
 
-At the current checkpoint, `SiteKit.Core.Tests` has **20 passing Release tests** and the solution builds with **0 errors**. Docker builds the Umbraco host with 0 errors, SQL is healthy, and the login form plus booking assets and health endpoint return HTTP 200. The host build reports 154 existing warnings. Local generated website, CRM, and Umbraco login captures are committed. Authenticated Studio/SQL journeys, eligible ChatGPT subscription, accessibility, performance, backup/restore, and deployment acceptance still need further verification; see the ledger before relying on any capability in production.
+At the current checkpoint, `SiteKit.Core.Tests` has **23 passing Release tests** and the solution builds with **0 errors**. The Docker Umbraco host builds with 0 errors; SQL is healthy. An authenticated live Studio session created a component through the visual editor, saved its schema, and rendered the shared definition in two independent projects with different content and appearance. HTTPS metadata, the HTTP-to-HTTPS redirect, project placements, and their rendered previews were checked against the running host. The latest Docker build reports 164 existing warnings. Eligible ChatGPT subscription use, authenticated Umbraco backoffice sign-in, SQL record journeys, accessibility, performance, backup/restore, and production deployment acceptance still need further verification; see the ledger before relying on any capability in production.
 
 ## Contributing
 

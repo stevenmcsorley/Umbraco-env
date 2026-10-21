@@ -9,7 +9,7 @@ solution; each milestone records implementation and validation evidence here.
 
 | Milestone | Scope | Status |
 |---|---|---|
-| M0 — Security and baseline | Audit existing code, protect existing installations, secure administrative operations, establish reproducible build | Docker build verified; SQL healthy; HTTPS Umbraco backoffice and booking-engine health endpoint return HTTP 200; data-protection key persists across container recreation; authenticated Studio checks pending |
+| M0 — Security and baseline | Audit existing code, protect existing installations, secure administrative operations, establish reproducible build | Docker build verified; SQL healthy; local HTTPS overlay and HTTP-to-HTTPS redirect verified; SiteKit Studio admin APIs require the allowlisted session; data-protection key persists across container recreation; full Umbraco backoffice sign-in and production hardening remain pending |
 | M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | Partial: foundations and project/data contracts implemented; code SDK and full module lifecycle incomplete |
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, multi-property visual editor, composed/reorderable layout builder, preview and safe renderer implemented; drag/drop canvas and compiled developer SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
@@ -102,10 +102,13 @@ solution; each milestone records implementation and validation evidence here.
   Existing nested properties and layout metadata are preserved when visual
   controls are edited. Project
   manifest CRUD is exposed at `/api/sitekit/projects`. Project placements and project-local appearance overrides are implemented; a drag/drop canvas and developer package build pipeline remain.
-- Build verification: the solution builds with 0 errors and 154 existing
-  warnings, and 20 Release core contract tests pass. Generated-site and CRM
-  browser evidence is recorded in `SITEKIT_SCREENSHOTS.md`; Studio previews
-  still use fixture data and are not a live SQL-backed backoffice capture.
+- Build verification: the solution builds with 0 errors and the core contract
+  suite passes 23 Release tests. An authenticated live Studio session authored
+  `northstar-editorial-hero` through the visual editor, saved its typed schema,
+  and rendered it from the shared registry in two separate projects with
+  independent data and appearance. Live browser captures and provenance are in
+  `SITEKIT_SCREENSHOTS.md`; this validates the JSON registries and renderer, not
+  Umbraco content-tree placement.
 
 ## M3 progress
 
@@ -129,7 +132,8 @@ solution; each milestone records implementation and validation evidence here.
   Responses inference remain unverified because no ChatGPT account is connected
   in this environment. Docker and SQL were unavailable when this entry was
   recorded; they have since been started and basic service smoke checks now
-  pass. Authenticated Umbraco Studio screenshots remain pending.
+  pass. Live authenticated SiteKit Studio captures are now documented; a
+  successful Umbraco backoffice identity-provider sign-in remains unverified.
 
 ## M4 and M5 progress
 
@@ -179,9 +183,9 @@ solution; each milestone records implementation and validation evidence here.
 
 | Date | Milestone | Validation |
 |---|---|---|
-| 2026-10-21 | M0 | .NET 10 Docker build succeeded with 0 errors and 154 existing Umbraco/nullability warnings. SQL is healthy; the Umbraco login form, generated booking CSS/JS assets and booking `/health` return HTTP 200. Data-protection key persistence survived app-container recreation. `npm audit` reports zero vulnerabilities in both Node projects. Authenticated Umbraco sign-in remains blocked until a trusted local HTTPS certificate is configured. |
-| 2026-10-21 | M1/M2 | `dotnet build UmbraccoEnv.sln --no-restore` succeeds with 0 errors. An additional build with `RazorCompileOnBuild=true` exposes pre-existing Razor compile failures in the backup view folder and the generated `PublishedModels.Home` type; ordinary project builds intentionally disable build-time Razor compilation. Runtime UI smoke checks remain outstanding. |
-| 2026-10-21 | M8 | `dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --no-restore --configuration Release` passed 3 tests covering encoded component rendering, screen/entity field validation and JSON record-store CRUD/audit retention. |
+| 2026-10-21 | M0 | .NET 10 Docker build succeeded with 0 errors and 164 existing Umbraco/nullability warnings. SQL is healthy; the Umbraco login form, generated booking CSS/JS assets and booking `/health` return HTTP 200. Data-protection key persistence survived app-container recreation. `npm audit` reports zero vulnerabilities in both Node projects. The HTTPS overlay serves OpenIddict metadata with HTTP 200; HTTP requests redirect to HTTPS on the overlay. Full Umbraco backoffice sign-in remains unverified. |
+| 2026-10-21 | M1/M2 | `dotnet build UmbraccoEnv.sln --no-restore` succeeds with 0 errors. An additional build with `RazorCompileOnBuild=true` exposes pre-existing Razor compile failures in the backup view folder and the generated `PublishedModels.Home` type; ordinary project builds intentionally disable build-time Razor compilation. Live authenticated Studio smoke created and retrieved a new versioned component, rendered its preview, created a second website project, and rendered the same component in both projects with distinct data and appearance. All five Studio routes return HTTP 200 after correcting Razor escaping in the responsive styles; Screens and Imports loaded with zero browser console errors. |
+| 2026-10-21 | M8 | `dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --configuration Release` passed all 23 tests with 0 failures and 0 skips in the .NET 10 SDK container. |
 
 
 ## Screenshot evidence
@@ -309,11 +313,12 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   runs. Bounded history records run metadata and file hash without row values;
   Studio displays the latest 100 previews/imports. Added import navigation
   across Studio areas.
-- Validation: all 11 Release core tests pass, including CSV/JSON/XML import and
+- Validation at that checkpoint: all 11 Release core tests passed, including CSV/JSON/XML import and
   preview, unique-key repeat updates, retention of omitted data and invalid-row
   reporting. The Umbraco Debug host compiles with 0 errors (154 existing
   warnings). Live authenticated endpoint and SQL-backed import verification
-  remain outstanding; no fixture screenshot is presented as runtime evidence.
+  remained outstanding at that checkpoint; screenshots in the current guide
+  are captured from a live runtime and are identified by their individual scope.
 - Current boundaries: no media transfer, background/resumable jobs, AI mapping,
   execution audit log or relationship-aware deduplication. See
   [SITEKIT_IMPORTS.md](SITEKIT_IMPORTS.md).
@@ -330,7 +335,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   the module Studio JavaScript passes `node --check`.
 - Module dependency validation currently checks installed module IDs; version
   ranges and transactional rollback across multiple registry files remain
-  planned. Static Studio fixture evidence is in `SITEKIT_SCREENSHOTS.md`.
+  planned. Live Studio project/component evidence is in `SITEKIT_SCREENSHOTS.md`.
 
 ## M4/M5 generated application runtime update
 
@@ -348,7 +353,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   emitted application. It starts the generated project and verifies unauthenticated
   denial, read-only write denial, create/update/read/delete behavior, and record
   retention while a screen changes and the project is regenerated/restarted. All
-  20 Release core tests pass; live browser captures are documented
+  23 Release core tests pass at the current checkpoint; live browser captures are documented
   in `SITEKIT_SCREENSHOTS.md`.
 - Boundaries: generated app CRUD currently uses local SQLite and a single
   administrator token, with no record-level role grants or soft-delete. The

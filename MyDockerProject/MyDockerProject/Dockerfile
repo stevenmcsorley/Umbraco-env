@@ -37,6 +37,8 @@ RUN dotnet publish "MyDockerProject.csproj" -c $BUILD_CONFIGURATION -o /app/publ
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Runtime Razor compilation reads views from disk; keep them in the production image.
+COPY --from=build /src/MyDockerProject/MyDockerProject/Views ./Views
 # We need to make sure that the user running the app has write access to the umbraco folder and wwwroot, in order to write logs and other files.
 # Since these are volumes they are created as root by the docker daemon.
 USER root

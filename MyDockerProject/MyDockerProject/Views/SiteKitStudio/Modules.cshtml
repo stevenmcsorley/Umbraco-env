@@ -1,9 +1,9 @@
 @{
     ViewData["Title"] = "Modules";
-    Layout = "~/Views/Layouts/FullWidth.cshtml";
+    Layout = "~/Views/Layouts/SiteKitStudio.cshtml";
 }
 
-<main class="skm"><header><div><small>SITEKIT STUDIO</small><h1>Modules</h1><p>Install reusable, integrity-checked SiteKit capabilities.</p><nav><a href="/studio/projects">Projects</a> · <a href="/studio/components">Components</a> · <a href="/studio/screens">Screens</a> · <a href="/studio/imports">Imports</a></nav></div></header>
+<main class="skm"><header><div><small>SITEKIT STUDIO</small><h1>Modules</h1><p>Install reusable, integrity-checked SiteKit capabilities.</p></div></header>
 <section><h2>Import a module package</h2><p>Only declarative JSON schemas, screens, workflows and Markdown documentation are accepted. Package code is never executed.</p><form id="import-form"><label>SiteKit module ZIP<input name="file" type="file" accept=".zip,application/zip" required></label><button class="primary">Verify and import</button></form><p id="message" role="status"></p></section>
 <section><h2>Verified modules</h2><div id="modules" aria-live="polite">Loading modules…</div></section></main>
 <style>
