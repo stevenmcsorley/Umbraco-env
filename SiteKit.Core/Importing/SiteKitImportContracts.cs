@@ -10,6 +10,7 @@ public sealed record SiteKitImportMapping
     public required Dictionary<string, string> Fields { get; init; }
     public required string[] MatchFields { get; init; }
     public string Format { get; init; } = "json";
+    public string? SourceUrl { get; init; }
     public bool HasHeader { get; init; } = true;
     public string Delimiter { get; init; } = ",";
 }

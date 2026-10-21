@@ -73,6 +73,13 @@ public sealed class JsonSiteKitImportMappingRegistry : ISiteKitImportMappingRegi
         if (!SiteKitProjectValidator.IsValidId(mapping.EntityAlias)) errors.Add("mapping entityAlias is invalid.");
         if (string.IsNullOrWhiteSpace(mapping.Name) || mapping.Name.Length > 120) errors.Add("mapping name is required and must be at most 120 characters.");
         if (mapping.Format is not ("csv" or "json" or "xml")) errors.Add("mapping format must be csv, json or xml.");
+        if (!string.IsNullOrWhiteSpace(mapping.SourceUrl))
+        {
+            if (!Uri.TryCreate(mapping.SourceUrl, UriKind.Absolute, out var sourceUri) || sourceUri.Scheme != Uri.UriSchemeHttps ||
+                !string.IsNullOrEmpty(sourceUri.UserInfo) || !string.IsNullOrEmpty(sourceUri.Fragment) || sourceUri.Port != 443 || System.Net.IPAddress.TryParse(sourceUri.Host, out _))
+                errors.Add("REST source must be an HTTPS URL on port 443 with a DNS hostname, and cannot contain credentials or a fragment.");
+            if (mapping.Format != "json") errors.Add("REST sources must return JSON arrays and use the JSON format.");
+        }
         if (mapping.Format == "csv" && (string.IsNullOrEmpty(mapping.Delimiter) || mapping.Delimiter.Length != 1 || mapping.Delimiter[0] is '\r' or '\n' or '"')) errors.Add("CSV delimiter must be one non-newline, non-quote character.");
         if (mapping.Fields is null || mapping.Fields.Count is 0 or > 100 || mapping.Fields.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Key.Length > 120 || !SiteKitProjectValidator.IsValidId(pair.Value)) || mapping.Fields.Values.Distinct(StringComparer.Ordinal).Count() != mapping.Fields.Count)
             errors.Add("mapping fields must map 1 to 100 unique entity field aliases from non-empty source names.");

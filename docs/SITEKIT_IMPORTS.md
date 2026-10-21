@@ -12,6 +12,12 @@ remains available for its current use cases.
   current Studio), quoted values and doubled quote escapes.
 - **XML:** repeated child elements under a document root. DTD processing and
   external entity resolution are disabled.
+- **REST:** a JSON array fetched from an HTTPS URL whose DNS hostname is
+  explicitly configured under `SiteKit:Import:AllowedHosts`. The client does
+  not follow redirects, send cookies, or accept non-HTTPS URLs. Fetches time
+  out after 60 seconds and are limited to 10 MiB, including responses without
+  a declared content length. Configure one host per array entry, or provide a
+  comma/semicolon-separated value. REST mappings are saved and repeatable.
 
 Field mapping is stored as `sourceName -> entityFieldAlias`. Match fields must
 be unique entity fields, and all match values must be present in an incoming

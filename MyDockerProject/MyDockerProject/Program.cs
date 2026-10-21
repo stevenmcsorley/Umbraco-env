@@ -91,6 +91,14 @@ builder.Services.AddSession(options =>
 
 // Add HttpClient for booking engine proxy
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("SiteKitImportSource", client => client.Timeout = TimeSpan.FromSeconds(60))
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false,
+        ConnectTimeout = TimeSpan.FromSeconds(10),
+        MaxResponseHeadersLength = 32
+    });
 
 // Add Entity Framework for bookings and inventory
 var connectionString = builder.Configuration.GetConnectionString("umbracoDbDSN");

@@ -32,6 +32,78 @@ public sealed class SiteKitCoreContractTests
     }
 
     [Fact]
+    public async Task RestImportFetchUsesAnAllowlistedHttpsHost()
+    {
+        var handler = new StaticHttpMessageHandler(request =>
+        {
+            Assert.Equal(HttpMethod.Get, request.Method);
+            Assert.Equal("api.example.test", request.RequestUri!.Host);
+            Assert.Contains(request.Headers.Accept, header => header.MediaType == "application/json");
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("[{\"email\":\"ada@example.test\"}]") };
+        });
+        using var client = new HttpClient(handler);
+        var source = new SiteKitRestImportSource(client, ["api.example.test"]);
+
+        var bytes = await source.FetchAsync(RestImportMapping());
+
+        Assert.Equal("[{\"email\":\"ada@example.test\"}]", System.Text.Encoding.UTF8.GetString(bytes.Span));
+        Assert.Equal(1, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task RestImportRejectsNonAllowlistedHostsAndRedirects()
+    {
+        var handler = new StaticHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.Redirect));
+        using var client = new HttpClient(handler);
+        var source = new SiteKitRestImportSource(client, ["api.example.test"]);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => source.FetchAsync(RestImportMapping("https://other.example.test/customers")));
+        Assert.Equal(0, handler.RequestCount);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.FetchAsync(RestImportMapping()));
+        Assert.Equal(1, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task RestImportRejectsOversizedResponsesAndUnsafeSourceUrls()
+    {
+        var handler = new StaticHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(new byte[SiteKitDataImportService.MaximumBytes + 1])
+        });
+        using var client = new HttpClient(handler);
+        var source = new SiteKitRestImportSource(client, ["api.example.test"]);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => source.FetchAsync(RestImportMapping("http://api.example.test/customers")));
+        await Assert.ThrowsAsync<ArgumentException>(() => source.FetchAsync(RestImportMapping("https://user:password@api.example.test/customers")));
+        Assert.Equal(0, handler.RequestCount);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.FetchAsync(RestImportMapping()));
+        Assert.Equal(1, handler.RequestCount);
+    }
+
+    private static SiteKitImportMapping RestImportMapping(string sourceUrl = "https://api.example.test/customers") => new()
+    {
+        ProjectId = "crm-smoke",
+        Alias = "customer-import",
+        Name = "Customer import",
+        EntityAlias = "customer",
+        Fields = new Dictionary<string, string> { ["email"] = "email" },
+        MatchFields = ["email"],
+        Format = "json",
+        SourceUrl = sourceUrl
+    };
+
+    private sealed class StaticHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> createResponse) : HttpMessageHandler
+    {
+        public int RequestCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            return Task.FromResult(createResponse(request));
+        }
+    }
+
+    [Fact]
     public void ComponentRendererEncodesUntrustedText()
     {
         var component = new SiteKitComponentDefinition
