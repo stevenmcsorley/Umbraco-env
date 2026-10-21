@@ -154,6 +154,11 @@ WebApplication app = builder.Build();
 // Use forwarded headers FIRST (before Umbraco boot) so it knows about HTTPS from Cloudflare
 app.UseForwardedHeaders();
 
+// Redirect direct HTTP requests to HTTPS after applying trusted proxy headers.
+// In the local Docker HTTPS overlay this prevents OpenIddict from receiving
+// authorization/discovery requests over the HTTP-only development port.
+app.UseHttpsRedirection();
+
 await app.BootUmbracoAsync();
 
 // Use session middleware
