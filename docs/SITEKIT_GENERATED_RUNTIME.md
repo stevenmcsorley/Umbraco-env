@@ -18,12 +18,15 @@ single administrator, configure `SITEKIT_ADMIN_TOKEN` in the process or
 container secret store. For multiple principals, configure
 `SITEKIT_PRINCIPAL_TOKENS` as a JSON object mapping SHA-256 token hashes to
 principal names, and `SITEKIT_ENTITY_GRANTS` as a JSON object mapping each
-principal to entity aliases and allowed operations (`read`, `create`, `update`,
-`delete`). For example:
+principal or `role:<alias>` to entity aliases and allowed operations (`read`,
+`create`, `update`, `delete`). Optionally configure `SITEKIT_PRINCIPAL_ROLES`
+as a JSON object mapping each principal name to its role aliases. A principal
+receives the union of its direct and assigned-role grants. For example:
 
 ```json
 SITEKIT_PRINCIPAL_TOKENS={"<sha256-token-hash>":"sales-reader"}
-SITEKIT_ENTITY_GRANTS={"sales-reader":{"customer":["read"]}}
+SITEKIT_PRINCIPAL_ROLES={"sales-reader":["sales-team"]}
+SITEKIT_ENTITY_GRANTS={"role:sales-team":{"customer":["read"]}}
 ```
 
 With no token configuration, the API returns `503`; with an invalid token, it
@@ -43,7 +46,8 @@ database as part of deployment. The shared SiteKit/Umbraco host has a separate
 permission registry and SQL Server record-store implementation.
 
 The generated-app build is covered by the generator contract test. The test
-starts the emitted app, exercises administrator and read-only principal grants,
-CRUD over HTTP, renames a screen and regenerates the project, then verifies the
-updated screen manifest and existing records are still available after restart.
-Production identity federation and database performance have not been verified.
+starts the emitted app, exercises administrator, direct-principal, and
+role-derived grants (including denied writes), CRUD over HTTP, renames a screen
+and regenerates the project, then verifies the updated screen manifest and
+existing records are still available after restart. Production identity
+federation and database performance have not been verified.

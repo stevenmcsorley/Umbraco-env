@@ -44,7 +44,7 @@ The same registered component definition is rendered by two independent generate
 
 ![Generated CRM with a customer table and persisted opportunity pipeline](output/playwright/sitekit-generated-crm-runtime.png)
 
-The generated CRM runtime uses SQLite-backed CRUD, token-based principals, and entity-operation grants. The current integration evidence covers record creation, update, persistence across restart, permission denial, relationship checks, and guarded deletion. See [runtime scope and setup](docs/SITEKIT_GENERATED_RUNTIME.md).
+The generated CRM runtime uses SQLite-backed CRUD, token-based principals, and direct or role-based entity-operation grants. The current integration evidence covers record creation, update, persistence across restart, permission denial, relationship checks, and guarded deletion. See [runtime scope and setup](docs/SITEKIT_GENERATED_RUNTIME.md).
 
 ### Create a component in Studio and reuse it
 
@@ -105,7 +105,7 @@ The Agent Host runs on the user's machine or controlled environment and keeps cr
 
 - **Dynamic components:** versioned schemas, visual property/layout editing, accessible interactive disclosure blocks, safe rendering, previews, variants, JSON import/export, registry search, shared project placements, and per-project appearance.
 - **Project generation:** independent .NET 10 website, application, combined, and API projects with Dockerfiles, manifests, and generated screen/runtime assets.
-- **Business data:** typed entities, additive schema evolution checks, SQLite persistence in generated apps, SQL Server record APIs in the Umbraco host, permission grants, audit data, and validated relationships.
+- **Business data:** typed entities, additive schema evolution checks, SQLite persistence in generated apps, SQL Server record APIs in the Umbraco host, direct and project-role permission grants, audit data, and validated relationships.
 - **Application screens:** tables and forms plus search, kanban, calendar, and entity-count dashboard views in generated applications.
 - **Modules:** verified declarative packages with integrity checks, component/entity/screen assets, dependency version ranges, project pins, and explicit upgrades.
 - **Universal imports:** CSV, JSON, XML, and allowlisted HTTPS REST JSON sources; field mappings, validation, repeatable upserts, preview, and import history.
@@ -188,7 +188,7 @@ output/playwright/                    Committed generated-runtime screenshots
 
 ## Validation snapshot
 
-At the current checkpoint, `SiteKit.Core.Tests` has **27 passing Release tests** and the solution builds with **0 errors**. The Docker Umbraco host builds with 0 errors; SQL is healthy. An authenticated live Studio session created a component through the visual editor, saved its schema, and rendered the shared definition in two independent projects with different content and appearance. HTTPS metadata, the HTTP-to-HTTPS redirect, project placements, rendered previews, and a SQL-backed Customer record plus its permission grant were checked against the running host; both remained available after an application-container restart. The latest Docker build reports 164 existing warnings. Eligible ChatGPT subscription use, full authenticated Umbraco backoffice sign-in, broader multi-entity and relational SQL journeys, accessibility, performance, backup/restore, and production deployment acceptance still need further verification; see the ledger before relying on any capability in production.
+At the current checkpoint, `SiteKit.Core.Tests` has **29 passing Release tests** and the solution builds with **0 errors** in CI. The latest CI run also passed the NuGet vulnerability gate. The Docker Umbraco host is running locally with a healthy SQL service. An authenticated Studio session created a component through the visual editor, saved its schema, and rendered the shared definition in two independent projects with different content and appearance. HTTPS metadata, the HTTP-to-HTTPS redirect, project placements, rendered previews, and a SQL-backed Customer record plus its permission grant were checked against the running host; both remained available after an application-container restart. Role-based permissions are exercised in both the SiteKit host evaluator and the generated-app CRUD integration flow. Eligible ChatGPT subscription use, full authenticated Umbraco backoffice sign-in, broader multi-entity and relational SQL journeys, accessibility, performance, backup/restore, and production deployment acceptance still need further verification; see the ledger before relying on any capability in production.
 
 ## Contributing
 
