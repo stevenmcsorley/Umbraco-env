@@ -11,6 +11,8 @@ umbraco-export-*/
 **/bin/
 **/obj/
 **/dist/
+generated-projects/
+*.sitekit-module.zip
 **/umbraco/Data/SiteKit/
 
 

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using SiteKit.Core.Modules;
 
 namespace SiteKit.AgentHost;
 
@@ -35,6 +36,27 @@ internal static class Program
                 case "logout":
                     await siwc.SignOutAsync();
                     Console.WriteLine("Local ChatGPT credentials cleared; remote revocation was attempted.");
+                    return 0;
+                case "pack-module":
+                    if (args.Length < 3) throw new ArgumentException("Usage: sitekit-agent pack-module <source-directory> <output.sitekit-module.zip>");
+                    await SiteKit.Core.Modules.SiteKitModulePackageBuilder.BuildAsync(args[1], args[2]);
+                    Console.WriteLine($"Module package created at {Path.GetFullPath(args[2])}");
+                    return 0;
+                case "import-module":
+                    if (args.Length < 2) throw new ArgumentException("Usage: sitekit-agent import-module <package.sitekit-module.zip>");
+                    await using (var package = File.OpenRead(args[1]))
+                    {
+                        var registry = new JsonSiteKitModuleRegistry(Path.Combine(GetSiteKitDataRoot(), "modules"));
+                        var imported = await registry.ImportAsync(package);
+                        Console.WriteLine($"Verified and imported {imported.Id} v{imported.Version}.");
+                    }
+                    return 0;
+                case "export-module":
+                    if (args.Length < 4) throw new ArgumentException("Usage: sitekit-agent export-module <module-id> <version> <output.sitekit-module.zip>");
+                    var moduleRegistry = new JsonSiteKitModuleRegistry(Path.Combine(GetSiteKitDataRoot(), "modules"));
+                    var bytes = await moduleRegistry.ExportAsync(args[1], args[2]);
+                    await File.WriteAllBytesAsync(args[3], bytes);
+                    Console.WriteLine($"Module package exported to {Path.GetFullPath(args[3])}");
                     return 0;
                 case "mcp":
                     await new McpStdioServer(toolHost).RunAsync();
@@ -91,6 +113,12 @@ internal static class Program
         Console.WriteLine("  sitekit-agent chat [--project ID]    Start a local AI orchestration session");
         Console.WriteLine("  sitekit-agent logout                 Revoke and clear the connected session");
         Console.WriteLine("  sitekit-agent mcp                    Run the local stdio MCP server");
+        Console.WriteLine("  sitekit-agent pack-module <dir> <zip>  Build a validated declarative module package");
+        Console.WriteLine("  sitekit-agent import-module <zip>      Verify and install a module package locally");
+        Console.WriteLine("  sitekit-agent export-module <id> <version> <zip>  Export a local package");
         Console.WriteLine("Environment: SITEKIT_ROOT, SITEKIT_DATA_ROOT, SITEKIT_AGENTHOST_DIRECTORY");
     }
+
+    private static string GetSiteKitDataRoot() => Path.GetFullPath(Environment.GetEnvironmentVariable("SITEKIT_DATA_ROOT") ??
+        Path.Combine(Environment.GetEnvironmentVariable("SITEKIT_ROOT") ?? Directory.GetCurrentDirectory(), "MyDockerProject", "MyDockerProject", "umbraco", "Data", "SiteKit"));
 }

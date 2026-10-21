@@ -13,9 +13,9 @@ solution; each milestone records implementation and validation evidence here.
 | M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | In progress |
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | In progress |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
-| M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Planned |
-| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Planned |
-| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Planned |
+| M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component and module projection remains |
+| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
+| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative package builder/importer/exporter, project installation and Studio UI; workflow execution and Automate adapter remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Planned |
 | M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Planned |
 
@@ -34,9 +34,9 @@ solution; each milestone records implementation and validation evidence here.
 | React/TypeScript booking UI | Implemented | Separate frontend and generated bundle |
 | Docker deployment | Partial | Compose includes SQL Server, Umbraco and engine; credentials and development configuration need hardening |
 | Component registry / Studio | Partial | Versioned declarative JSON registry, schema/data validation, import/export, safe primitive renderer, authenticated `/studio/components` editor, project registry and project-local placements/appearance in `/studio/projects`; reusable definitions are placed by reference with validated per-project overrides. Published page integration and developer package pipeline remain planned |
-| Application data models / screen builder | Planned | Operational entities currently limited to bookings, inventory and users |
-| Workflows / reusable module packages | Planned | No persistent general purpose workflow or package system found |
-| ChatGPT plan sharing / Agent Host / MCP | Planned | No implementation found; must follow current official SIWC contract and eligibility limits |
+| Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, explicit grants and a basic data model/record editor; database-enforced relationships, screen composition and live SQL verification remain |
+| Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component and entity definitions; workflow JSON is stored inertly; Automate execution adapter remains planned |
+| ChatGPT plan sharing / Agent Host / MCP | Partial | Local Agent Host implements SIWC, Responses streaming, typed tools and local stdio MCP; live eligible account flow remains unverified |
 
 ## Architecture decisions
 
@@ -59,12 +59,11 @@ solution; each milestone records implementation and validation evidence here.
 - The repository started on Umbraco 16 / .NET 9. It now targets Umbraco 17.7.1
   / .NET 10 and pins the .NET SDK with `global.json`; Docker uses .NET 10 images.
 - `MyDockerProject/.env`, two Umbraco export ZIPs, a database backup and 1,635
-  generated `node_modules` files were tracked. They are excluded from the
+  generated dependency files were tracked. They are excluded from the
   current tree; historical objects remain in Git. The repository owner has
   confirmed the committed database password is a test credential.
-- Admin, importer, migration and seed APIs now require a signed-in account
-  explicitly allowlisted in `SiteKit:AdminEmails`. Customer record endpoints
-  require the matching session identity. Passwords use ASP.NET Identity's
+- Admin, importer, migration, seed, Studio and SiteKit APIs require a signed-in account
+  explicitly allowlisted in `SiteKit:AdminEmails`. Customer record endpoints require the matching session identity. Allowlisted addresses cannot be publicly claimed without the separate bootstrap code; remove that code after provisioning the first admin account. Passwords use ASP.NET Identity's
   salted password hasher and legacy SHA-256 hashes are upgraded on successful
   login. HTML login, registration and booking cancellation forms use antiforgery
   tokens. Forwarded headers accept only configured proxy IPs.
@@ -93,11 +92,10 @@ solution; each milestone records implementation and validation evidence here.
   validation/preview API endpoints and the initial Component Studio route at
   `/studio/components`. The editor has quick fields plus advanced JSON schema
   editors for nested properties, variants and composed layouts. Project
-  manifest CRUD is exposed at `/api/sitekit/projects`. Project placements,
-  richer visual composition and developer package build pipeline remain.
+  manifest CRUD is exposed at `/api/sitekit/projects`. Project placements and project-local appearance overrides are implemented; richer visual composition and developer package build pipeline remain.
 - Build verification after these changes: `dotnet build UmbraccoEnv.sln
   --no-restore` succeeds with 0 errors and 154 warnings. No runtime UI or
-  database smoke check has been performed yet.
+  database smoke check has been performed yet. Static Playwright previews use fixture data; see `SITEKIT_SCREENSHOTS.md`.
 
 ## M3 progress
 
@@ -116,7 +114,30 @@ solution; each milestone records implementation and validation evidence here.
 - `dotnet build UmbraccoEnv.sln --no-restore` succeeds. Live OAuth, refresh and
   Responses inference remain unverified because no ChatGPT account is connected
   in this environment. Docker Desktop's Linux engine and SQL Server are also
-  unavailable, preventing live Umbraco Studio verification. Static fixture screenshots\nare documented in `SITEKIT_SCREENSHOTS.md`.
+  unavailable, preventing live Umbraco Studio verification. Static fixture screenshots are documented in `SITEKIT_SCREENSHOTS.md`.
+
+## M4 and M5 progress
+
+- SiteKit projects now include validated theme tokens and a generator that writes
+  an independent .NET 10 website, internal application, combined or API project
+  with a project manifest, runnable ASP.NET Core host, Dockerfile and build/run
+  documentation. The Studio and local AI/MCP tools can invoke generation.
+- Added project-scoped typed entity definitions with explicit per-principal
+  operation grants and schema version checks. Existing fields, types, constraints
+  and relationships cannot be removed or changed; schema evolution currently
+  permits optional additive fields one version at a time.
+- Added a SiteKit entity editor and record screen to Projects Studio. Authenticated
+  endpoints enforce explicit read/create/update/delete grants for every record
+  operation. Allowlisted SiteKit admins grant access to account emails.
+- SQL Server deployments persist operational records in a separate
+  `SiteKitOperationalRecord` table with audit columns and soft deletion. The
+  table is created idempotently by the SQL provider on first record access; the
+  local JSON record store remains a development fallback. Schema definitions
+  and permissions remain versioned local JSON.
+- Validation: a project and `Customer` entity were created and listed through
+  the local MCP protocol. The generated website built with .NET 10 and served a
+  healthy `/health` response and HTTP 200 page. SQL CRUD, grant enforcement and
+  schema behavior still require a running Umbraco/SQL environment.
 
 ## Validation record
 
@@ -128,4 +149,25 @@ solution; each milestone records implementation and validation evidence here.
 
 ## Screenshot evidence
 
-Studio visual previews and their validation limits are documented in [SITEKIT_SCREENSHOTS.md](SITEKIT_SCREENSHOTS.md).
+Studio visual previews and their validation limits are documented in [SITEKIT_SCREENSHOTS.md](SITEKIT_SCREENSHOTS.md). Module format and CLI documentation is in [SITEKIT_MODULE_PACKAGES.md](SITEKIT_MODULE_PACKAGES.md).
+
+
+
+
+
+
+
+## M6 progress
+
+- Added a bounded, SHA-256 checked `.sitekit-module.zip` format, pack/import/
+  export CLI commands, authenticated module API and Studio module installer.
+  Packages are declarative and reject executable code, web assets, path
+  traversal, symlinks and oversized files.
+- Module installation verifies hashes again, checks project-category and
+  dependency compatibility, installs shared component references and
+  project-scoped entity schemas, and updates the project manifest.
+- Validation: built/imported a `CRM Starter` package with one component and one
+  entity, then installed it into two projects through the local MCP tool. Both
+  project manifests include the module and entity/component references.
+- Workflow definitions are stored as inert JSON only. Umbraco Automate adapters,
+  runtime execution, retries and history are still outstanding.

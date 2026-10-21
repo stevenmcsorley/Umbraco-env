@@ -47,7 +47,11 @@ Configure repository and state roots with:
 $env:SITEKIT_ROOT = (Get-Location).Path
 $env:SITEKIT_DATA_ROOT = "F:\my-sitekit-data"
 $env:SITEKIT_AGENTHOST_DIRECTORY = "$env:LOCALAPPDATA\SiteKit\AgentHost"
+$env:SITEKIT_DOTNET_EXECUTABLE = "C:\Program Files\dotnet\dotnet.exe"
 ```
+
+`SITEKIT_DOTNET_EXECUTABLE` optionally points the fixed build tool at a specific
+trusted .NET CLI executable when `dotnet` is not on the host process PATH.
 
 The component, project and placement registries normally use the Umbraco
 application's `umbraco/Data/SiteKit` directory. Keep that directory on local
@@ -73,10 +77,12 @@ client:
 
 The server exposes `sitekit.list_projects`, `sitekit.inspect_project`,
 `sitekit.create_project`, `sitekit.list_components`, `sitekit.create_component`,
-`sitekit.create_placement`, `sitekit.validate_project`, and
-`sitekit.build_project`. There is no delete, deploy, arbitrary shell, or
-external-service tool. Build is fixed to `dotnet build UmbraccoEnv.sln` under
-the configured root. Calls are recorded in the local
+`sitekit.create_placement`, `sitekit.preview_project`, `sitekit.create_entity`,
+`sitekit.list_entities`, `sitekit.generate_project`, `sitekit.validate_project`,
+`sitekit.list_modules`, `sitekit.install_module`, and `sitekit.build_project`.
+There is no delete, deploy, arbitrary shell, or
+external-service tool. Build is fixed to either the generated project for the
+requested id or `dotnet build UmbraccoEnv.sln` under the configured root. Calls are recorded in the local
 `umbraco/Data/SiteKit/audit/agent-tools.jsonl` file.
 
 The current SIWC preview flow supports locally executed function tools, but not
@@ -96,3 +102,8 @@ connection.
 - The Docker Desktop Linux engine was unavailable, and no SQL Server service is
   running here. The Umbraco Studio pages have not yet been verified in the live
   CMS UI.
+
+
+## Administrator bootstrap
+
+The legacy customer login is not sufficient to establish the first admin account when registration is public. Addresses listed in `SiteKit:AdminEmails` therefore cannot register without a separate bootstrap code. In Docker, set `SITEKIT_ADMIN_EMAILS` and temporarily set `SITEKIT_ADMIN_REGISTRATION_CODE` in the private `.env` file. Register that exact address at `/register` with the code (or send `adminRegistrationCode` to `/api/auth/register`), then remove the bootstrap code and restart the app. Subsequent admin sign-ins use the saved account and no longer need the bootstrap code. Keep the code secret and do not commit `.env`.

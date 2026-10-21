@@ -7,6 +7,8 @@ using MyDockerProject.Models;
 using MyDockerProject.Security;
 using SiteKit.Core.Components;
 using SiteKit.Core.Projects;
+using SiteKit.Core.Data;
+using SiteKit.Core.Modules;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +28,26 @@ builder.Services.AddSingleton<ISiteKitPlacementRegistry>(services =>
 {
     var environment = services.GetRequiredService<IWebHostEnvironment>();
     return new JsonSiteKitPlacementRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "placements"));
+});
+builder.Services.AddSingleton<ISiteKitEntityRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitEntityRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "entities"));
+});
+builder.Services.AddSingleton<ISiteKitRecordStore>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitRecordStore(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "records"));
+});
+builder.Services.AddSingleton<ISiteKitPermissionRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitPermissionRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "permissions"));
+});
+builder.Services.AddSingleton<ISiteKitModuleRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitModuleRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "modules"));
 });
 
 // Add session support for authentication
@@ -48,6 +70,7 @@ if (!string.IsNullOrEmpty(connectionString))
 {
     builder.Services.AddDbContext<BookingDbContext>(options =>
         options.UseSqlServer(connectionString));
+    builder.Services.AddScoped<ISiteKitRecordStore, SqlSiteKitRecordStore>();
     
     // Register services
     builder.Services.AddScoped<BookingService>();

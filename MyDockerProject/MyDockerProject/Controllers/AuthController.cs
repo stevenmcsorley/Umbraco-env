@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyDockerProject.Services;
+using MyDockerProject.Security;
 
 namespace MyDockerProject.Controllers;
 
@@ -7,11 +8,13 @@ public class AuthController : Controller
 {
     private readonly IUserService _userService;
     private readonly ILogger<AuthController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IUserService userService, ILogger<AuthController> logger)
+    public AuthController(IUserService userService, ILogger<AuthController> logger, IConfiguration configuration)
     {
         _userService = userService;
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpGet("/register")]
@@ -22,11 +25,18 @@ public class AuthController : Controller
 
     [HttpPost("/register")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Register(string email, string password, string firstName, string lastName, string? phone = null)
+    public async Task<IActionResult> Register(string email, string password, string firstName, string lastName, string? phone = null, string? adminRegistrationCode = null)
     {
+        email = email?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
         {
             ViewBag.Error = "Email and password are required";
+            return View();
+        }
+
+        if (!SiteKitAdminRegistrationGuard.CanRegister(email, adminRegistrationCode, _configuration))
+        {
+            ViewBag.Error = "Administrator accounts require the deployment's separate one-time setup code.";
             return View();
         }
 

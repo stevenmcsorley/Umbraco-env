@@ -19,8 +19,9 @@ public sealed class SiteKitAdminAuthorizationFilter : IAsyncAuthorizationFilter
     public Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         var email = context.HttpContext.Session.GetString("UserEmail");
+        var userId = context.HttpContext.Session.GetString("UserId");
         var configuredAdmins = _configuration["SiteKit:AdminEmails"] ?? string.Empty;
-        var isAdministrator = !string.IsNullOrWhiteSpace(email) && configuredAdmins
+        var isAdministrator = Guid.TryParse(userId, out _) && !string.IsNullOrWhiteSpace(email) && configuredAdmins
             .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Contains(email, StringComparer.OrdinalIgnoreCase);
 

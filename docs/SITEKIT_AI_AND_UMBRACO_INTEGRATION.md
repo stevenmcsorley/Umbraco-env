@@ -81,11 +81,14 @@ Primary sources:
 - .NET 10 SDK 10.0.402 and Umbraco 17.7.1 build successfully.
 - The existing hotel partials, Block Grid/List views, booking service, inventory
   service, React booking UI, importer, and Docker composition remain in place.
-- The dynamic component registry, validated renderer, Component Studio,
-  project manifest/placement registries, and local appearance overrides are
-  implemented in the current working tree; the developer build pipeline,
-  complete visual interactions and generated project placements into published
-  CMS pages remain unfinished.
+- The dynamic component registry, validated renderer, Component Studio, project
+  and placement registries, project-local appearance, entity schemas, explicit
+  permission grants, record APIs and independent project generator are
+  implemented in the current working tree. Developer component package builds
+  and publishing generated placements into CMS pages remain unfinished.
+- Declarative module packages can be packed, integrity verified, imported and
+  installed into individual projects. Screen/workflow JSON currently remains
+  inert package content; there is no SiteKit workflow runner or Automate adapter.
 - The ChatGPT OAuth and local MCP Agent Host implementations exist, but have
   not been exercised against OpenAI because this environment has no connected
   test account. Eligibility and model availability cannot be promised for every

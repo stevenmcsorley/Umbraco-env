@@ -23,8 +23,17 @@ public static class SiteKitProjectValidator
         if (!IsAlias(manifest.Id)) errors.Add("id must be a lowercase URL-safe identifier.");
         if (string.IsNullOrWhiteSpace(manifest.Name) || manifest.Name.Length > 120) errors.Add("name is required and must be at most 120 characters.");
         if (!Categories.Contains(manifest.Category)) errors.Add("category must be website, application, combined, api or content.");
+        if (manifest.ThemeSettings is null) errors.Add("themeSettings are required.");
         if ((manifest.Description?.Length ?? 0) > 2000) errors.Add("description must be at most 2000 characters.");
         if (!IsAlias(manifest.Theme)) errors.Add("theme must be a lowercase URL-safe identifier.");
+        if (manifest.ThemeSettings is not null && (!System.Text.RegularExpressions.Regex.IsMatch(manifest.ThemeSettings.PrimaryColor, "^#[0-9a-fA-F]{6}$") ||
+            !System.Text.RegularExpressions.Regex.IsMatch(manifest.ThemeSettings.SurfaceColor, "^#[0-9a-fA-F]{6}$") ||
+            !System.Text.RegularExpressions.Regex.IsMatch(manifest.ThemeSettings.TextColor, "^#[0-9a-fA-F]{6}$")))
+            errors.Add("theme colors must be six-digit hexadecimal values.");
+        if (manifest.ThemeSettings is not null && !System.Text.RegularExpressions.Regex.IsMatch(manifest.ThemeSettings.Radius, "^(?:0|[0-9]{1,2}(?:\\.[0-9]{1,2})?(?:px|rem|em))$"))
+            errors.Add("theme radius must be zero or a bounded CSS length.");
+        if (manifest.ThemeSettings is not null && manifest.ThemeSettings.FontFamily is not ("system" or "serif" or "sans-serif" or "monospace"))
+            errors.Add("theme fontFamily must be system, serif, sans-serif or monospace.");
         ValidateIds(manifest.Modules, "modules", errors);
         ValidateIds(manifest.Components, "components", errors);
         return errors;

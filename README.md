@@ -1,6 +1,6 @@
-# Umbraco Site Kit with Booking Engine
+# SiteKit for Umbraco
 
-Universal, reusable website-building system for Umbraco CMS with React-based Booking Engine.
+SiteKit is an open-source platform for building Umbraco websites and data-backed business applications with reusable components, project manifests and a user-controlled AI Agent Host. The existing hotel and booking experience remains available as a starter application. The current implementation includes dynamic declarative components, independent project generation, typed application entities and a local Sign in with ChatGPT integration; see the [implementation ledger](docs/SITEKIT_IMPLEMENTATION_PLAN.md) for verified status.
 
 ## Architecture
 
@@ -79,7 +79,10 @@ This starts:
 ### 3. Create Content Types
 
 Management, import, migration and seed APIs require a signed-in customer account
-whose email is configured in `SITEKIT_ADMIN_EMAILS` in the local `.env` file.
+whose email is configured in `SITEKIT_ADMIN_EMAILS` in the local `.env` file. To
+create the first account for an allowlisted email, temporarily configure
+`SITEKIT_ADMIN_REGISTRATION_CODE`, submit it as `adminRegistrationCode`, then
+remove the code after registration.
 Keep `.env` private. Sign in at `/login`, then retain the session cookie when
 calling management endpoints. For example:
 

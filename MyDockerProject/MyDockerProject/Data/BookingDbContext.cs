@@ -12,6 +12,7 @@ public class BookingDbContext : DbContext
     public DbSet<Booking> Bookings { get; set; }
     public DbSet<Inventory> Inventory { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<SiteKitOperationalRecord> SiteKitOperationalRecords { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +40,19 @@ public class BookingDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(e => e.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<SiteKitOperationalRecord>(entity =>
+        {
+            entity.ToTable("SiteKitOperationalRecord");
+            entity.HasKey(record => record.Id);
+            entity.Property(record => record.Id).HasMaxLength(32);
+            entity.Property(record => record.ProjectId).HasMaxLength(64).IsRequired();
+            entity.Property(record => record.EntityAlias).HasMaxLength(64).IsRequired();
+            entity.Property(record => record.DataJson).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(record => record.CreatedBy).HasMaxLength(320);
+            entity.Property(record => record.UpdatedBy).HasMaxLength(320);
+            entity.HasIndex(record => new { record.ProjectId, record.EntityAlias, record.UpdatedAt });
         });
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using MyDockerProject.Models;
 using MyDockerProject.Services;
+using MyDockerProject.Security;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -11,20 +12,26 @@ public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly ILogger<AuthController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IUserService userService, ILogger<AuthController> logger)
+    public AuthController(IUserService userService, ILogger<AuthController> logger, IConfiguration configuration)
     {
         _userService = userService;
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
+        request.Email = request.Email.Trim();
         if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
         {
             return BadRequest(new { error = "Email and password are required" });
         }
+
+        if (!SiteKitAdminRegistrationGuard.CanRegister(request.Email, request.AdminRegistrationCode, _configuration))
+            return Forbid();
 
         var user = await _userService.RegisterAsync(
             request.Email,
@@ -66,6 +73,10 @@ public class AuthController : ControllerBase
         {
             return Unauthorized(new { error = "Invalid email or password" });
         }
+
+        HttpContext.Session.SetString("UserId", user.Id.ToString());
+        HttpContext.Session.SetString("UserEmail", user.Email);
+        HttpContext.Session.SetString("UserName", $"{user.FirstName} {user.LastName}");
 
         return Ok(new
         {
@@ -169,6 +180,7 @@ public class RegisterRequest
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string? Phone { get; set; }
+    public string? AdminRegistrationCode { get; set; }
 }
 
 public class LoginRequest

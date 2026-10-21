@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Text.Json;
 using SiteKit.Core.Components;
 using SiteKit.Core.Projects;
+using SiteKit.Core.Data;
+using SiteKit.Core.Modules;
 
 namespace SiteKit.AgentHost;
 
@@ -11,6 +13,10 @@ public sealed class SiteKitToolHost
     private readonly ISiteKitComponentRegistry _components;
     private readonly ISiteKitProjectRegistry _projects;
     private readonly ISiteKitPlacementRegistry _placements;
+    private readonly ISiteKitEntityRegistry _entities;
+    private readonly SiteKitProjectGenerator _generator;
+    private readonly ISiteKitModuleRegistry _modules;
+    private readonly SiteKitModuleInstaller _moduleInstaller;
     private readonly string _root;
     private readonly string _auditPath;
 
@@ -22,6 +28,10 @@ public sealed class SiteKitToolHost
         _components = new JsonSiteKitComponentRegistry(Path.Combine(dataRoot, "components"));
         _projects = new JsonSiteKitProjectRegistry(Path.Combine(dataRoot, "projects"));
         _placements = new JsonSiteKitPlacementRegistry(Path.Combine(dataRoot, "placements"));
+        _entities = new JsonSiteKitEntityRegistry(Path.Combine(dataRoot, "entities"));
+        _modules = new JsonSiteKitModuleRegistry(Path.Combine(dataRoot, "modules"));
+        _generator = new SiteKitProjectGenerator(Path.Combine(_root, "generated-projects"), _projects);
+        _moduleInstaller = new SiteKitModuleInstaller(Path.Combine(dataRoot, "modules"), _modules, _projects, _components, _entities);
         _auditPath = Path.Combine(dataRoot, "audit", "agent-tools.jsonl");
     }
 
@@ -32,7 +42,13 @@ public sealed class SiteKitToolHost
         Function("sitekit_list_projects", "List independent SiteKit projects."),
         Function("sitekit_inspect_project", "Inspect one project manifest and its component placements.", new { projectId = Schema("string") }, "projectId"),
         Function("sitekit_create_project", "Create or update a project manifest.", new { project = Schema("object") }, "project"),
+        Function("sitekit_generate_project", "Generate an independent deployable .NET project from an existing SiteKit manifest.", new { projectId = Schema("string") }, "projectId"),
+        Function("sitekit_create_entity", "Create or update a typed operational data model for a SiteKit project. Relationship fields reference another entity alias.", new { definition = Schema("object") }, "definition"),
+        Function("sitekit_list_entities", "List operational data models for a SiteKit project.", new { projectId = Schema("string") }, "projectId"),
+        Function("sitekit_list_modules", "List verified declarative modules installed in the local package registry."),
+        Function("sitekit_install_module", "Install a verified declarative module and its schemas into a project.", new { projectId = Schema("string"), moduleId = Schema("string"), version = Schema("string") }, "projectId", "moduleId", "version"),
         Function("sitekit_create_placement", "Place an existing reusable component in a project with independent data and appearance.", new { projectId = Schema("string"), placement = Schema("object") }, "projectId", "placement"),
+        Function("sitekit_preview_project", "Render all validated component placements in a project for an HTML preview.", new { projectId = Schema("string") }, "projectId"),
         Function("sitekit_validate_project", "Validate the project's module, component and placement references without changing data.", new { projectId = Schema("string") }, "projectId"),
         Function("sitekit_build_project", "Run the repository's fixed UmbraccoEnv.sln build; this tool accepts no shell command or path.", new { projectId = Schema("string") }, "projectId")
     ];
@@ -43,8 +59,14 @@ public sealed class SiteKitToolHost
         McpTool("sitekit.list_components", "List reusable component definitions and versions.", EmptySchema()),
         McpTool("sitekit.inspect_project", "Inspect one project manifest and placements.", ObjectSchema("projectId")),
         McpTool("sitekit.create_project", "Create or update a project manifest.", ObjectSchema("project")),
+        McpTool("sitekit.generate_project", "Generate an independent deployable .NET project.", ObjectSchema("projectId")),
+        McpTool("sitekit.create_entity", "Create a typed operational data model.", ObjectSchema("definition")),
+        McpTool("sitekit.list_entities", "List project operational data models.", ObjectSchema("projectId")),
+        McpTool("sitekit.list_modules", "List verified local modules.", EmptySchema()),
+        McpTool("sitekit.install_module", "Install an existing verified declarative module.", ObjectSchema("projectId", "moduleId", "version")),
         McpTool("sitekit.create_component", "Create a validated declarative component version.", ObjectSchema("definition")),
         McpTool("sitekit.create_placement", "Place a shared component into a project with local styling and data.", ObjectSchema("projectId", "placement")),
+        McpTool("sitekit.preview_project", "Render validated component placements for a project.", ObjectSchema("projectId")),
         McpTool("sitekit.validate_project", "Validate component and placement references.", ObjectSchema("projectId")),
         McpTool("sitekit.build_project", "Build the fixed SiteKit solution using dotnet; no arbitrary shell commands are accepted.", ObjectSchema("projectId"))
     ];
@@ -60,7 +82,13 @@ public sealed class SiteKitToolHost
                 "sitekit_list_projects" or "sitekit.list_projects" => await ListProjectsAsync(cancellationToken),
                 "sitekit_inspect_project" or "sitekit.inspect_project" => await InspectProjectAsync(arguments, cancellationToken),
                 "sitekit_create_project" or "sitekit.create_project" => await CreateProjectAsync(arguments, cancellationToken),
+                "sitekit_generate_project" or "sitekit.generate_project" => await GenerateProjectAsync(arguments, cancellationToken),
+                "sitekit_create_entity" or "sitekit.create_entity" => await CreateEntityAsync(arguments, cancellationToken),
+                "sitekit_list_entities" or "sitekit.list_entities" => await ListEntitiesAsync(arguments, cancellationToken),
+                "sitekit_list_modules" or "sitekit.list_modules" => await _modules.ListAsync(cancellationToken),
+                "sitekit_install_module" or "sitekit.install_module" => await InstallModuleAsync(arguments, cancellationToken),
                 "sitekit_create_placement" or "sitekit.create_placement" => await CreatePlacementAsync(arguments, cancellationToken),
+                "sitekit_preview_project" or "sitekit.preview_project" => await PreviewProjectAsync(arguments, cancellationToken),
                 "sitekit_validate_project" or "sitekit.validate_project" => await ValidateProjectAsync(arguments, cancellationToken),
                 "sitekit_build_project" or "sitekit.build_project" => await BuildProjectAsync(arguments, cancellationToken),
                 _ => throw new InvalidOperationException("This SiteKit tool is not enabled.")
@@ -101,6 +129,43 @@ public sealed class SiteKitToolHost
         return await _components.SaveAsync(definition, ct);
     }
 
+    private async Task<object> GenerateProjectAsync(JsonElement args, CancellationToken ct)
+    {
+        var id = RequiredString(args, "projectId");
+        var directory = await _generator.GenerateAsync(id, ct);
+        return new { projectId = id, directory, buildCommand = $"dotnet build {id}.csproj", runCommand = $"dotnet run --project {id}.csproj" };
+    }
+
+    private async Task<object> CreateEntityAsync(JsonElement args, CancellationToken ct)
+    {
+        var definition = Deserialize<SiteKitEntityDefinition>(RequiredObject(args, "definition"));
+        if (await _projects.GetAsync(definition.ProjectId, ct) is null) throw new InvalidOperationException("Project not found.");
+        var errors = SiteKitEntityValidator.Validate(definition);
+        foreach (var field in definition.Fields.Where(field => field.Type is "relationship" or "relationships" && SiteKitProjectValidator.IsValidId(field.RelatedEntity)))
+            if (field.RelatedEntity != definition.Alias && await _entities.GetAsync(definition.ProjectId, field.RelatedEntity!, ct) is null) errors = errors.Append($"Related entity '{field.RelatedEntity}' is not defined.").ToArray();
+        if (errors.Count > 0) throw new ArgumentException(string.Join(" ", errors));
+        var saved = await _entities.SaveAsync(definition, ct);
+        var project = await _projects.GetAsync(definition.ProjectId, ct);
+        if (project is not null && !project.Entities.Contains(definition.Alias, StringComparer.Ordinal))
+            await _projects.SaveAsync(project with { Entities = project.Entities.Append(definition.Alias).ToArray() }, ct);
+        return saved;
+    }
+
+    private async Task<object> ListEntitiesAsync(JsonElement args, CancellationToken ct)
+    {
+        var projectId = RequiredString(args, "projectId");
+        if (await _projects.GetAsync(projectId, ct) is null) throw new InvalidOperationException("Project not found.");
+        return await _entities.ListAsync(projectId, ct);
+    }
+
+    private async Task<object> InstallModuleAsync(JsonElement args, CancellationToken ct)
+    {
+        var projectId = RequiredString(args, "projectId");
+        var moduleId = RequiredString(args, "moduleId");
+        var version = RequiredString(args, "version");
+        return await _moduleInstaller.InstallAsync(projectId, moduleId, version, ct);
+    }
+
     private async Task<object> CreatePlacementAsync(JsonElement args, CancellationToken ct)
     {
         var projectId = RequiredString(args, "projectId");
@@ -118,6 +183,21 @@ public sealed class SiteKitToolHost
         return await _placements.SaveAsync(projectId, placement, ct);
     }
 
+    private async Task<object> PreviewProjectAsync(JsonElement args, CancellationToken ct)
+    {
+        var id = RequiredString(args, "projectId");
+        if (await _projects.GetAsync(id, ct) is null) throw new InvalidOperationException("Project not found.");
+        var rendered = new List<object>();
+        foreach (var placement in await _placements.ListAsync(id, ct))
+        {
+            var definition = await _components.GetAsync(placement.ComponentAlias, placement.Version, ct)
+                ?? throw new InvalidOperationException($"Component '{placement.ComponentAlias}' is not installed.");
+            rendered.Add(new { placement.Id, componentAlias = placement.ComponentAlias,
+                html = SiteKitComponentRenderer.Render(definition, placement.Data, placement.Variant, placement.StyleClass, placement.Appearance) });
+        }
+        return new { projectId = id, components = rendered };
+    }
+
     private async Task<object> ValidateProjectAsync(JsonElement args, CancellationToken ct)
     {
         var id = RequiredString(args, "projectId");
@@ -125,6 +205,8 @@ public sealed class SiteKitToolHost
         var errors = new List<string>();
         foreach (var alias in project.Components)
             if (await _components.GetAsync(alias, cancellationToken: ct) is null) errors.Add($"Component '{alias}' is not installed.");
+        foreach (var alias in project.Entities)
+            if (await _entities.GetAsync(id, alias, ct) is null) errors.Add($"Entity '{alias}' is missing its definition.");
         foreach (var placement in await _placements.ListAsync(id, ct))
         {
             var component = await _components.GetAsync(placement.ComponentAlias, placement.Version, ct);
@@ -138,11 +220,14 @@ public sealed class SiteKitToolHost
     {
         var id = RequiredString(args, "projectId");
         if (await _projects.GetAsync(id, ct) is null) throw new InvalidOperationException("Project not found.");
+        var generatedProject = Path.Combine(_root, "generated-projects", id, id + ".csproj");
         var solution = Path.Combine(_root, "UmbraccoEnv.sln");
-        if (!File.Exists(solution)) throw new InvalidOperationException("UmbraccoEnv.sln was not found under the configured SiteKit root.");
-        var start = new ProcessStartInfo("dotnet") { WorkingDirectory = _root, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
+        var target = File.Exists(generatedProject) ? generatedProject : solution;
+        if (!File.Exists(target)) throw new InvalidOperationException("Neither the generated project nor UmbraccoEnv.sln was found under the configured SiteKit root.");
+        var dotnet = Environment.GetEnvironmentVariable("SITEKIT_DOTNET_EXECUTABLE");
+        var start = new ProcessStartInfo(string.IsNullOrWhiteSpace(dotnet) ? "dotnet" : Path.GetFullPath(dotnet)) { WorkingDirectory = _root, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
         start.ArgumentList.Add("build");
-        start.ArgumentList.Add(solution);
+        start.ArgumentList.Add(target);
         start.ArgumentList.Add("--no-restore");
         using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start the dotnet build process.");
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -155,7 +240,7 @@ public sealed class SiteKitToolHost
         var error = await stderr;
         var tail = (output + Environment.NewLine + error).Split(Environment.NewLine).TakeLast(50).ToArray();
         if (process.ExitCode != 0) throw new InvalidOperationException($"Build failed with exit code {process.ExitCode}:\n{string.Join(Environment.NewLine, tail)}");
-        return new { projectId = id, exitCode = process.ExitCode, outputTail = tail };
+        return new { projectId = id, target, exitCode = process.ExitCode, outputTail = tail };
     }
 
     private async Task AuditAsync(string tool, bool success, CancellationToken ct)

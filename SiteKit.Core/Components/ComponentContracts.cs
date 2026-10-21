@@ -84,8 +84,19 @@ public sealed record SiteKitProjectManifest
     public string Theme { get; init; } = "default";
     public string[] Modules { get; init; } = [];
     public string[] Components { get; init; } = [];
+    public string[] Entities { get; init; } = [];
+    public SiteKitProjectTheme ThemeSettings { get; init; } = new();
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
+}
+
+public sealed record SiteKitProjectTheme
+{
+    public string PrimaryColor { get; init; } = "#087f8c";
+    public string SurfaceColor { get; init; } = "#ffffff";
+    public string TextColor { get; init; } = "#17212b";
+    public string FontFamily { get; init; } = "system";
+    public string Radius { get; init; } = "12px";
 }
 
 public sealed record SiteKitModuleManifest
@@ -98,5 +109,7 @@ public sealed record SiteKitModuleManifest
     public required string[] CompatibleSiteKitVersions { get; init; }
     public string[] Dependencies { get; init; } = [];
     public string[] Capabilities { get; init; } = [];
+    public string[] ProjectCategories { get; init; } = ["website", "application", "combined", "api", "content"];
+    public Dictionary<string, string> PackageFiles { get; init; } = new(StringComparer.Ordinal);
     public string IntegritySha256 { get; init; } = string.Empty;
 }

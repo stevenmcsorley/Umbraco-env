@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MyDockerProject.Security;
 using SiteKit.Core.Components;
 using SiteKit.Core.Projects;
+using SiteKit.Core.Data;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -11,7 +12,11 @@ namespace MyDockerProject.Controllers.Api;
 public sealed class SiteKitProjectsController : ControllerBase
 {
     private readonly ISiteKitProjectRegistry _registry;
-    public SiteKitProjectsController(ISiteKitProjectRegistry registry) => _registry = registry;
+    private readonly ISiteKitEntityRegistry _entities;
+    private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
+    public SiteKitProjectsController(ISiteKitProjectRegistry registry, ISiteKitEntityRegistry entities, IWebHostEnvironment environment, IConfiguration configuration)
+    { _registry = registry; _entities = entities; _environment = environment; _configuration = configuration; }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SiteKitProjectManifest>>> List(CancellationToken cancellationToken)
@@ -43,5 +48,26 @@ public sealed class SiteKitProjectsController : ControllerBase
     {
         try { return await _registry.DeleteAsync(id, cancellationToken) ? NoContent() : NotFound(); }
         catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
+    }
+
+    [HttpPost("{id}/generate")]
+    public async Task<IActionResult> Generate(string id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var generator = new SiteKitProjectGenerator(_configuration["SiteKit:GeneratedProjectsPath"] ?? Path.Combine(_environment.ContentRootPath, "generated-projects"), _registry);
+            var directory = await generator.GenerateAsync(id, cancellationToken);
+            return Ok(new { projectId = id, directory, buildCommand = $"dotnet build {id}.csproj", runCommand = $"dotnet run --project {id}.csproj" });
+        }
+        catch (InvalidOperationException exception) { return BadRequest(new { error = exception.Message }); }
+        catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
+    }
+
+    [HttpGet("{id}/entities")]
+    public async Task<IActionResult> ListEntities(string id, CancellationToken cancellationToken)
+    {
+        if (!SiteKitProjectValidator.IsValidId(id)) return BadRequest(new { error = "Project id is invalid." });
+        if (await _registry.GetAsync(id, cancellationToken) is null) return NotFound();
+        return Ok(await _entities.ListAsync(id, cancellationToken));
     }
 }
