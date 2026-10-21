@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using SiteKit.Core.Components;
+using SiteKit.Core.Data;
 
 namespace SiteKit.Core.Projects;
 
@@ -10,9 +11,10 @@ public sealed class SiteKitProjectGenerator
 {
     private readonly string _root;
     private readonly ISiteKitProjectRegistry _projects;
+    private readonly ISiteKitScreenRegistry? _screens;
 
-    public SiteKitProjectGenerator(string root, ISiteKitProjectRegistry projects)
-    { _root = Path.GetFullPath(root); _projects = projects; }
+    public SiteKitProjectGenerator(string root, ISiteKitProjectRegistry projects, ISiteKitScreenRegistry? screens = null)
+    { _root = Path.GetFullPath(root); _projects = projects; _screens = screens; }
 
     public async Task<string> GenerateAsync(string projectId, CancellationToken cancellationToken = default)
     {
@@ -29,6 +31,8 @@ public sealed class SiteKitProjectGenerator
 
         var manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true });
         await WriteAtomicAsync(Path.Combine(destination, "sitekit.project.json"), manifestJson, cancellationToken);
+        if (_screens is not null)
+            await WriteAtomicAsync(Path.Combine(destination, "sitekit.screens.json"), JsonSerializer.Serialize(await _screens.ListAsync(projectId, cancellationToken), new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }), cancellationToken);
         await WriteAtomicAsync(Path.Combine(destination, "global.json"), "{\n  \"sdk\": { \"version\": \"10.0.100\", \"rollForward\": \"latestFeature\" }\n}\n", cancellationToken);
         await WriteAtomicAsync(Path.Combine(destination, $"{manifest.Id}.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup></Project>\n", cancellationToken);
         await WriteAtomicAsync(Path.Combine(destination, "Program.cs"), BuildProgram(manifest), cancellationToken);

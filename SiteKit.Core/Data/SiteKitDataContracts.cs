@@ -47,6 +47,56 @@ public sealed record SiteKitEntityPermissionGrant
     public required string[] Operations { get; init; }
 }
 
+public sealed record SiteKitApplicationScreenDefinition
+{
+    public int SchemaVersion { get; init; } = 1;
+    public required string ProjectId { get; init; }
+    public required string Alias { get; init; }
+    public required string Name { get; init; }
+    public required string Type { get; init; }
+    public string? EntityAlias { get; init; }
+    public string[] Columns { get; init; } = [];
+    public string[] FormFields { get; init; } = [];
+    public string? GroupField { get; init; }
+    public string[] Components { get; init; } = [];
+    public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
+}
+
+public static class SiteKitScreenValidator
+{
+    private static readonly HashSet<string> Types = new(StringComparer.Ordinal)
+        { "table", "detail", "form", "dashboard", "kanban", "calendar", "search", "approval" };
+
+    public static IReadOnlyList<string> Validate(SiteKitApplicationScreenDefinition screen, SiteKitEntityDefinition? entity = null)
+    {
+        var errors = new List<string>();
+        if (screen.SchemaVersion != 1) errors.Add("screen schemaVersion must be 1.");
+        if (!SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(screen.ProjectId)) errors.Add("screen projectId is invalid.");
+        if (!SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(screen.Alias)) errors.Add("screen alias is invalid.");
+        if (string.IsNullOrWhiteSpace(screen.Name) || screen.Name.Length > 120) errors.Add("screen name is required and must be at most 120 characters.");
+        if (!Types.Contains(screen.Type)) errors.Add("screen type is unsupported.");
+        if (screen.EntityAlias is not null && !SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(screen.EntityAlias)) errors.Add("screen entityAlias is invalid.");
+        if (screen.Type is "table" or "detail" or "form" or "kanban" or "calendar" or "search" or "approval" && screen.EntityAlias is null) errors.Add($"{screen.Type} screens require an entityAlias.");
+        if (screen.Columns is null || screen.FormFields is null || screen.Components is null) errors.Add("screen columns, formFields and components are required arrays.");
+        else
+        {
+            if (screen.Columns.Length > 100 || screen.Columns.Distinct(StringComparer.Ordinal).Count() != screen.Columns.Length || screen.Columns.Any(field => !SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(field))) errors.Add("screen columns contain an invalid or duplicate field alias.");
+            if (screen.FormFields.Length > 100 || screen.FormFields.Distinct(StringComparer.Ordinal).Count() != screen.FormFields.Length || screen.FormFields.Any(field => !SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(field))) errors.Add("screen formFields contain an invalid or duplicate field alias.");
+            if (screen.Components.Length > 100 || screen.Components.Distinct(StringComparer.Ordinal).Count() != screen.Components.Length || screen.Components.Any(component => !SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(component))) errors.Add("screen components contain an invalid or duplicate alias.");
+        }
+        if (screen.GroupField is not null && !SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(screen.GroupField)) errors.Add("screen groupField is invalid.");
+        if (screen.Type == "kanban" && screen.GroupField is null) errors.Add("kanban screens require a groupField.");
+        if (entity is not null && screen.Columns is not null && screen.FormFields is not null)
+        {
+            if (screen.EntityAlias != entity.Alias || screen.ProjectId != entity.ProjectId) errors.Add("screen entity must belong to the same project.");
+            var fields = entity.Fields.Select(field => field.Alias).ToHashSet(StringComparer.Ordinal);
+            if (screen.Columns.Concat(screen.FormFields).Any(field => !fields.Contains(field))) errors.Add("screen references a field that is not defined on its entity.");
+            if (screen.GroupField is not null && !fields.Contains(screen.GroupField)) errors.Add("screen groupField is not defined on its entity.");
+        }
+        return errors;
+    }
+}
+
 public interface ISiteKitPermissionRegistry
 {
     Task<IReadOnlyList<SiteKitEntityPermissionGrant>> ListAsync(string projectId, string entityAlias, CancellationToken cancellationToken = default);

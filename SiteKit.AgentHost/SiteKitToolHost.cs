@@ -14,6 +14,7 @@ public sealed class SiteKitToolHost
     private readonly ISiteKitProjectRegistry _projects;
     private readonly ISiteKitPlacementRegistry _placements;
     private readonly ISiteKitEntityRegistry _entities;
+    private readonly ISiteKitScreenRegistry _screens;
     private readonly SiteKitProjectGenerator _generator;
     private readonly ISiteKitModuleRegistry _modules;
     private readonly SiteKitModuleInstaller _moduleInstaller;
@@ -29,9 +30,10 @@ public sealed class SiteKitToolHost
         _projects = new JsonSiteKitProjectRegistry(Path.Combine(dataRoot, "projects"));
         _placements = new JsonSiteKitPlacementRegistry(Path.Combine(dataRoot, "placements"));
         _entities = new JsonSiteKitEntityRegistry(Path.Combine(dataRoot, "entities"));
+        _screens = new JsonSiteKitScreenRegistry(Path.Combine(dataRoot, "screens"));
         _modules = new JsonSiteKitModuleRegistry(Path.Combine(dataRoot, "modules"));
-        _generator = new SiteKitProjectGenerator(Path.Combine(_root, "generated-projects"), _projects);
-        _moduleInstaller = new SiteKitModuleInstaller(Path.Combine(dataRoot, "modules"), _modules, _projects, _components, _entities);
+        _generator = new SiteKitProjectGenerator(Path.Combine(_root, "generated-projects"), _projects, _screens);
+        _moduleInstaller = new SiteKitModuleInstaller(Path.Combine(dataRoot, "modules"), _modules, _projects, _components, _entities, _screens);
         _auditPath = Path.Combine(dataRoot, "audit", "agent-tools.jsonl");
     }
 
@@ -45,6 +47,8 @@ public sealed class SiteKitToolHost
         Function("sitekit_generate_project", "Generate an independent deployable .NET project from an existing SiteKit manifest.", new { projectId = Schema("string") }, "projectId"),
         Function("sitekit_create_entity", "Create or update a typed operational data model for a SiteKit project. Relationship fields reference another entity alias.", new { definition = Schema("object") }, "definition"),
         Function("sitekit_list_entities", "List operational data models for a SiteKit project.", new { projectId = Schema("string") }, "projectId"),
+        Function("sitekit_create_screen", "Create or update a validated data-connected application screen.", new { screen = Schema("object") }, "screen"),
+        Function("sitekit_list_screens", "List application screens in a project.", new { projectId = Schema("string") }, "projectId"),
         Function("sitekit_list_modules", "List verified declarative modules installed in the local package registry."),
         Function("sitekit_install_module", "Install a verified declarative module and its schemas into a project.", new { projectId = Schema("string"), moduleId = Schema("string"), version = Schema("string") }, "projectId", "moduleId", "version"),
         Function("sitekit_create_placement", "Place an existing reusable component in a project with independent data and appearance.", new { projectId = Schema("string"), placement = Schema("object") }, "projectId", "placement"),
@@ -62,6 +66,8 @@ public sealed class SiteKitToolHost
         McpTool("sitekit.generate_project", "Generate an independent deployable .NET project.", ObjectSchema("projectId")),
         McpTool("sitekit.create_entity", "Create a typed operational data model.", ObjectSchema("definition")),
         McpTool("sitekit.list_entities", "List project operational data models.", ObjectSchema("projectId")),
+        McpTool("sitekit.create_screen", "Create or update a validated application screen.", ObjectSchema("screen")),
+        McpTool("sitekit.list_screens", "List application screens in a project.", ObjectSchema("projectId")),
         McpTool("sitekit.list_modules", "List verified local modules.", EmptySchema()),
         McpTool("sitekit.install_module", "Install an existing verified declarative module.", ObjectSchema("projectId", "moduleId", "version")),
         McpTool("sitekit.create_component", "Create a validated declarative component version.", ObjectSchema("definition")),
@@ -85,6 +91,8 @@ public sealed class SiteKitToolHost
                 "sitekit_generate_project" or "sitekit.generate_project" => await GenerateProjectAsync(arguments, cancellationToken),
                 "sitekit_create_entity" or "sitekit.create_entity" => await CreateEntityAsync(arguments, cancellationToken),
                 "sitekit_list_entities" or "sitekit.list_entities" => await ListEntitiesAsync(arguments, cancellationToken),
+                "sitekit_create_screen" or "sitekit.create_screen" => await CreateScreenAsync(arguments, cancellationToken),
+                "sitekit_list_screens" or "sitekit.list_screens" => await ListScreensAsync(arguments, cancellationToken),
                 "sitekit_list_modules" or "sitekit.list_modules" => await _modules.ListAsync(cancellationToken),
                 "sitekit_install_module" or "sitekit.install_module" => await InstallModuleAsync(arguments, cancellationToken),
                 "sitekit_create_placement" or "sitekit.create_placement" => await CreatePlacementAsync(arguments, cancellationToken),
@@ -156,6 +164,30 @@ public sealed class SiteKitToolHost
         var projectId = RequiredString(args, "projectId");
         if (await _projects.GetAsync(projectId, ct) is null) throw new InvalidOperationException("Project not found.");
         return await _entities.ListAsync(projectId, ct);
+    }
+
+    private async Task<object> CreateScreenAsync(JsonElement args, CancellationToken ct)
+    {
+        var screen = Deserialize<SiteKitApplicationScreenDefinition>(RequiredObject(args, "screen"));
+        if (await _projects.GetAsync(screen.ProjectId, ct) is null) throw new InvalidOperationException("Project not found.");
+        var entity = screen.EntityAlias is null ? null : await _entities.GetAsync(screen.ProjectId, screen.EntityAlias, ct);
+        if (screen.EntityAlias is not null && entity is null) throw new InvalidOperationException("The referenced entity is not defined in this project.");
+        var errors = SiteKitScreenValidator.Validate(screen, entity).ToList();
+        foreach (var component in screen.Components ?? [])
+            if (await _components.GetAsync(component, cancellationToken: ct) is null) errors.Add($"Component '{component}' is not installed.");
+        if (errors.Count > 0) throw new ArgumentException(string.Join(" ", errors));
+        var saved = await _screens.SaveAsync(screen, ct);
+        var project = await _projects.GetAsync(screen.ProjectId, ct);
+        if (project is not null && !project.Screens.Contains(screen.Alias, StringComparer.Ordinal))
+            await _projects.SaveAsync(project with { Screens = project.Screens.Append(screen.Alias).ToArray() }, ct);
+        return saved;
+    }
+
+    private async Task<object> ListScreensAsync(JsonElement args, CancellationToken ct)
+    {
+        var projectId = RequiredString(args, "projectId");
+        if (await _projects.GetAsync(projectId, ct) is null) throw new InvalidOperationException("Project not found.");
+        return await _screens.ListAsync(projectId, ct);
     }
 
     private async Task<object> InstallModuleAsync(JsonElement args, CancellationToken ct)

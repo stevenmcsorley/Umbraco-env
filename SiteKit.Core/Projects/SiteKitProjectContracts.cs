@@ -36,6 +36,8 @@ public static class SiteKitProjectValidator
             errors.Add("theme fontFamily must be system, serif, sans-serif or monospace.");
         ValidateIds(manifest.Modules, "modules", errors);
         ValidateIds(manifest.Components, "components", errors);
+        ValidateIds(manifest.Entities, "entities", errors);
+        ValidateIds(manifest.Screens, "screens", errors);
         return errors;
     }
 

@@ -16,3 +16,10 @@ public interface ISiteKitRecordStore
     Task<SiteKitEntityRecord> SaveAsync(SiteKitEntityDefinition definition, JsonElement data, string actor, string? id = null, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(string projectId, string entityAlias, string id, string actor, CancellationToken cancellationToken = default);
 }
+
+public interface ISiteKitScreenRegistry
+{
+    Task<IReadOnlyList<SiteKitApplicationScreenDefinition>> ListAsync(string projectId, CancellationToken cancellationToken = default);
+    Task<SiteKitApplicationScreenDefinition?> GetAsync(string projectId, string alias, CancellationToken cancellationToken = default);
+    Task<SiteKitApplicationScreenDefinition> SaveAsync(SiteKitApplicationScreenDefinition screen, CancellationToken cancellationToken = default);
+}

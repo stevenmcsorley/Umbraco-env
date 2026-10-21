@@ -16,9 +16,10 @@ public sealed class SiteKitModuleInstaller
     private readonly ISiteKitProjectRegistry _projects;
     private readonly ISiteKitComponentRegistry _components;
     private readonly ISiteKitEntityRegistry _entities;
+    private readonly ISiteKitScreenRegistry _screens;
 
-    public SiteKitModuleInstaller(string packageRoot, ISiteKitModuleRegistry modules, ISiteKitProjectRegistry projects, ISiteKitComponentRegistry components, ISiteKitEntityRegistry entities)
-    { _packageRoot = Path.GetFullPath(packageRoot); _modules = modules; _projects = projects; _components = components; _entities = entities; }
+    public SiteKitModuleInstaller(string packageRoot, ISiteKitModuleRegistry modules, ISiteKitProjectRegistry projects, ISiteKitComponentRegistry components, ISiteKitEntityRegistry entities, ISiteKitScreenRegistry screens)
+    { _packageRoot = Path.GetFullPath(packageRoot); _modules = modules; _projects = projects; _components = components; _entities = entities; _screens = screens; }
 
     public async Task<SiteKitProjectManifest> InstallAsync(string projectId, string moduleId, string version, CancellationToken cancellationToken = default)
     {
@@ -36,6 +37,7 @@ public sealed class SiteKitModuleInstaller
         if (!directory.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("Module package path is invalid.");
         var installedComponents = new List<string>();
         var installedEntities = new List<string>();
+        var installedScreens = new List<SiteKitApplicationScreenDefinition>();
         var definitions = new List<SiteKitComponentDefinition>();
         var entityDefinitions = new List<SiteKitEntityDefinition>();
         var integrityInput = new StringBuilder();
@@ -60,6 +62,13 @@ public sealed class SiteKitModuleInstaller
                 if (SiteKitEntityValidator.Validate(definition).Count > 0) throw new InvalidDataException($"Module entity '{relative}' failed validation.");
                 entityDefinitions.Add(definition);
             }
+            if (relative.StartsWith("screens/", StringComparison.Ordinal) && relative.EndsWith(".json", StringComparison.Ordinal))
+            {
+                var definition = JsonSerializer.Deserialize<SiteKitApplicationScreenDefinition>(bytes, Options) ?? throw new InvalidDataException($"Module screen '{relative}' is invalid.");
+                definition = definition with { ProjectId = projectId };
+                if (SiteKitScreenValidator.Validate(definition).Count > 0) throw new InvalidDataException($"Module screen '{relative}' failed validation.");
+                installedScreens.Add(definition);
+            }
         }
         var expectedIntegrity = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(integrityInput.ToString()))).ToLowerInvariant();
         if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(expectedIntegrity), Encoding.ASCII.GetBytes(module.IntegritySha256.ToLowerInvariant())))
@@ -81,6 +90,15 @@ public sealed class SiteKitModuleInstaller
             if (installed is not null && !string.Equals(JsonSerializer.Serialize(installed with { CreatedAt = definition.CreatedAt, UpdatedAt = definition.UpdatedAt }, Options), JsonSerializer.Serialize(definition, Options), StringComparison.Ordinal))
                 throw new InvalidOperationException($"Component '{definition.Alias}' v{definition.Version} already exists with different content.");
         }
+        var localEntityAliases = entityDefinitions.Select(definition => definition.Alias).ToHashSet(StringComparer.Ordinal);
+        foreach (var definition in installedScreens)
+        {
+            if (definition.EntityAlias is not null && !localEntityAliases.Contains(definition.EntityAlias) && await _entities.GetAsync(projectId, definition.EntityAlias, cancellationToken) is null)
+                throw new InvalidOperationException($"Screen entity '{definition.EntityAlias}' is not installed.");
+            foreach (var component in definition.Components)
+                if (await _components.GetAsync(component, cancellationToken: cancellationToken) is null && definitions.All(candidate => candidate.Alias != component))
+                    throw new InvalidOperationException($"Screen component '{component}' is not installed.");
+        }
         foreach (var definition in entityDefinitions)
         {
             var installed = await _entities.GetAsync(projectId, definition.Alias, cancellationToken);
@@ -89,6 +107,12 @@ public sealed class SiteKitModuleInstaller
             if (installed is not null && definition.Version == installed.Version &&
                 !string.Equals(JsonSerializer.Serialize(installed with { ProjectId = definition.ProjectId, UpdatedAt = definition.UpdatedAt }, Options), JsonSerializer.Serialize(definition, Options), StringComparison.Ordinal))
                 throw new InvalidOperationException($"Entity '{definition.Alias}' v{definition.Version} already exists with different content.");
+        }
+        foreach (var screen in installedScreens)
+        {
+            var entity = screen.EntityAlias is null ? null : entityDefinitions.FirstOrDefault(item => item.Alias == screen.EntityAlias) ?? await _entities.GetAsync(projectId, screen.EntityAlias, cancellationToken);
+            if (SiteKitScreenValidator.Validate(screen, entity).Count > 0)
+                throw new InvalidOperationException($"Screen '{screen.Alias}' does not match its installed entity schema.");
         }
 
         foreach (var definition in definitions)
@@ -101,11 +125,13 @@ public sealed class SiteKitModuleInstaller
             await _entities.SaveAsync(definition, cancellationToken);
             installedEntities.Add(definition.Alias);
         }
+        foreach (var screen in installedScreens) await _screens.SaveAsync(screen, cancellationToken);
         var updated = project with
         {
             Modules = project.Modules.Contains(module.Id, StringComparer.Ordinal) ? project.Modules : project.Modules.Append(module.Id).ToArray(),
             Components = project.Components.Concat(installedComponents).Distinct(StringComparer.Ordinal).ToArray(),
-            Entities = project.Entities.Concat(installedEntities).Distinct(StringComparer.Ordinal).ToArray()
+            Entities = project.Entities.Concat(installedEntities).Distinct(StringComparer.Ordinal).ToArray(),
+            Screens = project.Screens.Concat(installedScreens.Select(screen => screen.Alias)).Distinct(StringComparer.Ordinal).ToArray()
         };
         var errors = SiteKitProjectValidator.Validate(updated);
         if (errors.Count > 0) throw new InvalidOperationException(string.Join(" ", errors));

@@ -85,6 +85,7 @@ public sealed record SiteKitProjectManifest
     public string[] Modules { get; init; } = [];
     public string[] Components { get; init; } = [];
     public string[] Entities { get; init; } = [];
+    public string[] Screens { get; init; } = [];
     public SiteKitProjectTheme ThemeSettings { get; init; } = new();
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;

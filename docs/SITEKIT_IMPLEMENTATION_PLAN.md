@@ -171,3 +171,24 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   project manifests include the module and entity/component references.
 - Workflow definitions are stored as inert JSON only. Umbraco Automate adapters,
   runtime execution, retries and history are still outstanding.
+
+## M7 progress
+
+- Added a project-scoped application screen registry with validated definitions
+  for tables, forms, details, dashboards, kanban boards, calendars, search and
+  approval screens. Screens bind to declared entity fields and reusable
+  component definitions; project manifests track screen aliases.
+- Added the authenticated Screen Studio at `/studio/screens`, project/entity
+  selection, screen editing, and previews backed by the operational record
+  store. Screen metadata is included when generating an independent project.
+- Added local agent/MCP `sitekit.create_screen` and `sitekit.list_screens` tools.
+  Module packages now validate and install screen definitions with component
+  and entity references.
+- Validation: .NET 10 solution build succeeds (0 errors). MCP protocol smoke
+  created an application project and Opportunity entity, created/listed a
+  kanban screen, and returned `valid: true` from project validation. A static
+  Playwright screenshot documents the Screen Studio layout.
+- Limitations: generated applications currently export screen definitions as
+  metadata and the Studio preview reads records, but deployable generated
+  applications do not yet include screen rendering/runtime CRUD. CRM end-to-end
+  generation and record-preserving AI modification remain incomplete.

@@ -49,7 +49,8 @@ public sealed class SiteKitModulesController : ControllerBase
     [HttpPost("{id}/{version}/install/{projectId}")]
     public async Task<IActionResult> Install(string id, string version, string projectId, CancellationToken ct)
     {
-        var installer = new SiteKitModuleInstaller(Path.Combine(_environment.ContentRootPath, "umbraco", "Data", "SiteKit", "modules"), _modules, _projects, _components, _entities);
+        var screens = HttpContext.RequestServices.GetRequiredService<ISiteKitScreenRegistry>();
+        var installer = new SiteKitModuleInstaller(Path.Combine(_environment.ContentRootPath, "umbraco", "Data", "SiteKit", "modules"), _modules, _projects, _components, _entities, screens);
         try { return Ok(await installer.InstallAsync(projectId, id, version, ct)); }
         catch (FileNotFoundException) { return NotFound(); }
         catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }

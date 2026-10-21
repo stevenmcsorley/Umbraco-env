@@ -12,6 +12,9 @@ public sealed class SiteKitStudioController : Controller
     [HttpGet("/studio/projects")]
     public IActionResult Projects() => View("Projects");
 
+    [HttpGet("/studio/screens")]
+    public IActionResult Screens() => View("Screens");
+
     [HttpGet("/studio/modules")]
     public IActionResult Modules() => View("Modules");
 }

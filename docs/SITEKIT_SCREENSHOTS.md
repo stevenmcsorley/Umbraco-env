@@ -14,6 +14,16 @@ This shows the component catalogue, definition editor, schema/layout controls, v
 
 This shows the project list, shared component placement, project-local appearance settings and rendered preview. It predates the data-model editor added in M5.
 
+## Application Screens Studio
+
+![SiteKit application screen builder static visual preview](../output/playwright/sitekit-screens-static-preview.png)
+
+This static Playwright capture shows a project-bound opportunity pipeline screen
+definition, entity and field bindings, and a sample kanban preview. The live
+screen definition API and MCP create/list/validation tools were smoke-tested,
+but this screenshot uses fixture data and does not imply a live backoffice or
+database connection.
+
 ## Generated website runtime
 
 ![SiteKit generated website running locally](../output/playwright/sitekit-generated-website.png)

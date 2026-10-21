@@ -185,6 +185,17 @@ public sealed class JsonSiteKitModuleRegistry : ISiteKitModuleRegistry
             catch (JsonException) { errors.Add($"Entity '{path}' is invalid JSON."); }
             return;
         }
+        if (path.StartsWith("screens/", StringComparison.Ordinal) && path.EndsWith(".json", StringComparison.Ordinal))
+        {
+            try
+            {
+                var definition = JsonSerializer.Deserialize<SiteKitApplicationScreenDefinition>(bytes, JsonOptions);
+                if (definition is null) errors.Add($"Screen '{path}' is empty.");
+                else errors.AddRange(SiteKitScreenValidator.Validate(definition).Select(error => $"{path}: {error}"));
+            }
+            catch (JsonException) { errors.Add($"Screen '{path}' is invalid JSON."); }
+            return;
+        }
         if (!(path.StartsWith("screens/", StringComparison.Ordinal) || path.StartsWith("workflows/", StringComparison.Ordinal)) &&
             !(path.StartsWith("docs/", StringComparison.Ordinal) && path.EndsWith(".md", StringComparison.Ordinal)))
         {
