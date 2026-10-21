@@ -33,19 +33,22 @@ This starts:
 - Umbraco CMS (port 44372)
 - Booking Engine Backend (port 3001)
 
-The Umbraco Dockerfile builds the React booking bundle. The Compose host uses
-HTTP locally and persists ASP.NET Core data-protection keys in the existing
-Umbraco data volume. The login form is reachable, but Umbraco sign-in requires
-HTTPS because OpenIddict rejects its authorization request over HTTP. Configure
-a trusted local HTTPS certificate before signing in. Production hosting must
-also provide key encryption. Session storage is in-memory, so container
-restarts log active sessions out even though the data-protection key ring stays
-intact.
+The Umbraco Dockerfile builds the React booking bundle. The base Compose host
+uses HTTP on port 44372 and persists ASP.NET Core data-protection keys in the
+existing Umbraco data volume. OpenIddict requires authorization requests over
+HTTPS, so use the HTTPS overlay for backoffice sign-in. The login page is
+reachable; complete backoffice credential sign-in has not yet been verified
+for every local setup. Production hosting must also provide key encryption.
+Session storage is in-memory, so container restarts log active sessions out
+even though the data-protection key ring stays intact.
 
-For local authenticated sign-in, export and trust a development certificate,
-then start the optional HTTPS Compose overlay:
+For local sign-in, create and trust a development certificate once, then start
+the optional HTTPS Compose overlay. If `MyDockerProject/https/sitekit-dev.pfx`
+already exists, use the password that was set when it was created instead of
+replacing the certificate:
 
 ```powershell
+Set-Location MyDockerProject
 New-Item -ItemType Directory -Force https | Out-Null
 $env:SITEKIT_HTTPS_CERT_PASSWORD = 'choose-a-local-password'
 dotnet dev-certs https -ep https\sitekit-dev.pfx -p $env:SITEKIT_HTTPS_CERT_PASSWORD
@@ -53,8 +56,19 @@ dotnet dev-certs https --trust
 docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
 ```
 
-Open `https://localhost:44373/umbraco`. Keep the password in the same shell
-session. The certificate directory is ignored by Git and Docker build context.
+If starting from the repository root with an existing certificate, set
+`SITEKIT_HTTPS_CERT_PASSWORD` to that certificate's password before running
+Compose:
+
+```powershell
+$env:SITEKIT_HTTPS_CERT_PASSWORD = '<the certificate password>'
+docker compose -f MyDockerProject/docker-compose.yml -f MyDockerProject/docker-compose.https.yml up -d --build
+```
+
+Open `https://localhost:44373/umbraco` directly. The HTTP port 44372 redirects
+to HTTPS, but starting at the HTTPS URL avoids an HTTP authorization request.
+Stop the services with the same Compose files and `down`. The certificate
+directory is ignored by Git.
 
 ### 3. Access Services
 
