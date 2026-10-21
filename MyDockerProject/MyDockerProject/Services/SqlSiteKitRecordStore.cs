@@ -1,6 +1,8 @@
 using System.Data;
+using System.Data.Common;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyDockerProject.Data;
 using MyDockerProject.Models;
 using SiteKit.Core.Data;
@@ -79,17 +81,55 @@ public sealed class SqlSiteKitRecordStore : ISiteKitRecordStore
         return ToContract(row);
     }
 
-    public async Task<bool> DeleteAsync(string projectId, string entityAlias, string id, string actor, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(string projectId, string entityAlias, string id, string actor, IReadOnlyList<SiteKitEntityDefinition> entityDefinitions, CancellationToken cancellationToken = default)
     {
         await EnsureTableAsync(cancellationToken);
         var key = NormalizeId(id);
-        var row = await _database.SiteKitOperationalRecords.FirstOrDefaultAsync(item => item.ProjectId == projectId && item.EntityAlias == entityAlias && item.Id == key && !item.IsDeleted, cancellationToken);
+        if (string.IsNullOrWhiteSpace(actor) || actor.Length > 320) throw new ArgumentException("An authenticated actor is required.", nameof(actor));
+        await using var transaction = await _database.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var row = await _database.SiteKitOperationalRecords.FromSqlInterpolated($"SELECT * FROM [SiteKitOperationalRecord] WITH (UPDLOCK, HOLDLOCK) WHERE [ProjectId] = {projectId} AND [EntityAlias] = {entityAlias} AND [Id] = {key} AND [IsDeleted] = 0")
+            .FirstOrDefaultAsync(cancellationToken);
         if (row is null) return false;
+        foreach (var source in entityDefinitions.Where(definition => definition.ProjectId == projectId))
+        foreach (var field in source.Fields.Where(field => field.Type is "relationship" or "relationships" && field.RelatedEntity == entityAlias))
+            if (await HasReferenceAsync(projectId, source.Alias, field, key, cancellationToken))
+                throw new InvalidOperationException($"Cannot delete {entityAlias} record '{key}' because a {source.Alias} record references it through '{field.Alias}'.");
         row.IsDeleted = true;
         row.UpdatedAt = DateTimeOffset.UtcNow;
         row.UpdatedBy = actor;
         await _database.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return true;
+    }
+
+    private async Task<bool> HasReferenceAsync(string projectId, string sourceAlias, SiteKitEntityField field, string recordId, CancellationToken cancellationToken)
+    {
+        var connection = _database.Database.GetDbConnection();
+        await using var command = connection.CreateCommand();
+        command.Transaction = _database.Database.CurrentTransaction!.GetDbTransaction();
+        var pathParameter = command.CreateParameter();
+        pathParameter.ParameterName = "@path";
+        pathParameter.Value = "$.'" + field.Alias.Replace("'", "''", StringComparison.Ordinal) + "'";
+        command.Parameters.Add(pathParameter);
+        var projectParameter = command.CreateParameter();
+        projectParameter.ParameterName = "@projectId";
+        projectParameter.Value = projectId;
+        command.Parameters.Add(projectParameter);
+        var sourceParameter = command.CreateParameter();
+        sourceParameter.ParameterName = "@sourceAlias";
+        sourceParameter.Value = sourceAlias;
+        command.Parameters.Add(sourceParameter);
+        var idParameter = command.CreateParameter();
+        idParameter.ParameterName = "@recordId";
+        idParameter.Value = Guid.ParseExact(recordId, "N");
+        idParameter.DbType = DbType.Guid;
+        command.Parameters.Add(idParameter);
+        var relationPredicate = field.Type == "relationships"
+            ? "EXISTS (SELECT 1 FROM OPENJSON([DataJson], @path) AS relation WHERE TRY_CONVERT(uniqueidentifier, relation.[value]) = @recordId)"
+            : "TRY_CONVERT(uniqueidentifier, JSON_VALUE([DataJson], @path)) = @recordId";
+        command.CommandText = $"SELECT CASE WHEN EXISTS (SELECT 1 FROM [SiteKitOperationalRecord] WITH (UPDLOCK, HOLDLOCK) WHERE [ProjectId] = @projectId AND [EntityAlias] = @sourceAlias AND [IsDeleted] = 0 AND {relationPredicate}) THEN 1 ELSE 0 END";
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt32(result, System.Globalization.CultureInfo.InvariantCulture) == 1;
     }
 
     private async Task EnsureTableAsync(CancellationToken cancellationToken)

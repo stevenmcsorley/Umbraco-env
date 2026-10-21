@@ -78,7 +78,7 @@ public sealed class JsonSiteKitRecordStore : ISiteKitRecordStore
         finally { _gate.Release(); }
     }
 
-    public async Task<bool> DeleteAsync(string projectId, string entityAlias, string id, string actor, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(string projectId, string entityAlias, string id, string actor, IReadOnlyList<SiteKitEntityDefinition> entityDefinitions, CancellationToken cancellationToken = default)
     {
         ValidateIds(projectId, entityAlias);
         if (!Guid.TryParse(id, out var recordId)) throw new ArgumentException("Record id must be a UUID.", nameof(id));
@@ -87,11 +87,23 @@ public sealed class JsonSiteKitRecordStore : ISiteKitRecordStore
         {
             var path = Path.Combine(GetDirectory(projectId, entityAlias), recordId.ToString("N") + ".json");
             if (!File.Exists(path)) return false;
+            foreach (var source in entityDefinitions.Where(definition => definition.ProjectId == projectId))
+            foreach (var field in source.Fields.Where(field => field.Type is "relationship" or "relationships" && field.RelatedEntity == entityAlias))
+            foreach (var sourceRecord in await ListAsync(projectId, source.Alias, cancellationToken))
+            {
+                if (!sourceRecord.Data.TryGetProperty(field.Alias, out var value)) continue;
+                var references = field.Type == "relationships" && value.ValueKind == JsonValueKind.Array
+                    ? value.EnumerateArray().Any(item => IsSameId(item, recordId))
+                    : IsSameId(value, recordId);
+                if (references) throw new InvalidOperationException($"Cannot delete {entityAlias} record '{recordId:N}' because {source.Alias} record '{sourceRecord.Id}' references it through '{field.Alias}'.");
+            }
             File.Delete(path);
             return true;
         }
         finally { _gate.Release(); }
     }
+
+    private static bool IsSameId(JsonElement value, Guid id) => value.ValueKind == JsonValueKind.String && Guid.TryParse(value.GetString(), out var referencedId) && referencedId == id;
 
     private string GetDirectory(string projectId, string entityAlias) => Path.Combine(_root, projectId, entityAlias);
     private static void ValidateIds(string projectId, string alias)

@@ -348,13 +348,41 @@ public sealed class SiteKitCoreContractTests
             Assert.Equal("Ada Lovelace", updated.Data.GetProperty("name").GetString());
             Assert.Equal(created.CreatedAt, updated.CreatedAt);
 
-            Assert.True(await store.DeleteAsync(entity.ProjectId, entity.Alias, created.Id, "admin@example.test"));
+            Assert.True(await store.DeleteAsync(entity.ProjectId, entity.Alias, created.Id, "admin@example.test", [entity]));
             Assert.Null(await store.GetAsync(entity.ProjectId, entity.Alias, created.Id));
         }
         finally
         {
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task JsonRecordStorePreventsDeletingRecordsReferencedByOtherEntities()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-record-tests", Guid.NewGuid().ToString("N"));
+        var store = new JsonSiteKitRecordStore(root);
+        var customer = CustomerEntity();
+        var opportunity = new SiteKitEntityDefinition
+        {
+            ProjectId = customer.ProjectId, Alias = "opportunity", Name = "Opportunity",
+            Fields = [new() { Alias = "title", Name = "Title", Type = "text", Required = true },
+                new() { Alias = "customer", Name = "Customer", Type = "relationship", RelatedEntity = "customer", Required = true }]
+        };
+        try
+        {
+            using var customerData = JsonDocument.Parse("{\"name\":\"Ada\",\"email\":\"ada@example.test\",\"status\":\"lead\"}");
+            var customerRecord = await store.SaveAsync(customer, customerData.RootElement, "admin@example.test");
+            using var opportunityData = JsonDocument.Parse($"{{\"title\":\"New business\",\"customer\":\"{Guid.Parse(customerRecord.Id):D}\"}}");
+            var opportunityRecord = await store.SaveAsync(opportunity, opportunityData.RootElement, "admin@example.test");
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => store.DeleteAsync(customer.ProjectId, customer.Alias, customerRecord.Id, "admin@example.test", [customer, opportunity]));
+            Assert.Contains("references it", exception.Message, StringComparison.Ordinal);
+            Assert.NotNull(await store.GetAsync(customer.ProjectId, customer.Alias, customerRecord.Id));
+            Assert.True(await store.DeleteAsync(opportunity.ProjectId, opportunity.Alias, opportunityRecord.Id, "admin@example.test", [customer, opportunity]));
+            Assert.True(await store.DeleteAsync(customer.ProjectId, customer.Alias, customerRecord.Id, "admin@example.test", [customer, opportunity]));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 
     [Fact]
