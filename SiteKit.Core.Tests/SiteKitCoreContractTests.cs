@@ -735,13 +735,16 @@ public sealed class SiteKitCoreContractTests
             portProbe.Stop();
             const string token = "sitekit-generator-integration-test-token";
             const string readerToken = "sitekit-generator-readonly-test-token";
+            const string roleToken = "sitekit-generator-role-test-token";
             var readerHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(readerToken)));
-            var principals = JsonSerializer.Serialize(new Dictionary<string, string> { [readerHash] = "sales-reader" });
-            const string grants = "{\"sales-reader\":{\"customer\":[\"read\"]}}";
+            var roleHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(roleToken)));
+            var principals = JsonSerializer.Serialize(new Dictionary<string, string> { [readerHash] = "sales-reader", [roleHash] = "sales-manager" });
+            const string principalRoles = "{\"sales-manager\":[\"sales-team\"]}";
+            const string grants = "{\"sales-reader\":{\"customer\":[\"read\"]},\"role:sales-team\":{\"customer\":[\"read\"]}}";
             using var app = Process.Start(new ProcessStartInfo("dotnet", $"run --no-build --configuration Release --project \"{project.Id}.csproj\" -- --urls http://127.0.0.1:{port}")
             {
                 WorkingDirectory = destination, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
-                Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["SITEKIT_PRINCIPAL_TOKENS"] = principals, ["SITEKIT_ENTITY_GRANTS"] = grants, ["Logging__LogLevel__Default"] = "Warning" }
+                Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["SITEKIT_PRINCIPAL_TOKENS"] = principals, ["SITEKIT_PRINCIPAL_ROLES"] = principalRoles, ["SITEKIT_ENTITY_GRANTS"] = grants, ["Logging__LogLevel__Default"] = "Warning" }
             })!;
             try
             {
@@ -763,6 +766,12 @@ public sealed class SiteKitCoreContractTests
                     readerClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", readerToken);
                     Assert.Equal(HttpStatusCode.OK, (await readerClient.GetAsync("/api/sitekit/records/customer")).StatusCode);
                     Assert.Equal(HttpStatusCode.Forbidden, (await readerClient.PostAsJsonAsync("/api/sitekit/records/customer", new { name = "Not allowed" })).StatusCode);
+                }
+                using (var roleClient = new HttpClient { BaseAddress = client.BaseAddress })
+                {
+                    roleClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", roleToken);
+                    Assert.Equal(HttpStatusCode.OK, (await roleClient.GetAsync("/api/sitekit/records/customer")).StatusCode);
+                    Assert.Equal(HttpStatusCode.Forbidden, (await roleClient.PostAsJsonAsync("/api/sitekit/records/customer", new { name = "Role member cannot create without a grant" })).StatusCode);
                 }
                 var createdResponse = await client.PostAsJsonAsync("/api/sitekit/records/customer", new { name = "Ada Lovelace" });
                 Assert.Equal(HttpStatusCode.Created, createdResponse.StatusCode);
@@ -786,7 +795,7 @@ public sealed class SiteKitCoreContractTests
                 using var restarted = Process.Start(new ProcessStartInfo("dotnet", $"run --no-build --configuration Release --project \"{project.Id}.csproj\" -- --urls http://127.0.0.1:{port}")
                 {
                     WorkingDirectory = destination, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
-                    Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["SITEKIT_PRINCIPAL_TOKENS"] = principals, ["SITEKIT_ENTITY_GRANTS"] = grants, ["Logging__LogLevel__Default"] = "Warning" }
+                    Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["SITEKIT_PRINCIPAL_TOKENS"] = principals, ["SITEKIT_PRINCIPAL_ROLES"] = principalRoles, ["SITEKIT_ENTITY_GRANTS"] = grants, ["Logging__LogLevel__Default"] = "Warning" }
                 })!;
                 try
                 {
