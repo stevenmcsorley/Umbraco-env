@@ -122,7 +122,12 @@ public sealed class SiteKitEntitiesController : ControllerBase
         var entity = await _entities.GetAsync(projectId, alias, ct);
         if (entity is null) return NotFound();
         if (!await Can("delete", projectId, alias, ct)) return Forbid();
-        if (!await _records.DeleteAsync(projectId, alias, id, HttpContext.Session.GetString("UserEmail")!, await _entities.ListAsync(projectId, ct), ct)) return NotFound();
+        try
+        {
+            if (!await _records.DeleteAsync(projectId, alias, id, HttpContext.Session.GetString("UserEmail")!, await _entities.ListAsync(projectId, ct), ct)) return NotFound();
+        }
+        catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
+        catch (InvalidOperationException exception) { return Conflict(new { error = exception.Message }); }
         _events.Publish(new SiteKitOperationalRecordChangedNotification(projectId, alias, id, "deleted", DateTimeOffset.UtcNow));
         return NoContent();
     }
