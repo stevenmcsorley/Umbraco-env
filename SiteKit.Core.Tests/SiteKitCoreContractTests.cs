@@ -1,4 +1,9 @@
 using System.Text.Json;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Net.Sockets;
 using SiteKit.Core.Components;
 using SiteKit.Core.Data;
 using SiteKit.Core.Importing;
@@ -270,6 +275,112 @@ public sealed class SiteKitCoreContractTests
             await using var package = File.OpenRead(zip);
             await modules.ImportAsync(package);
         }
+    }
+
+    [Fact]
+    public async Task ApplicationProjectGenerationIncludesScreenRuntimeAndProtectedCrud()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-generator-tests", Guid.NewGuid().ToString("N"));
+        var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "projects"));
+        var entities = new JsonSiteKitEntityRegistry(Path.Combine(root, "entities"));
+        var screens = new JsonSiteKitScreenRegistry(Path.Combine(root, "screens"));
+        var project = new SiteKitProjectManifest { Id = "sales-crm", Name = "Sales CRM", Category = "application", Entities = ["customer"], Screens = ["customers"] };
+        await projects.SaveAsync(project);
+        await entities.SaveAsync(new SiteKitEntityDefinition
+        {
+            ProjectId = project.Id, Alias = "customer", Name = "Customer",
+            Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "name", Name = "Name", Type = "text", Required = true }]
+        });
+        await screens.SaveAsync(new SiteKitApplicationScreenDefinition
+        {
+            ProjectId = project.Id, Alias = "customers", Name = "Customers", Type = "table", EntityAlias = "customer",
+            Columns = ["name"], FormFields = ["name"]
+        });
+        try
+        {
+            var destination = await new SiteKitProjectGenerator(Path.Combine(root, "generated"), projects, screens, entities).GenerateAsync(project.Id);
+            var program = await File.ReadAllTextAsync(Path.Combine(destination, "Program.cs"));
+            Assert.Contains("MapPost(\"/api/sitekit/records/{entity}\"", program);
+            Assert.Contains("SITEKIT_ADMIN_TOKEN", program);
+            Assert.Contains("Normalize(Entity model", program);
+            Assert.True(File.Exists(Path.Combine(destination, "wwwroot", "sitekit-runtime.js")));
+            Assert.True(File.Exists(Path.Combine(destination, "sitekit.screens.json")));
+            Assert.True(File.Exists(Path.Combine(destination, "sitekit.entities.json")));
+            using var build = Process.Start(new ProcessStartInfo("dotnet", $"build \"{project.Id}.csproj\" --configuration Release --nologo")
+            {
+                WorkingDirectory = destination, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false
+            })!;
+            var stdout = await build.StandardOutput.ReadToEndAsync();
+            var stderr = await build.StandardError.ReadToEndAsync();
+            await build.WaitForExitAsync();
+            Assert.True(build.ExitCode == 0, $"Generated project build failed: {stdout}\n{stderr}");
+
+            var portProbe = new TcpListener(IPAddress.Loopback, 0);
+            portProbe.Start();
+            var port = ((IPEndPoint)portProbe.LocalEndpoint).Port;
+            portProbe.Stop();
+            const string token = "sitekit-generator-integration-test-token";
+            using var app = Process.Start(new ProcessStartInfo("dotnet", $"run --no-build --configuration Release --project \"{project.Id}.csproj\" -- --urls http://127.0.0.1:{port}")
+            {
+                WorkingDirectory = destination, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
+                Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["Logging__LogLevel__Default"] = "Warning" }
+            })!;
+            try
+            {
+                using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{port}"), Timeout = TimeSpan.FromSeconds(2) };
+                var ready = false;
+                for (var attempt = 0; attempt < 40 && !ready; attempt++)
+                {
+                    try { ready = (await client.GetAsync("/health")).IsSuccessStatusCode; }
+                    catch (HttpRequestException) { await Task.Delay(150); }
+                    catch (TaskCanceledException) { await Task.Delay(150); }
+                    if (app.HasExited) break;
+                }
+                Assert.True(ready, "Generated app did not start within the startup window.");
+                var unauthorized = await client.GetAsync("/api/sitekit/records/customer");
+                Assert.Equal(HttpStatusCode.Unauthorized, unauthorized.StatusCode);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var createdResponse = await client.PostAsJsonAsync("/api/sitekit/records/customer", new { name = "Ada Lovelace" });
+                Assert.Equal(HttpStatusCode.Created, createdResponse.StatusCode);
+                using var created = JsonDocument.Parse(await createdResponse.Content.ReadAsStringAsync());
+                var id = created.RootElement.GetProperty("id").GetString()!;
+                Assert.Equal(id, created.RootElement.GetProperty("data").GetProperty("id").GetString());
+                var updateResponse = await client.PutAsJsonAsync($"/api/sitekit/records/customer/{id}", new { name = "Ada Byron" });
+                Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+                app.Kill(entireProcessTree: true);
+                await app.WaitForExitAsync();
+                using var restarted = Process.Start(new ProcessStartInfo("dotnet", $"run --no-build --configuration Release --project \"{project.Id}.csproj\" -- --urls http://127.0.0.1:{port}")
+                {
+                    WorkingDirectory = destination, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
+                    Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["Logging__LogLevel__Default"] = "Warning" }
+                })!;
+                try
+                {
+                    var recovered = false;
+                    for (var attempt = 0; attempt < 40 && !recovered; attempt++)
+                    {
+                        try { recovered = (await client.GetAsync("/health")).IsSuccessStatusCode; }
+                        catch (HttpRequestException) { await Task.Delay(150); }
+                    }
+                    Assert.True(recovered, "Generated app did not restart.");
+                    var listed = await client.GetFromJsonAsync<JsonElement[]>("/api/sitekit/records/customer");
+                    Assert.Equal("Ada Byron", listed![0].GetProperty("data").GetProperty("name").GetString());
+                    var deleteResponse = await client.DeleteAsync($"/api/sitekit/records/customer/{id}");
+                    Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+                }
+                finally
+                {
+                    if (!restarted.HasExited) restarted.Kill(entireProcessTree: true);
+                    await restarted.WaitForExitAsync();
+                }
+            }
+            finally
+            {
+                if (!app.HasExited) app.Kill(entireProcessTree: true);
+                await app.WaitForExitAsync();
+            }
+        }
+        finally { if (!string.Equals(Environment.GetEnvironmentVariable("SITEKIT_KEEP_GENERATOR_FIXTURE"), "1", StringComparison.Ordinal) && Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 
     private static SiteKitEntityDefinition CustomerEntity() => new()
