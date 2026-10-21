@@ -42,6 +42,20 @@ also provide key encryption. Session storage is in-memory, so container
 restarts log active sessions out even though the data-protection key ring stays
 intact.
 
+For local authenticated sign-in, export and trust a development certificate,
+then start the optional HTTPS Compose overlay:
+
+```powershell
+New-Item -ItemType Directory -Force MyDockerProject\https | Out-Null
+$env:SITEKIT_HTTPS_CERT_PASSWORD = 'choose-a-local-password'
+dotnet dev-certs https -ep MyDockerProject\https\sitekit-dev.pfx -p $env:SITEKIT_HTTPS_CERT_PASSWORD
+dotnet dev-certs https --trust
+docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
+```
+
+Open `https://localhost:44373/umbraco`. Keep the password in the same shell
+session. The certificate directory is ignored by Git and Docker build context.
+
 ### 3. Access Services
 
 - **Umbraco Backoffice**: http://localhost:44372/umbraco

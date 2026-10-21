@@ -9,7 +9,7 @@ solution; each milestone records implementation and validation evidence here.
 
 | Milestone | Scope | Status |
 |---|---|---|
-| M0 — Security and baseline | Audit existing code, protect existing installations, secure administrative operations, establish reproducible build | Docker build verified; SQL healthy; Umbraco login form and booking-engine health endpoint return HTTP 200; data-protection key persists across container recreation; authenticated Studio checks pending; local HTTPS setup still needed for Umbraco sign-in |
+| M0 — Security and baseline | Audit existing code, protect existing installations, secure administrative operations, establish reproducible build | Docker build verified; SQL healthy; Umbraco login form and booking-engine health endpoint return HTTP 200; data-protection key persists across container recreation; opt-in local HTTPS overlay supports sign-in when a trusted development certificate is supplied; authenticated Studio checks pending |
 | M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | Partial: foundations and project/data contracts implemented; code SDK and full module lifecycle incomplete |
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, multi-property visual editor, composed/reorderable layout builder, preview and safe renderer implemented; drag/drop canvas and compiled developer SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
@@ -32,7 +32,7 @@ solution; each milestone records implementation and validation evidence here.
 | Data importer | Partial | Hotel importer preserved; universal project/entity mappings now support CSV/JSON/XML preview, idempotent upsert and value-free execution history; queueing, media and live host verification remain |
 | Content type generation | Implemented | Seed API creates document types and element types; administrative endpoint security is critical |
 | React/TypeScript booking UI | Implemented | Separate frontend, Vite 8 / React Router 7, Tailwind 4, generated bundle; npm audit reports no known vulnerabilities |
-| Docker deployment | Partial | Compose SQL Server, Umbraco and booking engine started and smoke checked. SQL health is green; Umbraco login form and booking `/health` return HTTP 200. ASP.NET Core data-protection keys persist in the existing `umb_data` volume across app-container recreation. Automate completes its nine startup migrations using the shared CMS SQL connection. Development compose still uses HTTP and does not encrypt the key ring at rest; local Umbraco sign-in needs a trusted HTTPS certificate, and production TLS and key encryption remain required. |
+| Docker deployment | Partial | Compose SQL Server, Umbraco and booking engine started and smoke checked. SQL health is green; Umbraco login form and booking `/health` return HTTP 200. ASP.NET Core data-protection keys persist in the existing `umb_data` volume across app-container recreation. Automate completes its nine startup migrations using the shared CMS SQL connection. An optional HTTPS overlay is available and its merged configuration validates; actual certificate trust and sign-in remain pending. Production TLS and data-protection key encryption remain required. |
 | Component registry / Studio | Partial | Versioned declarative JSON registry, schema/data validation, import/export, safe primitive renderer, authenticated `/studio/components` editor with searchable persistent tags, project registry and project-local placements/appearance in `/studio/projects`; reusable definitions are projected by reference into generated websites with validated per-project overrides. Umbraco-published page integration and developer package pipeline remain planned |
 | Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, explicit grants and a basic data model/record editor; database-enforced relationships, screen composition and live SQL verification remain |
 | Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component, entity and screen definitions; official Umbraco Automate and a scoped SiteKit record-change trigger are integrated; record actions are missing and module workflow JSON remains inert |
@@ -209,6 +209,12 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   build. Docker Debug build completed with 0 errors and 154 existing warnings.
 - The host does not have the pinned .NET 10 SDK installed. Validation used the
   .NET 10 Docker SDK image. Authenticated Studio routes remain unverified.
+- Added an optional Compose HTTPS overlay using a user-supplied trusted PFX
+  mounted read-only, plus local setup instructions. Certificate files are
+  excluded from Git and the Docker build context. `docker compose ... config
+  --quiet` passed with a placeholder environment value; the overlay was not
+  started because no local certificate was provisioned or trusted. The default
+  Docker stack remains up on HTTP and its SQL health check is green.
 - Updated the frontend's vulnerable Vite and React Router dependencies, moved
   to Tailwind 4 with its Vite plugin, and corrected the ESM path configuration.
   `npm audit` reports zero vulnerabilities and `npm run build` emits an 18.57

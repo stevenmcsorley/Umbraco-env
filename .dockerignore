@@ -11,3 +11,4 @@ umbraco-export-*
 **/umbraco/Logs/
 MyDockerProject/.env
 MyDockerProject/.env.*
+MyDockerProject/https/

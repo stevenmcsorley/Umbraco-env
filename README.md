@@ -122,6 +122,19 @@ The compose stack exposes Umbraco at `http://localhost:44372` and the booking en
 
 The local stack serves HTTP only. The Umbraco login form is viewable, but OpenIddict rejects the sign-in flow over HTTP. Configure HTTPS with a trusted local certificate before signing in. Production also needs key encryption at rest and TLS termination. Provision the first SiteKit administrator through the documented allowlist/bootstrap flow; keep `.env` private and remove the temporary registration code after setup.
 
+For local authenticated backoffice work, an opt-in HTTPS Compose overlay is included. Export and trust a development certificate on your machine, then start the overlay:
+
+```powershell
+New-Item -ItemType Directory -Force MyDockerProject\https | Out-Null
+$env:SITEKIT_HTTPS_CERT_PASSWORD = 'choose-a-local-password'
+dotnet dev-certs https -ep MyDockerProject\https\sitekit-dev.pfx -p $env:SITEKIT_HTTPS_CERT_PASSWORD
+dotnet dev-certs https --trust
+Set-Location MyDockerProject
+docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
+```
+
+Open `https://localhost:44373/umbraco`. The certificate and its password stay local and are excluded from Git and Docker build contexts. The overlay does not disable Umbraco's HTTPS checks; the default HTTP stack remains available on port 44372. Keep the password in the same PowerShell session when using the overlay. To stop the HTTPS override, use the same two Compose files with `down` (this does not remove named data volumes).
+
 ### Generate a project
 
 Use SiteKit Studio or the local Agent Host's project tools. Generated projects target .NET 10 and include their own project manifest, runnable ASP.NET Core host, and Dockerfile. The detailed generated runtime guide explains credentials, project files, and its current production boundaries: [Generated application runtime](docs/SITEKIT_GENERATED_RUNTIME.md).
