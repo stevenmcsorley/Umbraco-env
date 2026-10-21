@@ -189,7 +189,8 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   component definitions; project manifests track screen aliases.
 - Added the authenticated Screen Studio at `/studio/screens`, project/entity
   selection, screen editing, and previews backed by the operational record
-  store. Screen metadata is included when generating an independent project.
+  store. Screen previews enforce the same per-principal `read` grant as record
+  APIs. Screen metadata is included when generating an independent project.
 - Added local agent/MCP `sitekit.create_screen` and `sitekit.list_screens` tools.
   Module packages now validate and install screen definitions with component
   and entity references.
