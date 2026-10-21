@@ -186,6 +186,7 @@ solution; each milestone records implementation and validation evidence here.
 | 2026-10-21 | M0 | .NET 10 Docker build succeeded with 0 errors and 164 existing Umbraco/nullability warnings. SQL is healthy; the Umbraco login form, generated booking CSS/JS assets and booking `/health` return HTTP 200. Data-protection key persistence survived app-container recreation. `npm audit` reports zero vulnerabilities in both Node projects. The HTTPS overlay serves OpenIddict metadata with HTTP 200; HTTP requests redirect to HTTPS on the overlay. Full Umbraco backoffice sign-in remains unverified. |
 | 2026-10-21 | M1/M2 | `dotnet build UmbraccoEnv.sln --no-restore` succeeds with 0 errors. An additional build with `RazorCompileOnBuild=true` exposes pre-existing Razor compile failures in the backup view folder and the generated `PublishedModels.Home` type; ordinary project builds intentionally disable build-time Razor compilation. Live authenticated Studio smoke created and retrieved a new versioned component, rendered its preview, created a second website project, and rendered the same component in both projects with distinct data and appearance. All five Studio routes return HTTP 200 after correcting Razor escaping in the responsive styles; Screens and Imports loaded with zero browser console errors. |
 | 2026-10-21 | M8 | `dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --configuration Release` passed all 23 tests with 0 failures and 0 skips in the .NET 10 SDK container. |
+| 2026-10-21 | M5/M7 | Generator integration suite passed 23/23 tests after adding table/kanban edit controls and single/multiple relationship selectors. The suite builds generated projects and exercises token-protected persistent CRUD, relationships and delete protection; the browser screen workflow itself remains unautomated. |
 
 
 ## Screenshot evidence
@@ -305,11 +306,15 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   `sitekit.screens.json` and entity definitions to `sitekit.entities.json`.
 - Limitations: generated app screens currently cover tables, search, kanban,
   calendars and entity-count dashboards with token/grant-protected SQLite CRUD.
-  Charts, richer form/detail interactions, related-record editors and the
+  Table and kanban screens now edit existing rows through configured fields;
+  generated forms provide single and multiple relationship selectors populated
+  only from records the principal may read. API integration coverage verifies
+  protected CRUD and relationship integrity; it does not yet automate the
+  browser editing flow. Charts, richer detail/approval interactions, and the
   end-to-end AI-generated CRM journey remain incomplete. Record-preserving AI
-  modification remains incomplete. Screen
-  Studio record editor controls call the permission-checked CRUD APIs, but the
-  new controls have not been exercised against a live Umbraco/SQL installation.
+  modification remains incomplete. Screen Studio record editor controls call
+  the permission-checked CRUD APIs, but the controls have not been exercised
+  against a live Umbraco/SQL installation.
 
 ## Universal import progress
 

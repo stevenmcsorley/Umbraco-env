@@ -486,6 +486,11 @@ public sealed class SiteKitCoreContractTests
             var screenRuntime = await File.ReadAllTextAsync(Path.Combine(destination, "wwwroot", "sitekit-runtime.js"));
             Assert.Contains("screen.type==='kanban'", screenRuntime);
             Assert.Contains("screen.type==='dashboard'", screenRuntime);
+            Assert.Contains("data-edit", screenRuntime);
+            Assert.Contains("method:recordId?'PUT':'POST'", screenRuntime);
+            Assert.Contains("Save changes", screenRuntime);
+            Assert.Contains("relatedEntity=entities.find", screenRuntime);
+            Assert.Contains("selectedOptions", screenRuntime);
             Assert.True(File.Exists(Path.Combine(destination, "sitekit.screens.json")));
             var generatedScreenOrder = JsonSerializer.Deserialize<SiteKitApplicationScreenDefinition[]>(await File.ReadAllTextAsync(Path.Combine(destination, "sitekit.screens.json")), new JsonSerializerOptions(JsonSerializerDefaults.Web));
             Assert.Equal(project.Screens, generatedScreenOrder!.Select(screen => screen.Alias));
