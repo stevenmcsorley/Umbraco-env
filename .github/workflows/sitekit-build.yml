@@ -16,6 +16,8 @@ jobs:
           dotnet-version: 10.0.x
       - name: Restore solution
         run: dotnet restore UmbraccoEnv.sln
+      - name: Test SiteKit core contracts and storage
+        run: dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --no-restore --configuration Release
       - name: Check known vulnerable packages
         run: |
           dotnet list MyDockerProject/MyDockerProject/MyDockerProject.csproj package --vulnerable --include-transitive --format json > "$RUNNER_TEMP/sitekit-vulnerability-report.json"
