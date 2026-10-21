@@ -188,6 +188,7 @@ solution; each milestone records implementation and validation evidence here.
 | 2026-10-21 | M8 | `dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --configuration Release` passed all 23 tests with 0 failures and 0 skips in the .NET 10 SDK container. |
 | 2026-10-21 | M5/M7 | Generator integration suite passed 23/23 tests after adding table/kanban edit controls and single/multiple relationship selectors. The suite builds generated projects and exercises token-protected persistent CRUD, relationships and delete protection; the browser screen workflow itself remains unautomated. |
 | 2026-10-21 | M3/M7 | Release suite passed 24/24 tests, including first-run generation and build through the Agent Host tool after restore; generated screen editing and relationship control contracts are asserted. Live ChatGPT orchestration and browser-driven generated-screen editing remain unverified. |
+| 2026-10-22 | M5 | Release suite passed 25/25 tests. A schema migration regression proves existing record data remains intact through an optional field addition and that a required-field addition is rejected without changing the stored schema. |
 
 
 ## Screenshot evidence
@@ -331,7 +332,8 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   command or path arguments.
 - Validation: a new Agent Host integration test created an API project through
   the project registry, generated it, then invoked the same build tool. The
-  clean first build passed with restore; the Release suite passed all 24 tests.
+  clean first build passed with restore; the Release suite passed all 25 tests
+  after adding the schema migration regression.
 - Limits: no connected eligible ChatGPT account was available to validate the
   provider's live multi-step orchestration. The generated app still requires
   operators to configure identity tokens/grants before use.
@@ -390,7 +392,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   emitted application. It starts the generated project and verifies unauthenticated
   denial, read-only write denial, create/update/read/delete behavior, and record
   retention while a screen changes and the project is regenerated/restarted. All
-  24 Release core tests pass at the current checkpoint; live browser captures are documented
+  25 Release core tests pass at the current checkpoint; live browser captures are documented
   in `SITEKIT_SCREENSHOTS.md`.
 - Boundaries: generated app CRUD currently uses local SQLite and a single
   administrator token, with no record-level role grants or soft-delete. The

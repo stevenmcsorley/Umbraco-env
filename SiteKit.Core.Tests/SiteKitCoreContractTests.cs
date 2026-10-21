@@ -58,6 +58,50 @@ public sealed class SiteKitCoreContractTests
     }
 
     [Fact]
+    public async Task AdditiveEntitySchemaUpgradePreservesExistingRecordAndRejectsBreakingChanges()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-schema-migration", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var entities = new JsonSiteKitEntityRegistry(Path.Combine(root, "entities"));
+            var records = new JsonSiteKitRecordStore(Path.Combine(root, "records"));
+            var versionOne = new SiteKitEntityDefinition
+            {
+                ProjectId = "sales-crm", Alias = "customer", Name = "Customer",
+                Fields = [new() { Alias = "id", Name = "Id", Type = "text" }, new() { Alias = "name", Name = "Name", Type = "text", Required = true }]
+            };
+            await entities.SaveAsync(versionOne);
+            using var payload = JsonDocument.Parse("{\"name\":\"Alder & Finch\"}");
+            var originalRecord = await records.SaveAsync(versionOne, payload.RootElement, "migration-test@sitekit.local");
+
+            var versionTwo = versionOne with
+            {
+                Version = 2,
+                Fields = [.. versionOne.Fields, new() { Alias = "email", Name = "Email", Type = "email" }]
+            };
+            await entities.SaveAsync(versionTwo);
+            var retainedRecord = await records.GetAsync(versionOne.ProjectId, versionOne.Alias, originalRecord.Id);
+            Assert.NotNull(retainedRecord);
+            Assert.Equal("Alder & Finch", retainedRecord.Data.GetProperty("name").GetString());
+            Assert.False(retainedRecord.Data.TryGetProperty("email", out _));
+
+            var breakingVersion = versionTwo with
+            {
+                Version = 3,
+                Fields = [.. versionTwo.Fields, new() { Alias = "account-code", Name = "Account code", Type = "text", Required = true }]
+            };
+            await Assert.ThrowsAsync<InvalidOperationException>(() => entities.SaveAsync(breakingVersion));
+            var unchangedSchema = await entities.GetAsync(versionOne.ProjectId, versionOne.Alias);
+            Assert.Equal(2, unchangedSchema!.Version);
+            Assert.Equal(3, unchangedSchema.Fields.Length);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RestImportFetchUsesAnAllowlistedHttpsHost()
     {
         var handler = new StaticHttpMessageHandler(request =>
