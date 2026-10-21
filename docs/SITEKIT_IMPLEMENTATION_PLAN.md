@@ -187,6 +187,7 @@ solution; each milestone records implementation and validation evidence here.
 | 2026-10-21 | M1/M2 | `dotnet build UmbraccoEnv.sln --no-restore` succeeds with 0 errors. An additional build with `RazorCompileOnBuild=true` exposes pre-existing Razor compile failures in the backup view folder and the generated `PublishedModels.Home` type; ordinary project builds intentionally disable build-time Razor compilation. Live authenticated Studio smoke created and retrieved a new versioned component, rendered its preview, created a second website project, and rendered the same component in both projects with distinct data and appearance. All five Studio routes return HTTP 200 after correcting Razor escaping in the responsive styles; Screens and Imports loaded with zero browser console errors. |
 | 2026-10-21 | M8 | `dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --configuration Release` passed all 23 tests with 0 failures and 0 skips in the .NET 10 SDK container. |
 | 2026-10-21 | M5/M7 | Generator integration suite passed 23/23 tests after adding table/kanban edit controls and single/multiple relationship selectors. The suite builds generated projects and exercises token-protected persistent CRUD, relationships and delete protection; the browser screen workflow itself remains unautomated. |
+| 2026-10-21 | M3/M7 | Release suite passed 24/24 tests, including first-run generation and build through the Agent Host tool after restore; generated screen editing and relationship control contracts are asserted. Live ChatGPT orchestration and browser-driven generated-screen editing remain unverified. |
 
 
 ## Screenshot evidence
@@ -316,6 +317,25 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   the permission-checked CRUD APIs, but the controls have not been exercised
   against a live Umbraco/SQL installation.
 
+### M7 Agent Host application build flow
+
+- Expanded SiteKit Architect instructions with an explicit create/modify
+  sequence: inspect projects/components/modules, reuse compatible assets, save
+  entity models before screens, validate, generate, build, and report required
+  deployment configuration. Existing-project changes should preserve aliases
+  and the generated app's SQLite database.
+- Fixed `sitekit_build_project` to perform dependency restore for a generated
+  project and run from that project's directory so its pinned .NET SDK selection
+  applies. The checked-in solution continues to use `--no-restore`. The tool
+  still accepts only a project ID and fixed targets; it does not expose shell
+  command or path arguments.
+- Validation: a new Agent Host integration test created an API project through
+  the project registry, generated it, then invoked the same build tool. The
+  clean first build passed with restore; the Release suite passed all 24 tests.
+- Limits: no connected eligible ChatGPT account was available to validate the
+  provider's live multi-step orchestration. The generated app still requires
+  operators to configure identity tokens/grants before use.
+
 ## Universal import progress
 
 - Preserved the existing hotel/content importer and added independent
@@ -370,7 +390,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   emitted application. It starts the generated project and verifies unauthenticated
   denial, read-only write denial, create/update/read/delete behavior, and record
   retention while a screen changes and the project is regenerated/restarted. All
-  23 Release core tests pass at the current checkpoint; live browser captures are documented
+  24 Release core tests pass at the current checkpoint; live browser captures are documented
   in `SITEKIT_SCREENSHOTS.md`.
 - Boundaries: generated app CRUD currently uses local SQLite and a single
   administrator token, with no record-level role grants or soft-delete. The

@@ -32,6 +32,32 @@ public sealed class SiteKitCoreContractTests
     }
 
     [Fact]
+    public async Task AgentBuildToolRestoresAndBuildsFirstGeneratedProject()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-agent-build", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "MyDockerProject", "MyDockerProject", "umbraco", "Data", "SiteKit", "projects"));
+            await projects.SaveAsync(new SiteKitProjectManifest { Id = "first-generated-api", Name = "First Generated API", Category = "api" });
+            var tools = new SiteKitToolHost(root);
+            using var arguments = JsonDocument.Parse("{\"projectId\":\"first-generated-api\"}");
+
+            using var generated = JsonDocument.Parse(await tools.ExecuteAsync("sitekit_generate_project", arguments.RootElement));
+            Assert.True(generated.RootElement.GetProperty("ok").GetBoolean());
+            var destination = generated.RootElement.GetProperty("result").GetProperty("directory").GetString()!;
+            Assert.True(File.Exists(Path.Combine(destination, "global.json")));
+
+            using var built = JsonDocument.Parse(await tools.ExecuteAsync("sitekit_build_project", arguments.RootElement));
+            Assert.True(built.RootElement.GetProperty("ok").GetBoolean(), built.RootElement.ToString());
+            Assert.Equal(0, built.RootElement.GetProperty("result").GetProperty("exitCode").GetInt32());
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RestImportFetchUsesAnAllowlistedHttpsHost()
     {
         var handler = new StaticHttpMessageHandler(request =>

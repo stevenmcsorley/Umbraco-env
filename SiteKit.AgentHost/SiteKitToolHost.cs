@@ -55,7 +55,7 @@ public sealed class SiteKitToolHost
         Function("sitekit_create_placement", "Place an existing reusable component in a project with independent data and appearance.", new { projectId = Schema("string"), placement = Schema("object") }, "projectId", "placement"),
         Function("sitekit_preview_project", "Render all validated component placements in a project for an HTML preview.", new { projectId = Schema("string") }, "projectId"),
         Function("sitekit_validate_project", "Validate the project's module, component and placement references without changing data.", new { projectId = Schema("string") }, "projectId"),
-        Function("sitekit_build_project", "Run the repository's fixed UmbraccoEnv.sln build; this tool accepts no shell command or path.", new { projectId = Schema("string") }, "projectId")
+        Function("sitekit_build_project", "Build this project's generated application when available, otherwise build the fixed SiteKit solution. No arbitrary command or path is accepted.", new { projectId = Schema("string") }, "projectId")
     ];
 
     public static IReadOnlyList<object> McpTools =>
@@ -76,7 +76,7 @@ public sealed class SiteKitToolHost
         McpTool("sitekit.create_placement", "Place a shared component into a project with local styling and data.", ObjectSchema("projectId", "placement")),
         McpTool("sitekit.preview_project", "Render validated component placements for a project.", ObjectSchema("projectId")),
         McpTool("sitekit.validate_project", "Validate component and placement references.", ObjectSchema("projectId")),
-        McpTool("sitekit.build_project", "Build the fixed SiteKit solution using dotnet; no arbitrary shell commands are accepted.", ObjectSchema("projectId"))
+        McpTool("sitekit.build_project", "Build this project's generated application when available, otherwise the fixed SiteKit solution; no arbitrary shell command or path is accepted.", ObjectSchema("projectId"))
     ];
 
     public async Task<string> ExecuteAsync(string name, JsonElement arguments, CancellationToken cancellationToken = default)
@@ -278,10 +278,17 @@ public sealed class SiteKitToolHost
         var target = File.Exists(generatedProject) ? generatedProject : solution;
         if (!File.Exists(target)) throw new InvalidOperationException("Neither the generated project nor UmbraccoEnv.sln was found under the configured SiteKit root.");
         var dotnet = Environment.GetEnvironmentVariable("SITEKIT_DOTNET_EXECUTABLE");
-        var start = new ProcessStartInfo(string.IsNullOrWhiteSpace(dotnet) ? "dotnet" : Path.GetFullPath(dotnet)) { WorkingDirectory = _root, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
+        var generatedBuild = File.Exists(generatedProject);
+        var start = new ProcessStartInfo(string.IsNullOrWhiteSpace(dotnet) ? "dotnet" : Path.GetFullPath(dotnet))
+        {
+            WorkingDirectory = generatedBuild ? Path.GetDirectoryName(generatedProject)! : _root,
+            RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true
+        };
         start.ArgumentList.Add("build");
         start.ArgumentList.Add(target);
-        start.ArgumentList.Add("--no-restore");
+        // Generated projects have their own first-run dependency restore; the
+        // checked-in solution can keep the fast, reproducible no-restore build.
+        if (!generatedBuild) start.ArgumentList.Add("--no-restore");
         using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start the dotnet build process.");
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromMinutes(5));
