@@ -10,8 +10,8 @@ solution; each milestone records implementation and validation evidence here.
 | Milestone | Scope | Status |
 |---|---|---|
 | M0 — Security and baseline | Audit existing code, protect existing installations, secure administrative operations, establish reproducible build | Docker build verified; SQL healthy; local HTTPS overlay and HTTP-to-HTTPS redirect verified; SiteKit Studio admin APIs require the allowlisted session; data-protection key persists across container recreation; full Umbraco backoffice sign-in and production hardening remain pending |
-| M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | Partial: foundations and project/data contracts implemented; code SDK and full module lifecycle incomplete |
-| M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, multi-property visual editor, composed/reorderable layout builder, accessible disclosure interactions, preview and safe renderer implemented; drag/drop canvas and compiled developer SDK incomplete |
+| M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | Partial: foundations and project/data contracts implemented; code-first C# component authoring is available; compiled renderer SDK and full module lifecycle incomplete |
+| M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, C# definition builder, multi-property visual editor, composed/reorderable layout builder, accessible disclosure interactions, preview, safe renderer, and validated cross-registry export/import implemented; drag/drop canvas and compiled Razor/React SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator now projects shared validated component placements with per-project data and appearance; broader module projection and full production hosting configuration remain |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; generated apps include model-driven screens, SQLite-backed CRUD, per-principal operation grants, relationship reference validation and delete protection; identity federation, database-enforced relationships and live SQL verification remain |
@@ -112,6 +112,20 @@ solution; each milestone records implementation and validation evidence here.
   `SITEKIT_SCREENSHOTS.md`; this validates the JSON registries and renderer, not
   Umbraco content-tree placement.
 
+### C# component authoring SDK
+
+- Added `SiteKitComponentDefinitionBuilder`, a fluent .NET API for declaring
+  typed properties, layout trees, tags, variants and metadata. `Build()` runs
+  the same component schema/layout validator used by Component Studio. The
+  output saves to the shared registry and uses the existing validated export
+  and import contract for reuse across installations.
+- Validation: the SDK contract test builds an FAQ definition, exports it from
+  one registry, imports it into another, validates it and renders the imported
+  version with project data. The Release suite passes 27 tests.
+- Boundaries: this is a C# code-first authoring path for declarative schemas,
+  not a compiled custom renderer. Razor assemblies, React/TypeScript bundles,
+  backend service hooks and controlled compilation/deployment remain planned.
+
 ## M3 progress
 
 - Added the standalone `SiteKit.AgentHost` executable. It requests fresh OAuth
@@ -192,6 +206,7 @@ solution; each milestone records implementation and validation evidence here.
 | 2026-10-21 | M3/M7 | Release suite passed 24/24 tests, including first-run generation and build through the Agent Host tool after restore; generated screen editing and relationship control contracts are asserted. Live ChatGPT orchestration and browser-driven generated-screen editing remain unverified. |
 | 2026-10-22 | M5 | Release suite passed 25/25 tests. A schema migration regression proves existing record data remains intact through an optional field addition and that a required-field addition is rejected without changing the stored schema. |
 | 2026-10-22 | M2/M8 | Release suite passed 26/26 tests, including accessible accordion rendering and HTML-encoding assertions. Rebuilt the Docker Umbraco host with 0 errors and 164 existing warnings; OpenIddict discovery returned HTTP 200 over local HTTPS. |
+| 2026-10-22 | M1/M2 | Release suite passed 27/27 tests, including C# code-first component definition, export/import across registries, validation, and rendering. |
 
 
 ## Screenshot evidence
@@ -395,7 +410,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   emitted application. It starts the generated project and verifies unauthenticated
   denial, read-only write denial, create/update/read/delete behavior, and record
   retention while a screen changes and the project is regenerated/restarted. All
-  26 Release core tests pass at the current checkpoint; live browser captures are documented
+  27 Release core tests pass at the current checkpoint; live browser captures are documented
   in `SITEKIT_SCREENSHOTS.md`.
 - Boundaries: generated app CRUD currently uses local SQLite and a single
   administrator token, with no record-level role grants or soft-delete. The

@@ -41,6 +41,24 @@ public static partial class SiteKitComponentValidator
             errors.Add("description must be at most 2000 characters.");
         if (!IsVersion(definition.Version ?? string.Empty))
             errors.Add("version must be a numeric semantic version such as 1.0.0.");
+        if (definition.Tags is null || definition.Tags.Length > 50)
+            errors.Add("tags are required and cannot contain more than 50 values.");
+        else
+        {
+            var tags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var tag in definition.Tags)
+                if (string.IsNullOrWhiteSpace(tag) || tag.Length > 64 || tag != tag.Trim() || tag.Any(char.IsControl) || !tags.Add(tag))
+                    errors.Add("tags must be unique, trimmed, non-empty values of at most 64 characters.");
+        }
+        if (definition.Dependencies is null || definition.Dependencies.Length > 50)
+            errors.Add("dependencies are required and cannot contain more than 50 component aliases.");
+        else
+        {
+            var dependencies = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var dependency in definition.Dependencies)
+                if (!AliasPattern.IsMatch(dependency) || dependency == definition.Alias || !dependencies.Add(dependency))
+                    errors.Add("dependencies must be unique valid component aliases and cannot include the component itself.");
+        }
         if (definition.Properties is null)
             return errors.Append("properties is required.").ToArray();
         if (definition.Layout is null)

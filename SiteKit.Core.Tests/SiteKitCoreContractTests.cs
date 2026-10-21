@@ -219,6 +219,62 @@ public sealed class SiteKitCoreContractTests
     }
 
     [Fact]
+    public async Task CodeFirstComponentSdkBuildsValidDefinitionsAndExportsThemForReuse()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-component-sdk-tests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var definition = SiteKitComponentDefinitionBuilder
+                .Create("reusable-faq-card", "Reusable FAQ Card", "content")
+                .Description("An accessible FAQ disclosure component.")
+                .Version("1.0.0")
+                .Tag("faq")
+                .Tag("support")
+                .DependsOn("shared-layout")
+                .Property("question", "Question", "text", required: true)
+                .Property("answer", "Answer", "text", required: true)
+                .Variant("compact", "Compact", "compact")
+                .Layout(new SiteKitLayoutNode
+                {
+                    Type = "accordion", Bind = "question",
+                    Children = [new() { Type = "text", Bind = "answer" }]
+                })
+                .Build();
+
+            var sourceRegistry = new JsonSiteKitComponentRegistry(Path.Combine(root, "source"));
+            var destinationRegistry = new JsonSiteKitComponentRegistry(Path.Combine(root, "destination"));
+            await sourceRegistry.SaveAsync(definition);
+            await using var package = new MemoryStream(await sourceRegistry.ExportAsync(definition.Alias, definition.Version));
+            var imported = await destinationRegistry.ImportAsync(package);
+
+            Assert.Empty(SiteKitComponentValidator.ValidateDefinition(imported));
+            Assert.Equal(definition.Tags, imported.Tags);
+            Assert.Equal(definition.Dependencies, imported.Dependencies);
+            Assert.Equal(definition.Variants, imported.Variants);
+            using var data = JsonDocument.Parse("{\"question\":\"How do I reuse this?\",\"answer\":\"Install the exported component package.\"}");
+            var rendered = SiteKitComponentRenderer.Render(imported, data.RootElement, "compact");
+            Assert.Contains("<details", rendered);
+            Assert.Contains("How do I reuse this?", rendered);
+            Assert.Contains("Install the exported component package.", rendered);
+
+            Assert.Throws<ArgumentException>(() => SiteKitComponentDefinitionBuilder
+                .Create("Invalid alias", "Invalid", "content")
+                .Property("title", "Title", "text", required: true)
+                .Build());
+            Assert.Throws<ArgumentException>(() => SiteKitComponentDefinitionBuilder
+                .Create("invalid-dependencies", "Invalid dependencies", "content")
+                .Property("title", "Title", "text", required: true)
+                .DependsOn("shared-layout")
+                .DependsOn("shared-layout")
+                .Build());
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void KanbanScreenMustBindToDeclaredEntityFields()
     {
         var entity = CustomerEntity();

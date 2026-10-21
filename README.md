@@ -181,13 +181,14 @@ output/playwright/                    Committed generated-runtime screenshots
 - [Getting started guide](docs/GETTING_STARTED.md)
 - [Generated application runtime](docs/SITEKIT_GENERATED_RUNTIME.md)
 - [Screenshot evidence and provenance](docs/SITEKIT_SCREENSHOTS.md)
+- [C# component authoring SDK](docs/SITEKIT_COMPONENT_SDK.md)
 - [Umbraco Automate boundaries](docs/SITEKIT_AUTOMATION.md)
 - [Module package format](docs/SITEKIT_MODULE_PACKAGES.md)
 - [Hotel data import example](MyDockerProject/sample-import.json)
 
 ## Validation snapshot
 
-At the current checkpoint, `SiteKit.Core.Tests` has **26 passing Release tests** and the solution builds with **0 errors**. The Docker Umbraco host builds with 0 errors; SQL is healthy. An authenticated live Studio session created a component through the visual editor, saved its schema, and rendered the shared definition in two independent projects with different content and appearance. HTTPS metadata, the HTTP-to-HTTPS redirect, project placements, rendered previews, and a SQL-backed Customer record plus its permission grant were checked against the running host; both remained available after an application-container restart. The latest Docker build reports 164 existing warnings. Eligible ChatGPT subscription use, full authenticated Umbraco backoffice sign-in, broader multi-entity and relational SQL journeys, accessibility, performance, backup/restore, and production deployment acceptance still need further verification; see the ledger before relying on any capability in production.
+At the current checkpoint, `SiteKit.Core.Tests` has **27 passing Release tests** and the solution builds with **0 errors**. The Docker Umbraco host builds with 0 errors; SQL is healthy. An authenticated live Studio session created a component through the visual editor, saved its schema, and rendered the shared definition in two independent projects with different content and appearance. HTTPS metadata, the HTTP-to-HTTPS redirect, project placements, rendered previews, and a SQL-backed Customer record plus its permission grant were checked against the running host; both remained available after an application-container restart. The latest Docker build reports 164 existing warnings. Eligible ChatGPT subscription use, full authenticated Umbraco backoffice sign-in, broader multi-entity and relational SQL journeys, accessibility, performance, backup/restore, and production deployment acceptance still need further verification; see the ledger before relying on any capability in production.
 
 ## Contributing
 
