@@ -27,6 +27,32 @@ public sealed class SiteKitModuleInstaller
     public Task<SiteKitProjectManifest> UpgradeAsync(string projectId, string moduleId, string version, CancellationToken cancellationToken = default)
         => InstallInternalAsync(projectId, moduleId, version, true, cancellationToken);
 
+    /// <summary>Removes a module pin while preserving project assets and records created from the package.</summary>
+    public async Task<SiteKitProjectManifest> UninstallAsync(string projectId, string moduleId, CancellationToken cancellationToken = default)
+    {
+        var project = await _projects.GetAsync(projectId, cancellationToken) ?? throw new InvalidOperationException("Project not found.");
+        if (!project.Modules.Contains(moduleId, StringComparer.Ordinal))
+            throw new InvalidOperationException($"Module '{moduleId}' is not installed in this project.");
+
+        foreach (var installedId in project.Modules.Where(id => !string.Equals(id, moduleId, StringComparison.Ordinal)))
+        {
+            if (project.ModuleVersions is null || !project.ModuleVersions.TryGetValue(installedId, out var installedVersion))
+                throw new InvalidOperationException($"Cannot safely remove '{moduleId}' because installed module '{installedId}' has no version pin to verify its dependencies.");
+            var installedModule = await _modules.GetAsync(installedId, installedVersion, cancellationToken)
+                ?? throw new InvalidOperationException($"Cannot safely remove '{moduleId}' because installed module '{installedId}' v{installedVersion} is unavailable for dependency validation.");
+            if (installedModule.Dependencies.Contains(moduleId, StringComparer.Ordinal))
+                throw new InvalidOperationException($"Module '{installedId}' depends on '{moduleId}' and must be removed first.");
+        }
+
+        var versions = new Dictionary<string, string>(project.ModuleVersions ?? new Dictionary<string, string>(), StringComparer.Ordinal);
+        versions.Remove(moduleId);
+        return await _projects.SaveAsync(project with
+        {
+            Modules = project.Modules.Where(id => !string.Equals(id, moduleId, StringComparison.Ordinal)).ToArray(),
+            ModuleVersions = versions
+        }, cancellationToken);
+    }
+
     private async Task<SiteKitProjectManifest> InstallInternalAsync(string projectId, string moduleId, string version, bool allowUpgrade, CancellationToken cancellationToken)
     {
         var project = await _projects.GetAsync(projectId, cancellationToken) ?? throw new InvalidOperationException("Project not found.");

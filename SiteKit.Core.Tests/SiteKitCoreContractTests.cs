@@ -612,6 +612,7 @@ public sealed class SiteKitCoreContractTests
         var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "projects"));
         var components = new JsonSiteKitComponentRegistry(Path.Combine(root, "components"));
         var entities = new JsonSiteKitEntityRegistry(Path.Combine(root, "entities"));
+        var records = new JsonSiteKitRecordStore(Path.Combine(root, "records"));
         var screens = new JsonSiteKitScreenRegistry(Path.Combine(root, "screens"));
         var modules = new JsonSiteKitModuleRegistry(packages);
         var installer = new SiteKitModuleInstaller(packages, modules, projects, components, entities, screens);
@@ -634,9 +635,28 @@ public sealed class SiteKitCoreContractTests
             await ImportModule("1.0.1", "sales-addon", "addon-card", ["sales-module"], new Dictionary<string, string> { ["sales-module"] = ">=1.0.0 <2.0.0" });
             var installedAddon = await installer.InstallAsync("sales-crm", "sales-addon", "1.0.1");
             Assert.Equal("1.0.1", installedAddon.ModuleVersions["sales-addon"]);
+            var customer = await entities.GetAsync("sales-crm", "customer");
+            var customerId = Guid.NewGuid();
+            using var customerData = JsonDocument.Parse(JsonSerializer.Serialize(new { id = customerId.ToString(), name = "Preserved module customer" }));
+            var savedCustomer = await records.SaveAsync(customer!, customerData.RootElement, "admin@example.test", customerId.ToString());
             await ImportModule("2.0.0");
             await Assert.ThrowsAsync<InvalidOperationException>(() => installer.UpgradeAsync("sales-crm", "sales-module", "2.0.0"));
             Assert.Equal("1.1.0", (await projects.GetAsync("sales-crm"))!.ModuleVersions["sales-module"]);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => installer.UninstallAsync("sales-crm", "sales-module"));
+            var withoutAddon = await installer.UninstallAsync("sales-crm", "sales-addon");
+            Assert.DoesNotContain("sales-addon", withoutAddon.Modules);
+            Assert.DoesNotContain("sales-addon", withoutAddon.ModuleVersions.Keys);
+            Assert.Contains("addon-card", withoutAddon.Components);
+            Assert.Contains("crm-card", withoutAddon.Components);
+            Assert.Contains("customer", withoutAddon.Entities);
+            var withoutBaseModule = await installer.UninstallAsync("sales-crm", "sales-module");
+            Assert.Empty(withoutBaseModule.Modules);
+            Assert.Empty(withoutBaseModule.ModuleVersions);
+            Assert.Contains("crm-card", withoutBaseModule.Components);
+            Assert.Contains("customer", withoutBaseModule.Entities);
+            Assert.Equal("Preserved module customer", (await records.GetAsync("sales-crm", "customer", savedCustomer.Id))!.Data.GetProperty("name").GetString());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => installer.UninstallAsync("sales-crm", "sales-module"));
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
 
@@ -644,6 +664,7 @@ public sealed class SiteKitCoreContractTests
         {
             if (Directory.Exists(source)) Directory.Delete(source, recursive: true);
             Directory.CreateDirectory(Path.Combine(source, "components"));
+            Directory.CreateDirectory(Path.Combine(source, "entities"));
             var component = new SiteKitComponentDefinition
             {
                 Alias = componentAlias, Name = "CRM Card", Category = "Business", Version = version,
@@ -651,6 +672,12 @@ public sealed class SiteKitCoreContractTests
                 Layout = new() { Type = "heading", Bind = "title", HeadingLevel = 2 }
             };
             await File.WriteAllBytesAsync(Path.Combine(source, "components", "crm-card.json"), JsonSerializer.SerializeToUtf8Bytes(component));
+            var entity = new SiteKitEntityDefinition
+            {
+                ProjectId = "module-package", Alias = "customer", Name = "Customer",
+                Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "name", Name = "Name", Type = "text", Required = true }]
+            };
+            await File.WriteAllBytesAsync(Path.Combine(source, "entities", "customer.json"), JsonSerializer.SerializeToUtf8Bytes(entity));
             var manifest = new SiteKitModuleManifest
             {
                 Id = moduleId, Name = "Sales Module", Version = version,

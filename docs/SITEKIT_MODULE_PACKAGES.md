@@ -55,6 +55,14 @@ Range-constrained dependencies must be installed with an exact project version
 pin. Upgrades are rejected if they would violate a range declared by another
 installed module.
 
+Studio can remove a module association from a project. Removal is blocked while
+another installed module depends on it. It deletes the module ID and version
+pin from the project manifest but deliberately preserves component, entity and
+screen definitions, project references, and operational records. This keeps
+application data intact; preserved assets can continue to be used as ordinary
+project assets after the package association is removed. If dependency metadata
+for another installed module is missing or unpinned, removal fails closed.
+
 Example package manifest fragment:
 
 ```json

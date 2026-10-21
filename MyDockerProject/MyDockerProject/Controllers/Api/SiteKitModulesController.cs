@@ -67,4 +67,15 @@ public sealed class SiteKitModulesController : ControllerBase
         catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
         catch (InvalidOperationException exception) { return Conflict(new { error = exception.Message }); }
     }
+
+    [HttpDelete("{id}/uninstall/{projectId}")]
+    public async Task<IActionResult> Uninstall(string id, string projectId, CancellationToken ct)
+    {
+        var screens = HttpContext.RequestServices.GetRequiredService<ISiteKitScreenRegistry>();
+        var installer = new SiteKitModuleInstaller(Path.Combine(_environment.ContentRootPath, "umbraco", "Data", "SiteKit", "modules"), _modules, _projects, _components, _entities, screens);
+        try { return Ok(await installer.UninstallAsync(projectId, id, ct)); }
+        catch (FileNotFoundException) { return NotFound(); }
+        catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
+        catch (InvalidOperationException exception) { return Conflict(new { error = exception.Message }); }
+    }
 }
