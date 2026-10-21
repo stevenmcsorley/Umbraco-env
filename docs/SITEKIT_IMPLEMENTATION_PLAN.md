@@ -31,7 +31,7 @@ solution; each milestone records implementation and validation evidence here.
 | Customer login | Partial | Session based login with ASP.NET Identity password hashing and allowlisted administration; native backoffice identity integration remains separate work |
 | Data importer | Partial | Hotel importer preserved; universal project/entity mappings now support CSV/JSON/XML preview, idempotent upsert and value-free execution history; queueing, media and live host verification remain |
 | Content type generation | Implemented | Seed API creates document types and element types; administrative endpoint security is critical |
-| React/TypeScript booking UI | Implemented | Separate frontend and generated bundle |
+| React/TypeScript booking UI | Implemented | Separate frontend, Vite 8 / React Router 7, Tailwind 4, generated bundle; npm audit reports no known vulnerabilities |
 | Docker deployment | Partial | Compose SQL Server, Umbraco and booking engine started and smoke checked. SQL health is green; Umbraco login form and booking `/health` return HTTP 200. ASP.NET Core data-protection keys persist in the existing `umb_data` volume across app-container recreation. Automate completes its nine startup migrations using the shared CMS SQL connection. Development compose still uses HTTP and does not encrypt the key ring at rest; local Umbraco sign-in needs a trusted HTTPS certificate, and production TLS and key encryption remain required. |
 | Component registry / Studio | Partial | Versioned declarative JSON registry, schema/data validation, import/export, safe primitive renderer, authenticated `/studio/components` editor with searchable persistent tags, project registry and project-local placements/appearance in `/studio/projects`; reusable definitions are projected by reference into generated websites with validated per-project overrides. Umbraco-published page integration and developer package pipeline remain planned |
 | Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, explicit grants and a basic data model/record editor; database-enforced relationships, screen composition and live SQL verification remain |
@@ -174,7 +174,7 @@ solution; each milestone records implementation and validation evidence here.
 
 | Date | Milestone | Validation |
 |---|---|---|
-| 2026-10-21 | M0 | `dotnet build UmbraccoEnv.sln` succeeded on .NET SDK 10.0.402; `dotnet list package --vulnerable --include-transitive` reported no vulnerable packages. 154 compiler warnings remain, primarily legacy Umbraco API usage and nullability. Runtime/DB smoke checks remain outstanding. |
+| 2026-10-21 | M0 | .NET 10 Docker build succeeded with 0 errors and 154 existing Umbraco/nullability warnings. SQL is healthy; the Umbraco login form, generated booking CSS/JS assets and booking `/health` return HTTP 200. Data-protection key persistence survived app-container recreation. `npm audit` reports zero vulnerabilities in both Node projects. Authenticated Umbraco sign-in remains blocked until a trusted local HTTPS certificate is configured. |
 | 2026-10-21 | M1/M2 | `dotnet build UmbraccoEnv.sln --no-restore` succeeds with 0 errors. An additional build with `RazorCompileOnBuild=true` exposes pre-existing Razor compile failures in the backup view folder and the generated `PublishedModels.Home` type; ordinary project builds intentionally disable build-time Razor compilation. Runtime UI smoke checks remain outstanding. |
 | 2026-10-21 | M8 | `dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --no-restore --configuration Release` passed 3 tests covering encoded component rendering, screen/entity field validation and JSON record-store CRUD/audit retention. |
 
@@ -196,7 +196,6 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   container. It shows the genuine Umbraco login form, not an authenticated
   SiteKit Studio screen.
 - Configured ASP.NET Core data-protection keys to persist to the existing
-- Configured ASP.NET Core data-protection keys to persist to the existing
   `umb_data` volume and confirmed the same key file survives app-container
   recreation. Session values still use in-memory storage and do not survive an
   app restart. Added the Umbraco v17 development-mode backoffice package needed
@@ -210,6 +209,15 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   build. Docker Debug build completed with 0 errors and 154 existing warnings.
 - The host does not have the pinned .NET 10 SDK installed. Validation used the
   .NET 10 Docker SDK image. Authenticated Studio routes remain unverified.
+- Updated the frontend's vulnerable Vite and React Router dependencies, moved
+  to Tailwind 4 with its Vite plugin, and corrected the ESM path configuration.
+  `npm audit` reports zero vulnerabilities and `npm run build` emits an 18.57
+  KB CSS bundle with Tailwind utilities. Updated the booking API runtime/dev
+  dependencies, removed vulnerable `ts-node-dev`, and moved Node images to 22;
+  both npm projects audit cleanly. The Docker build now packages the JavaScript
+  and CSS assets without Compose bind mounts shadowing them. Docker smoke checks
+  returned HTTP 200 for the served 18.57 KB stylesheet, 213 KB bundle, login
+  form, and booking API health route.
 
 
 

@@ -50,9 +50,11 @@ The generated CRM runtime uses SQLite-backed CRUD, token-based principals, and e
 
 The authenticated Studio surfaces live inside the Umbraco backoffice at
 `/studio/projects`, `/studio/components`, `/studio/screens`, `/studio/imports`,
-and `/studio/modules`. This environment did not have a running SQL-backed
-backoffice, so the images above are limited to real generated runtime screens.
-See the [screenshot guide](docs/SITEKIT_SCREENSHOTS.md) for capture provenance.
+and `/studio/modules`. The Docker-backed Umbraco and SQL services are now
+running, and the real Umbraco login form has been captured. Authenticated
+Studio screens are not shown because this capture has no provisioned admin
+session. See the [screenshot guide](docs/SITEKIT_SCREENSHOTS.md) for provenance
+and the local HTTPS requirement.
 
 ## How the pieces fit
 
@@ -96,7 +98,7 @@ The [milestone ledger](docs/SITEKIT_IMPLEMENTATION_PLAN.md) distinguishes implem
 
 - .NET 10 SDK (Umbraco 17 LTS)
 - Docker Desktop with its Linux engine, for the full Umbraco/SQL Server stack
-- Node.js 20+, for the booking engine frontend
+- Node.js 22+, for building the booking engine outside Docker
 - A Six Labors community license key for Release builds using ImageSharp 4.1.3; never commit the key
 
 ### Build the platform
@@ -116,7 +118,9 @@ Set-Location MyDockerProject
 docker compose up -d --build
 ```
 
-The compose stack exposes Umbraco at `http://localhost:44372` and the booking engine API at `http://localhost:3001`. Docker builds the React booking bundle as part of the Umbraco image. ASP.NET Core data-protection keys persist in the existing Docker data volume, and the Umbraco 17 Automate package shares the CMS SQL database. Session storage remains in memory, so active sessions reset when the app container restarts. The local stack serves HTTP only: the Umbraco login form is viewable, but OpenIddict rejects the sign-in flow over HTTP. Configure HTTPS with a trusted local certificate before signing in. Production also needs key encryption at rest and TLS termination. The first SiteKit administrator must be provisioned through the documented allowlist/bootstrap flow; keep `.env` private and remove the temporary registration code after setup.
+The compose stack exposes Umbraco at `http://localhost:44372` and the booking engine API at `http://localhost:3001`. Docker builds the React booking JavaScript and Tailwind CSS as part of the Umbraco image; ASP.NET Core data-protection keys persist in the existing Docker data volume, and Umbraco Automate shares the CMS SQL database. Session storage remains in memory, so active sessions reset when the app container restarts.
+
+The local stack serves HTTP only. The Umbraco login form is viewable, but OpenIddict rejects the sign-in flow over HTTP. Configure HTTPS with a trusted local certificate before signing in. Production also needs key encryption at rest and TLS termination. Provision the first SiteKit administrator through the documented allowlist/bootstrap flow; keep `.env` private and remove the temporary registration code after setup.
 
 ### Generate a project
 
@@ -146,7 +150,7 @@ output/playwright/                    Committed generated-runtime screenshots
 
 ## Validation snapshot
 
-At the current checkpoint, `SiteKit.Core.Tests` has **19 passing Release tests** and the solution builds with **0 errors**. The solution build still reports existing warnings. Local generated website and CRM screenshots are committed. Live Umbraco/SQL, eligible ChatGPT subscription, accessibility, performance, backup/restore, and deployment acceptance still need further verification; see the ledger before relying on any capability in production.
+At the current checkpoint, `SiteKit.Core.Tests` has **19 passing Release tests** and the solution builds with **0 errors**. Docker builds the Umbraco host with 0 errors, SQL is healthy, and the login form plus booking assets and health endpoint return HTTP 200. The host build reports 154 existing warnings. Local generated website, CRM, and Umbraco login captures are committed. Authenticated Studio/SQL journeys, eligible ChatGPT subscription, accessibility, performance, backup/restore, and deployment acceptance still need further verification; see the ledger before relying on any capability in production.
 
 ## Contributing
 

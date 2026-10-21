@@ -5,7 +5,7 @@ EXPOSE 8080
 EXPOSE 8081
 
 # Build React frontend
-FROM node:20-alpine AS frontend-build
+FROM node:22-alpine AS frontend-build
 WORKDIR /src/frontend
 COPY frontend/package*.json ./
 RUN npm ci
@@ -22,6 +22,7 @@ COPY SiteKit.Core/ SiteKit.Core/
 COPY MyDockerProject/MyDockerProject/ MyDockerProject/MyDockerProject/
 # Copy built React app from frontend-build stage to wwwroot
 COPY --from=frontend-build /src/frontend/dist/booking-engine.iife.js MyDockerProject/MyDockerProject/wwwroot/scripts/booking-engine.js
+COPY --from=frontend-build /src/frontend/dist/booking-engine.css MyDockerProject/MyDockerProject/wwwroot/css/booking-engine.css
 WORKDIR "/src/MyDockerProject/MyDockerProject"
 RUN dotnet build "MyDockerProject.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

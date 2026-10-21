@@ -3,19 +3,20 @@
 The React booking engine is **automatically built as part of the Docker build process**. The Dockerfile includes a multi-stage build that:
 
 1. Builds the React app from `frontend/` folder
-2. Copies the built `booking-engine.js` to `wwwroot/scripts/`
-3. Includes it in the final Docker image
+2. Copies the built `booking-engine.iife.js` to `wwwroot/scripts/booking-engine.js`
+3. Copies the generated Tailwind stylesheet to `wwwroot/css/booking-engine.css`
+4. Includes both assets in the final Docker image
 
 ## Docker Build (Automatic)
 
 The React booking engine is built automatically when you run:
 ```bash
-docker-compose build mydockerproject
+docker compose build mydockerproject
 ```
 
 Or when rebuilding:
 ```bash
-docker-compose up --build
+docker compose up -d --build
 ```
 
 ## Building Locally (For Development)
@@ -36,8 +37,9 @@ cd frontend
 npm install
 npm run build
 
-# Copy the built file to wwwroot
-cp dist/booking-engine.iife.js MyDockerProject/MyDockerProject/wwwroot/scripts/booking-engine.js
+# Copy the JavaScript and stylesheet to wwwroot
+cp dist/booking-engine.iife.js ../MyDockerProject/MyDockerProject/wwwroot/scripts/booking-engine.js
+cp dist/booking-engine.css ../MyDockerProject/MyDockerProject/wwwroot/css/booking-engine.css
 ```
 
 **Note**: Local builds are only needed for development. In Docker, the build happens automatically.
@@ -46,8 +48,8 @@ cp dist/booking-engine.iife.js MyDockerProject/MyDockerProject/wwwroot/scripts/b
 
 - **Source**: `frontend/src/booking-engine/`
 - **Entry Point**: `frontend/src/booking-engine-entry.tsx`
-- **Built Output**: `frontend/dist/booking-engine.js`
-- **Deployment Location**: `MyDockerProject/MyDockerProject/wwwroot/scripts/booking-engine.js`
+- **Built Output**: `frontend/dist/booking-engine.iife.js` and `frontend/dist/booking-engine.css`
+- **Deployment Locations**: `MyDockerProject/MyDockerProject/wwwroot/scripts/booking-engine.js` and `wwwroot/css/booking-engine.css`
 
 ## Development
 

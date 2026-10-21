@@ -6,11 +6,12 @@
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run build
-# Copy built file to wwwroot
-mkdir -p ../MyDockerProject/MyDockerProject/wwwroot/scripts
+# Copy built assets (only needed for a local non-Docker host)
+mkdir -p ../MyDockerProject/MyDockerProject/wwwroot/scripts ../MyDockerProject/MyDockerProject/wwwroot/css
 cp dist/booking-engine.iife.js ../MyDockerProject/MyDockerProject/wwwroot/scripts/booking-engine.js
+cp dist/booking-engine.css ../MyDockerProject/MyDockerProject/wwwroot/css/booking-engine.css
 ```
 
 Or use the build script:
