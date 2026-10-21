@@ -443,3 +443,17 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 - Scope: this verifies one entity and a local test principal against the
   Umbraco host SQL store. It does not validate multi-entity relational
   migrations, production role administration, or a complete CRM journey.
+
+## OAuth HTTPS error probe (2026-10-22)
+
+- Reproduced the local route behavior against the running Docker host. Requests
+  to the Umbraco member authorization endpoint and the likely backoffice OAuth
+  routes over `http://localhost:44372` returned 307 redirects to the matching
+  `https://localhost:44373` URL. The HTTPS member authorization endpoint
+  reached OpenIddict and returned its expected 400 validation response for the
+  deliberately incomplete probe (no OAuth parameters).
+- The recent container logs contained no `ID2083` entry. This verifies the
+  current local HTTPS listener and redirect behavior, but does not identify
+  which browser URL or external proxy request produced the reported error. For
+  local sign-in, start at `https://localhost:44373/umbraco`; do not bookmark or
+  open the HTTP listener directly.

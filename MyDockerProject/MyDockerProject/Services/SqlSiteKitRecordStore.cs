@@ -109,7 +109,9 @@ public sealed class SqlSiteKitRecordStore : ISiteKitRecordStore
         command.Transaction = _database.Database.CurrentTransaction!.GetDbTransaction();
         var pathParameter = command.CreateParameter();
         pathParameter.ParameterName = "@path";
-        pathParameter.Value = "$.'" + field.Alias.Replace("'", "''", StringComparison.Ordinal) + "'";
+        // JSON serialization gives SQL Server's JSON path grammar the required
+        // double-quoted property segment, including safe escaping for punctuation.
+        pathParameter.Value = "$." + JsonSerializer.Serialize(field.Alias);
         command.Parameters.Add(pathParameter);
         var projectParameter = command.CreateParameter();
         projectParameter.ParameterName = "@projectId";
