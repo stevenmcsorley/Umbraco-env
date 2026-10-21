@@ -48,7 +48,20 @@ Studio distinguishes first install from upgrade. A project pinned to a different
 version must use the explicit upgrade action; downgrades are rejected. Existing
 projects that have module IDs without a version pin must also pass through that
 explicit upgrade path to establish a pin. Module dependencies currently name
-module IDs but do not declare semantic version ranges; each dependency must be
-installed first.
+module IDs and can declare ranges through the optional `dependencyVersions`
+manifest map. Supported constraints are exact versions, `*`, caret (`^`),
+tilde (`~`) and whitespace-separated comparators such as `>=1.0.0 <2.0.0`.
+Range-constrained dependencies must be installed with an exact project version
+pin. Upgrades are rejected if they would violate a range declared by another
+installed module.
 
-This package format is declarative. Screen files are validated and installed as project-bound SiteKit screen definitions, then can be previewed against operational records in Screen Studio. Generated projects currently receive the screen definitions as metadata; a generated screen runtime remains outstanding. Workflow files remain inert JSON. Umbraco Automate has a SiteKit record-change trigger and a permission-checked update action, but does not import these package workflows as executable automations. See [SITEKIT_AUTOMATION.md](SITEKIT_AUTOMATION.md) and [SITEKIT_IMPLEMENTATION_PLAN.md](SITEKIT_IMPLEMENTATION_PLAN.md).
+Example package manifest fragment:
+
+```json
+{
+  "dependencies": ["shared-sales-ui"],
+  "dependencyVersions": { "shared-sales-ui": "^1.2.0" }
+}
+```
+
+This package format is declarative. Screen files are validated and installed as project-bound SiteKit screen definitions, then can be previewed against operational records in Screen Studio. Generated application and combined projects include a screen runtime over their exported definitions and records. Workflow files remain inert JSON. Umbraco Automate has a SiteKit record-change trigger and a permission-checked update action, but does not import these package workflows as executable automations. See [SITEKIT_AUTOMATION.md](SITEKIT_AUTOMATION.md) and [SITEKIT_IMPLEMENTATION_PLAN.md](SITEKIT_IMPLEMENTATION_PLAN.md).

@@ -149,6 +149,9 @@ public sealed class JsonSiteKitModuleRegistry : ISiteKitModuleRegistry
         if (string.IsNullOrWhiteSpace(manifest.Name) || manifest.Name.Length > 120) errors.Add("Module name is required.");
         if (manifest.CompatibleSiteKitVersions is null || manifest.CompatibleSiteKitVersions.Length == 0 || manifest.CompatibleSiteKitVersions.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 100)) errors.Add("CompatibleSiteKitVersions must declare at least one supported version.");
         if (manifest.Dependencies is null || manifest.Dependencies.Any(dependency => !IsId(dependency)) || manifest.Dependencies.Contains(manifest.Id, StringComparer.Ordinal)) errors.Add("Module dependencies contain an invalid id or self-reference.");
+        if (manifest.DependencyVersions is null) errors.Add("Module dependencyVersions are required.");
+        else if (manifest.Dependencies is null || manifest.DependencyVersions.Any(pair => !manifest.Dependencies.Contains(pair.Key, StringComparer.Ordinal) || !SiteKitModuleVersion.IsValidRange(pair.Value)))
+            errors.Add("Module dependencyVersions must provide valid ranges only for declared dependencies.");
         if (manifest.ProjectCategories is null || manifest.ProjectCategories.Length == 0 || manifest.ProjectCategories.Any(category => category is not ("website" or "application" or "combined" or "api" or "content"))) errors.Add("Module project categories are invalid.");
         if (manifest.PackageFiles is null || manifest.PackageFiles.Count > MaxFiles - 1) errors.Add("Module package file list is invalid.");
         else foreach (var (path, hash) in manifest.PackageFiles)

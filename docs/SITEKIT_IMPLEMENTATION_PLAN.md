@@ -15,9 +15,9 @@ solution; each milestone records implementation and validation evidence here.
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component projection and full production hosting configuration remain |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; generated apps now include model-driven screens, SQLite-backed CRUD and per-principal entity operation grants; identity federation, database-enforced relationships and live SQL verification remain |
-| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade with project version pins and downgrade protection; official Automate 17.5.1 plus scoped record-change trigger and permission-checked update action compile; uninstall, version-ranged dependencies, executable workflow provisioning and live runtime verification remain |
+| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade with project version pins, SemVer dependency ranges and dependent-upgrade checks; official Automate 17.5.1 plus scoped record-change trigger and permission-checked update action compile; uninstall, executable workflow provisioning and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 12 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 18 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -260,7 +260,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   the same module ID cannot silently replace an installed version; Studio and
   the local Agent Host expose an explicit upgrade action. Upgrades move forward
   only, and downgrades are rejected before package assets are written.
-- Validation: all 11 Release core contract tests pass, including first install,
+- Validation: all 18 Release core contract tests pass, including first install,
   blocked implicit upgrade, explicit forward upgrade and blocked downgrade.
   The .NET 10 Umbraco solution builds with 0 errors (1 existing warning), and
   the module Studio JavaScript passes `node --check`.
@@ -283,7 +283,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   runtime assets and protected CRUD source, and invokes `dotnet build` on the
   emitted application. It starts the generated project and verifies unauthenticated
   denial, read-only write denial, create/update/read/delete behavior, and record retention after an app
-  restart. All 12 Release core tests pass; a live browser capture is documented
+  restart. All 18 Release core tests pass; a live browser capture is documented
   in `SITEKIT_SCREENSHOTS.md`.
 - Boundaries: generated app CRUD currently uses local SQLite and a single
   administrator token, with no record-level role grants or soft-delete. The

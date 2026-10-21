@@ -56,6 +56,16 @@ public sealed class SiteKitCoreContractTests
         Assert.Contains(invalid, error => error.Contains("not defined", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("1.5.0", "^1.2.0", true)]
+    [InlineData("2.0.0", "^1.2.0", false)]
+    [InlineData("1.4.9", ">=1.2.0 <1.5.0", true)]
+    [InlineData("1.5.0", ">=1.2.0 <1.5.0", false)]
+    [InlineData("1.2.0-beta.2", ">=1.2.0-beta.1 <1.2.0", true)]
+    [InlineData("1.0.0", "~1.2.0", false)]
+    public void ModuleDependencyRangesUseSemVer(string version, string range, bool expected)
+        => Assert.Equal(expected, SiteKitModuleVersion.Satisfies(version, range));
+
     [Fact]
     public async Task JsonRecordStorePersistsCrudAndAuditFields()
     {
@@ -253,24 +263,34 @@ public sealed class SiteKitCoreContractTests
             var upgraded = await installer.UpgradeAsync("sales-crm", "sales-module", "1.1.0");
             Assert.Equal("1.1.0", upgraded.ModuleVersions["sales-module"]);
             await Assert.ThrowsAsync<InvalidOperationException>(() => installer.UpgradeAsync("sales-crm", "sales-module", "1.0.0"));
+
+            await ImportModule("1.0.0", "sales-addon", "addon-card", ["sales-module"], new Dictionary<string, string> { ["sales-module"] = "<1.0.0" });
+            await Assert.ThrowsAsync<InvalidOperationException>(() => installer.InstallAsync("sales-crm", "sales-addon", "1.0.0"));
+            await ImportModule("1.0.1", "sales-addon", "addon-card", ["sales-module"], new Dictionary<string, string> { ["sales-module"] = ">=1.0.0 <2.0.0" });
+            var installedAddon = await installer.InstallAsync("sales-crm", "sales-addon", "1.0.1");
+            Assert.Equal("1.0.1", installedAddon.ModuleVersions["sales-addon"]);
+            await ImportModule("2.0.0");
+            await Assert.ThrowsAsync<InvalidOperationException>(() => installer.UpgradeAsync("sales-crm", "sales-module", "2.0.0"));
+            Assert.Equal("1.1.0", (await projects.GetAsync("sales-crm"))!.ModuleVersions["sales-module"]);
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
 
-        async Task ImportModule(string version)
+        async Task ImportModule(string version, string moduleId = "sales-module", string componentAlias = "crm-card", string[]? dependencies = null, Dictionary<string, string>? dependencyVersions = null)
         {
             if (Directory.Exists(source)) Directory.Delete(source, recursive: true);
             Directory.CreateDirectory(Path.Combine(source, "components"));
             var component = new SiteKitComponentDefinition
             {
-                Alias = "crm-card", Name = "CRM Card", Category = "Business", Version = version,
+                Alias = componentAlias, Name = "CRM Card", Category = "Business", Version = version,
                 Properties = [new() { Alias = "title", Label = "Title", Type = "text", Required = true }],
                 Layout = new() { Type = "heading", Bind = "title", HeadingLevel = 2 }
             };
             await File.WriteAllBytesAsync(Path.Combine(source, "components", "crm-card.json"), JsonSerializer.SerializeToUtf8Bytes(component));
             var manifest = new SiteKitModuleManifest
             {
-                Id = "sales-module", Name = "Sales Module", Version = version,
-                CompatibleSiteKitVersions = ["2.0.0"], ProjectCategories = ["application"]
+                Id = moduleId, Name = "Sales Module", Version = version,
+                CompatibleSiteKitVersions = ["2.0.0"], ProjectCategories = ["application"],
+                Dependencies = dependencies ?? [], DependencyVersions = dependencyVersions ?? new Dictionary<string, string>()
             };
             await File.WriteAllBytesAsync(Path.Combine(source, "sitekit.module.json"), JsonSerializer.SerializeToUtf8Bytes(manifest));
             await SiteKitModulePackageBuilder.BuildAsync(source, zip);

@@ -110,6 +110,7 @@ public sealed record SiteKitModuleManifest
     public string Description { get; init; } = string.Empty;
     public required string[] CompatibleSiteKitVersions { get; init; }
     public string[] Dependencies { get; init; } = [];
+    public Dictionary<string, string> DependencyVersions { get; init; } = new(StringComparer.Ordinal);
     public string[] Capabilities { get; init; } = [];
     public string[] ProjectCategories { get; init; } = ["website", "application", "combined", "api", "content"];
     public Dictionary<string, string> PackageFiles { get; init; } = new(StringComparer.Ordinal);

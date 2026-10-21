@@ -41,7 +41,7 @@ public sealed class SiteKitModuleInstaller
             if (!string.Equals(installedVersion, module.Version, StringComparison.Ordinal))
             {
                 if (!allowUpgrade) throw new InvalidOperationException($"Module '{module.Id}' is pinned to {installedVersion}; use the explicit upgrade operation to install {module.Version}.");
-                if (CompareVersions(module.Version, installedVersion) <= 0) throw new InvalidOperationException($"Module upgrade must move '{module.Id}' forward from {installedVersion}; downgrades are not allowed.");
+                if (SiteKitModuleVersion.Compare(module.Version, installedVersion) <= 0) throw new InvalidOperationException($"Module upgrade must move '{module.Id}' forward from {installedVersion}; downgrades are not allowed.");
             }
         }
         var manifestErrors = JsonSiteKitModuleRegistry.ValidateManifest(module);
@@ -49,7 +49,27 @@ public sealed class SiteKitModuleInstaller
         if (module.ProjectCategories.Length > 0 && !module.ProjectCategories.Contains(project.Category, StringComparer.Ordinal))
             throw new InvalidOperationException($"Module '{module.Id}' is not compatible with project category '{project.Category}'.");
         foreach (var dependency in module.Dependencies)
+        {
             if (!project.Modules.Contains(dependency, StringComparer.Ordinal)) throw new InvalidOperationException($"Required module '{dependency}' must be installed first.");
+            if (module.DependencyVersions.TryGetValue(dependency, out var requiredRange))
+            {
+                if (project.ModuleVersions is null || !project.ModuleVersions.TryGetValue(dependency, out var installedDependencyVersion))
+                    throw new InvalidOperationException($"Required module '{dependency}' must have a pinned version to validate range '{requiredRange}'.");
+                if (!SiteKitModuleVersion.Satisfies(installedDependencyVersion, requiredRange))
+                    throw new InvalidOperationException($"Installed module '{dependency}' v{installedDependencyVersion} does not satisfy required range '{requiredRange}'.");
+            }
+        }
+        if (allowUpgrade)
+        {
+            foreach (var installedId in project.Modules.Where(id => id != module.Id))
+            {
+                if (project.ModuleVersions is null || !project.ModuleVersions.TryGetValue(installedId, out var dependentVersion)) continue;
+                var installedModule = await _modules.GetAsync(installedId, dependentVersion, cancellationToken);
+                if (installedModule?.DependencyVersions.TryGetValue(module.Id, out var dependentRange) == true &&
+                    !SiteKitModuleVersion.Satisfies(module.Version, dependentRange))
+                    throw new InvalidOperationException($"Upgrade to {module.Version} violates dependent module '{installedId}' range '{dependentRange}'.");
+            }
+        }
 
         var directory = Path.GetFullPath(Path.Combine(_packageRoot, module.Id, module.Version));
         var root = Path.GetFullPath(_packageRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
@@ -159,18 +179,4 @@ public sealed class SiteKitModuleInstaller
         return await _projects.SaveAsync(updated, cancellationToken);
     }
 
-    private static int CompareVersions(string left, string right)
-    {
-        static (Version Core, string? Prerelease) Parse(string value)
-        {
-            var pieces = value.Split('-', 2);
-            return (Version.Parse(pieces[0]), pieces.Length == 2 ? pieces[1] : null);
-        }
-        var a = Parse(left); var b = Parse(right);
-        var coreComparison = a.Core.CompareTo(b.Core);
-        if (coreComparison != 0) return coreComparison;
-        if (a.Prerelease is null) return b.Prerelease is null ? 0 : 1;
-        if (b.Prerelease is null) return -1;
-        return string.Compare(a.Prerelease, b.Prerelease, StringComparison.OrdinalIgnoreCase);
-    }
 }
