@@ -1,0 +1,116 @@
+<!doctype html><html lang="en"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SiteKit Components static preview</title><style>.preview-banner{font:14px/1.4 system-ui;background:#fff6d8;color:#594600;padding:12px 18px;border-bottom:1px solid #ddc66b}</style></head><body><div class="preview-banner">Static visual preview with local fixture data. The live Umbraco UI is not running.</div><div class="sitekit-studio" id="sitekit-studio">
+    <header class="sitekit-studio__header">
+        <div><p class="sitekit-eyebrow">SITEKIT STUDIO</p><h1>Components</h1><p>Create reusable, data-driven components for this project.</p></div>
+        <button class="sitekit-primary" id="new-component">New component</button>
+    </header>
+    <div class="sitekit-studio__grid">
+        <aside class="sitekit-library"><h2>Library</h2><input id="component-search" type="search" placeholder="Search components" aria-label="Search components"/><div id="component-list" aria-live="polite">Loading components…</div></aside>
+        <main class="sitekit-editor">
+            <h2 id="editor-title">Select a component</h2>
+            <p id="studio-message" role="status">Choose a component or create one. Changes are saved as versioned declarative definitions.</p>
+            <form id="component-form" hidden>
+                <div class="sitekit-fields">
+                    <label>Name<input name="name" required maxlength="100"/></label>
+                    <label>Alias<input name="alias" required pattern="[a-z][a-z0-9-]{1,63}" title="Lowercase letters, numbers and hyphens"/></label>
+                    <label>Category<input name="category" value="Content" required maxlength="60"/></label>
+                    <label>Version<input name="version" value="1.0.0" required pattern="[0-9]+\.[0-9]+\.[0-9]+"/></label>
+                    <label class="sitekit-wide">Description<textarea name="description" maxlength="2000"></textarea></label>
+                    <label>Property alias<input name="propertyAlias" value="title" pattern="[a-z][a-z0-9-]{1,63}" required/></label>
+                    <label>Property label<input name="propertyLabel" value="Title" required maxlength="100"/></label>
+                    <label>Property type<select name="propertyType"><option>text</option><option>richText</option><option>number</option><option>boolean</option><option>color</option><option>media</option><option>link</option><option>reference</option></select></label>
+                    <label>Layout primitive<select name="primitive"><option>section</option><option>container</option><option>stack</option><option>grid</option><option>card</option><option>heading</option><option>text</option><option>button</option><option>image</option></select></label>
+                    <label class="sitekit-wide"><span><input name="required" type="checkbox" checked/> Required property</span></label>
+                </div>
+                <details class="sitekit-advanced">
+                    <summary>Advanced component schema</summary>
+                    <p>Define nested property collections and a composed layout using SiteKit's validated schema. Values in these editors override the quick fields above. This accepts JSON definitions only; it does not run source code.</p>
+                    <label>Properties JSON<textarea name="propertiesJson" spellcheck="false" aria-label="Component properties JSON"></textarea></label>
+                    <label>Layout JSON<textarea name="layoutJson" spellcheck="false" aria-label="Component layout JSON"></textarea></label>
+                    <label>Variants JSON<textarea name="variantsJson" spellcheck="false" aria-label="Component variants JSON"></textarea></label>
+                </details>
+                <div class="sitekit-actions"><button class="sitekit-primary" type="submit">Save version</button><button type="button" id="preview-component">Preview</button><button type="button" id="export-component">Export JSON</button></div>
+            </form>
+            <div class="sitekit-preview" id="component-preview" aria-label="Component preview"></div>
+        </main>
+    </div>
+</div>
+
+<style>
+    .sitekit-studio{max-width:1440px;margin:2rem auto;padding:0 1.5rem;color:#17212b;font:400 15px/1.5 system-ui,sans-serif}.sitekit-studio *{box-sizing:border-box}.sitekit-studio__header{display:flex;justify-content:space-between;align-items:center;padding:1.5rem 0 2rem;border-bottom:1px solid #dce3e8}.sitekit-studio h1{font-size:2rem;margin:.1rem 0}.sitekit-studio h2{font-size:1.2rem;margin:.25rem 0 1rem}.sitekit-studio p{color:#61717d}.sitekit-eyebrow{font-size:.75rem;letter-spacing:.12em;color:#087f8c!important;font-weight:700;margin:0}.sitekit-studio__grid{display:grid;grid-template-columns:minmax(230px,300px) 1fr;gap:1.5rem;padding-top:1.5rem}.sitekit-library,.sitekit-editor{background:white;border:1px solid #dce3e8;border-radius:12px;padding:1.25rem;min-width:0}.sitekit-library input[type=search],.sitekit-fields input,.sitekit-fields textarea,.sitekit-fields select,.sitekit-advanced textarea{width:100%;padding:.65rem .75rem;border:1px solid #bbc7cf;border-radius:7px;background:#fff;color:#17212b}.sitekit-library input[type=search]{margin-bottom:1rem}.sitekit-component-item{width:100%;display:block;text-align:left;background:#f7f9fa;border:1px solid #e2e8ec;border-radius:8px;padding:.75rem;margin:.5rem 0;cursor:pointer;color:#17212b}.sitekit-component-item:hover,.sitekit-component-item:focus{border-color:#087f8c}.sitekit-component-item small{display:block;color:#697984}.sitekit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.sitekit-fields label,.sitekit-advanced label{display:grid;gap:.35rem;font-weight:600}.sitekit-fields .sitekit-wide{grid-column:1/-1}.sitekit-fields textarea{min-height:5rem}.sitekit-fields input[type=checkbox]{width:auto}.sitekit-advanced{margin-top:1.25rem;padding:1rem;border:1px solid #dce3e8;border-radius:8px}.sitekit-advanced summary{cursor:pointer;font-weight:700}.sitekit-advanced p{font-size:.9rem}.sitekit-advanced label{margin-top:1rem}.sitekit-advanced textarea{font:13px/1.5 ui-monospace,monospace;min-height:11rem}.sitekit-actions{display:flex;gap:.75rem;margin:1.25rem 0;flex-wrap:wrap}.sitekit-studio button{border:1px solid #b8c5cc;border-radius:7px;padding:.65rem 1rem;background:white;cursor:pointer;font-weight:650}.sitekit-studio button:focus-visible,.sitekit-studio input:focus-visible,.sitekit-studio select:focus-visible,.sitekit-studio textarea:focus-visible{outline:3px solid #68c9d0;outline-offset:2px}.sitekit-studio .sitekit-primary{background:#087f8c;color:white;border-color:#087f8c}.sitekit-preview{min-height:90px;padding:1.25rem;border:1px dashed #aabac3;border-radius:8px;background:#f8fafb}.sitekit-preview:empty:after{content:'Preview appears here';color:#71818b}.sitekit-preview .sitekit-grid{display:grid;grid-template-columns:repeat(var(--sitekit-columns,2),minmax(0,1fr));gap:1rem}.sitekit-preview .sitekit-card{border-radius:8px;background:white;padding:1rem;box-shadow:0 1px 4px #0002}.sitekit-preview .sitekit-stack{display:flex;flex-direction:column;gap:.5rem}@media(max-width:760px){.sitekit-studio__grid{grid-template-columns:1fr}.sitekit-studio__header{align-items:flex-start;gap:1rem;flex-direction:column}.sitekit-fields{grid-template-columns:1fr}.sitekit-fields .sitekit-wide{grid-column:auto}}
+</style>
+<script>
+const sitekitDemoProject={schemaVersion:1,id:'northstar-crm',name:'Northstar CRM',category:'application',theme:'default',description:'A clean customer and opportunity workspace.',modules:[],components:['featured-opportunities']};
+const sitekitDemoComponent={schemaVersion:1,alias:'featured-opportunities',name:'Featured Opportunities',category:'Sales',version:'1.0.0',description:'Reusable opportunity summary cards.',tags:['sales'],dependencies:[],properties:[{alias:'title',label:'Section title',type:'text',required:true}],layout:{type:'section',children:[{type:'container',children:[{type:'heading',headingLevel:2,bind:'title'},{type:'grid',columns:3,children:[{type:'card',children:[{type:'heading',headingLevel:3,text:'Harbor Group'},{type:'text',text:'£84,000 · Proposal'}]},{type:'card',children:[{type:'heading',headingLevel:3,text:'Alpine Works'},{type:'text',text:'£52,500 · Discovery'}]},{type:'card',children:[{type:'heading',headingLevel:3,text:'Morrow Labs'},{type:'text',text:'£27,000 · Qualified'}]}]}]}]},variants:[]};
+const sitekitDemoPlacement={id:'placement-featured-opportunities',componentAlias:'featured-opportunities',version:'1.0.0',data:{title:'Priority opportunities'},appearance:{color:'#17212b',backgroundColor:'#f1f7f7',borderColor:'#b8d9da',borderRadius:'16px',padding:'20px'}};
+window.fetch=async (url,options={})=>{const path=String(url);let value='';if(path.endsWith('/api/sitekit/projects'))value=[sitekitDemoProject];else if(path.endsWith('/api/sitekit/components'))value=[sitekitDemoComponent];else if(path.endsWith('/api/sitekit/projects/northstar-crm/placements'))value=[sitekitDemoPlacement];else if(path.includes('/placements/placement-featured-opportunities/preview'))value='<div class="sitekit-component" style="color:#17212b;background-color:#f1f7f7;border-color:#b8d9da;border-radius:16px;padding:20px"><section class="sitekit-section"><div class="sitekit-container"><h2 class="sitekit-heading">Priority opportunities</h2><div class="sitekit-grid" style="--sitekit-columns:3"><article class="sitekit-card"><h3 class="sitekit-heading">Harbor Group</h3><p class="sitekit-text">£84,000 · Proposal</p></article><article class="sitekit-card"><h3 class="sitekit-heading">Alpine Works</h3><p class="sitekit-text">£52,500 · Discovery</p></article><article class="sitekit-card"><h3 class="sitekit-heading">Morrow Labs</h3><p class="sitekit-text">£27,000 · Qualified</p></article></div></div></section></div>';else if(path.endsWith('/preview'))value='<div class="sitekit-component"><section class="sitekit-section"><h2 class="sitekit-heading">A reusable component preview</h2></section></div>';else value={};return {ok:true,status:200,json:async()=>value,text:async()=>value};};
+</script><script>
+(() => {
+    const api = '/api/sitekit/components';
+    const form = document.getElementById('component-form');
+    const list = document.getElementById('component-list');
+    const message = document.getElementById('studio-message');
+    const preview = document.getElementById('component-preview');
+    let definitions = [];
+    let selected = null;
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    async function load() {
+        const response = await fetch(api);
+        if (!response.ok) throw new Error(response.status === 401 ? 'Sign in with an administrator account to use Component Studio.' : `Could not load components (${response.status}).`);
+        definitions = await response.json(); renderList();
+    }
+    function renderList() {
+        const query = document.getElementById('component-search').value.toLowerCase();
+        const filtered = definitions.filter(x => `${x.name} ${x.category} ${x.tags.join(' ')}`.toLowerCase().includes(query));
+        list.innerHTML = filtered.length ? filtered.map(x => `<button class="sitekit-component-item" data-alias="${esc(x.alias)}"><strong>${esc(x.name)}</strong><small>${esc(x.category)} · v${esc(x.version)}</small></button>`).join('') : '<p>No components yet. Create the first one.</p>';
+        list.querySelectorAll('[data-alias]').forEach(button => button.addEventListener('click', () => select(definitions.find(x => x.alias === button.dataset.alias))));
+    }
+    function select(definition) {
+        selected = definition; form.hidden = false; document.getElementById('editor-title').textContent = definition.name;
+        for (const key of ['name','alias','category','version','description']) form.elements[key].value = definition[key] ?? '';
+        const property = definition.properties[0] ?? {alias:'title',label:'Title',type:'text',required:true};
+        form.elements.propertyAlias.value = property.alias; form.elements.propertyLabel.value = property.label; form.elements.propertyType.value = property.type;
+        form.elements.required.checked = property.required; form.elements.primitive.value = definition.layout.type;
+        form.elements.propertiesJson.value = JSON.stringify(definition.properties, null, 2);
+        form.elements.layoutJson.value = JSON.stringify(definition.layout, null, 2);
+        form.elements.variantsJson.value = JSON.stringify(definition.variants, null, 2);
+        message.textContent = 'Edit the component definition and save a new version. The renderer supports safe built-in primitives.'; renderPreview();
+    }
+    function definitionFromForm() {
+        const defaults = {properties:[{alias:form.elements.propertyAlias.value,label:form.elements.propertyLabel.value,type:form.elements.propertyType.value,required:form.elements.required.checked}],layout:{type:form.elements.primitive.value,bind:['heading','text','button','image'].includes(form.elements.primitive.value)?form.elements.propertyAlias.value:null,text:null,children:[]},variants:[]};
+        const properties = form.elements.propertiesJson.value.trim() ? JSON.parse(form.elements.propertiesJson.value) : defaults.properties;
+        const layout = form.elements.layoutJson.value.trim() ? JSON.parse(form.elements.layoutJson.value) : defaults.layout;
+        const variants = form.elements.variantsJson.value.trim() ? JSON.parse(form.elements.variantsJson.value) : defaults.variants;
+        return {schemaVersion:1,alias:form.elements.alias.value,name:form.elements.name.value,category:form.elements.category.value,description:form.elements.description.value,version:form.elements.version.value,tags:[],dependencies:[],properties,layout,variants};
+    }
+    function sample(property) {
+        switch (property.type) {
+            case 'number': return 12;
+            case 'boolean': return true;
+            case 'color': return '#087f8c';
+            case 'media': return '/media/sitekit-preview.jpg';
+            case 'link': return {url:'/contact',label:'Contact us'};
+            case 'reference': return '00000000-0000-0000-0000-000000000001';
+            case 'object': return Object.fromEntries((property.children || []).map(child=>[child.alias,sample(child)]));
+            case 'collection': return [Object.fromEntries((property.children || []).map(child=>[child.alias,sample(child)]))];
+            default: return 'A reusable component';
+        }
+    }
+    async function renderPreview() {
+        if (!selected && !form.elements.alias.value) return;
+        let definition; try { definition = definitionFromForm(); } catch (error) { message.textContent = `Invalid JSON in advanced schema: ${error.message}`; return; }
+        const data = Object.fromEntries(definition.properties.map(property=>[property.alias,sample(property)]));
+        try {
+            const response = await fetch(`${api}/preview`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({alias:definition.alias,version:definition.version,data,definition})});
+            if (response.ok) preview.innerHTML = await response.text();
+            else preview.textContent = 'Save the component before previewing it.';
+        } catch { preview.textContent = 'Preview unavailable.'; }
+    }
+    document.getElementById('new-component').addEventListener('click', () => {selected=null;form.reset();form.hidden=false;form.elements.alias.value='new-component';form.elements.version.value='1.0.0';document.getElementById('editor-title').textContent='New component';message.textContent='Define a simple component, then save it to the shared project library.';preview.replaceChildren();});
+    document.getElementById('component-search').addEventListener('input',renderList);
+    document.getElementById('preview-component').addEventListener('click',renderPreview);
+    form.addEventListener('submit',async event=>{event.preventDefault();let definition;try{definition=definitionFromForm();}catch(error){message.textContent=`Invalid JSON in advanced schema: ${error.message}`;return;}const response=await fetch(api,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(definition)});if(!response.ok){const body=await response.json().catch(()=>({}));message.textContent=body.title||body.error||'The component could not be saved. Check its schema and alias.';return;}selected=await response.json();message.textContent='Component version saved to this project library.';await load();select(selected);});
+    document.getElementById('export-component').addEventListener('click',()=>{if(!selected){message.textContent='Save the component before exporting.';return;}location.href=`${api}/${encodeURIComponent(form.elements.alias.value)}/${encodeURIComponent(form.elements.version.value)}/export`;});
+    load().catch(error=>{list.textContent=error.message;message.textContent=error.message;});
+})();
+</script>
+</body></html>

@@ -4,11 +4,13 @@ using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Core.Models;
+using MyDockerProject.Security;
 
 namespace MyDockerProject.Controllers.Api;
 
 [ApiController]
 [Route("api/[controller]")]
+[TypeFilter(typeof(SiteKitAdminAuthorizationFilter))]
 public class SeedController : ControllerBase
 {
     private readonly IContentService _contentService;

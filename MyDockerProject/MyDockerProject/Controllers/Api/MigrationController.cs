@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyDockerProject.Data;
+using MyDockerProject.Security;
 
 namespace MyDockerProject.Controllers.Api;
 
 [ApiController]
 [Route("api/[controller]")]
+[TypeFilter(typeof(SiteKitAdminAuthorizationFilter))]
 public class MigrationController : ControllerBase
 {
     private readonly BookingDbContext _context;

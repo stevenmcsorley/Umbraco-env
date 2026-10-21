@@ -115,7 +115,7 @@ Components are industry-agnostic and reusable across different site types.
 
 ## Technology Stack
 
-- **Backend**: Umbraco CMS (.NET 9), Node.js + TypeScript (Booking Engine)
+- **Backend**: Umbraco CMS 17 LTS (.NET 10), Node.js + TypeScript (Booking Engine)
 - **Frontend**: Razor views + JavaScript (main site), React + TypeScript (booking engine)
 - **Database**: SQL Server
 - **Containerization**: Docker Compose

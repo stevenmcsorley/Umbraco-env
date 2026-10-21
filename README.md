@@ -49,7 +49,7 @@ Universal, reusable website-building system for Umbraco CMS with React-based Boo
 
 - Docker and Docker Compose
 - Node.js 20+ (for local development)
-- .NET 9 SDK (for local Umbraco development)
+- .NET 10 SDK (for local Umbraco development; Umbraco 17 LTS)
 
 ## Getting Started
 
@@ -78,13 +78,25 @@ This starts:
 
 ### 3. Create Content Types
 
+Management, import, migration and seed APIs require a signed-in customer account
+whose email is configured in `SITEKIT_ADMIN_EMAILS` in the local `.env` file.
+Keep `.env` private. Sign in at `/login`, then retain the session cookie when
+calling management endpoints. For example:
+
+```powershell
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$credentials = @{ email = "admin@example.com"; password = "your-password" } | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:44372/api/auth/login" -Method POST -WebSession $session -Body $credentials -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-document-types" -Method POST -WebSession $session
+```
+
 **Option A: Create via API (Recommended)**
 ```powershell
 # Create all document types at once
-Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-document-types" -Method POST
+Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-document-types" -Method POST -WebSession $session
 
 # Or create individually:
-Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-addon-document-type" -Method POST
+Invoke-RestMethod -Uri "http://localhost:44372/api/seed/create-addon-document-type" -Method POST -WebSession $session
 ```
 
 **Option B: Create Manually**
@@ -117,7 +129,7 @@ This creates:
 Before importing data with prices, ensure the Inventory, Bookings, and Users tables exist:
 
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:44372/api/migration/ensure-tables" -Method POST
+Invoke-RestMethod -Uri "http://localhost:44372/api/migration/ensure-tables" -Method POST -WebSession $session
 ```
 
 This creates:
@@ -135,7 +147,7 @@ You can bulk import hotels, rooms, events, and offers using the import API:
 ```powershell
 $jsonContent = Get-Content -Path "sample-import.json" -Raw
 $body = @{ ContentJson = $jsonContent } | ConvertTo-Json -Depth 10
-Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST -Body $body -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import" -Method POST -WebSession $session -Body $body -ContentType "application/json"
 ```
 
 **Using file upload:**
@@ -144,7 +156,7 @@ $filePath = "sample-import.json"
 $form = @{
     file = Get-Item $filePath
 }
-Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import-file" -Method POST -Form $form
+Invoke-RestMethod -Uri "http://localhost:44372/api/importer/import-file" -Method POST -WebSession $session -Form $form
 ```
 
 **Import JSON Format:**

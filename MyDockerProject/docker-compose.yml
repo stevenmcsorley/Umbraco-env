@@ -30,6 +30,7 @@ services:
       - ConnectionStrings__umbracoDbDSN=Server=umb_database;Database=umbracoDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=true;
       - ConnectionStrings__umbracoDbDSN_ProviderName=Microsoft.Data.SqlClient
       - BOOKING_ENGINE_URL=http://booking_engine:3001
+      - SiteKit__AdminEmails=${SITEKIT_ADMIN_EMAILS:-}
     volumes:
       - umb_media:/app/wwwroot/media
       - umb_scripts:/app/wwwroot/scripts

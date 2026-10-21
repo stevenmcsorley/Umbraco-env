@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using MyDockerProject.Services;
+using MyDockerProject.Security;
 
 namespace MyDockerProject.Controllers.Api;
 
 [ApiController]
 [Route("api/[controller]")]
+[TypeFilter(typeof(SiteKitAdminAuthorizationFilter))]
 public class ImporterController : ControllerBase
 {
     private readonly DataImportService _importService;

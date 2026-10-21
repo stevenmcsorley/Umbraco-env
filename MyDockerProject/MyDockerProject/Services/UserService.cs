@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MyDockerProject.Data;
 using MyDockerProject.Models;
@@ -10,11 +11,13 @@ public class UserService : IUserService
 {
     private readonly BookingDbContext _context;
     private readonly ILogger<UserService> _logger;
+    private readonly PasswordHasher<User> _passwordHasher;
 
-    public UserService(BookingDbContext context, ILogger<UserService> logger)
+    public UserService(BookingDbContext context, ILogger<UserService> logger, PasswordHasher<User> passwordHasher)
     {
         _context = context;
         _logger = logger;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<User?> RegisterAsync(string email, string password, string firstName, string lastName, string? phone = null)
@@ -31,13 +34,13 @@ public class UserService : IUserService
         var user = new User
         {
             Email = email,
-            PasswordHash = HashPassword(password),
             FirstName = firstName,
             LastName = lastName,
             Phone = phone,
             CreatedAt = DateTime.UtcNow,
             IsActive = true
         };
+        user.PasswordHash = _passwordHasher.HashPassword(user, password);
 
         _context.Set<User>().Add(user);
         await _context.SaveChangesAsync();
@@ -51,9 +54,32 @@ public class UserService : IUserService
         var user = await _context.Set<User>()
             .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
 
-        if (user == null || !VerifyPassword(password, user.PasswordHash))
+        if (user == null)
         {
             return null;
+        }
+
+        if (IsLegacyHash(user.PasswordHash))
+        {
+            if (!VerifyLegacyPassword(password, user.PasswordHash))
+            {
+                return null;
+            }
+
+            user.PasswordHash = _passwordHasher.HashPassword(user, password);
+        }
+        else
+        {
+            var verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+            if (verification == PasswordVerificationResult.Failed)
+            {
+                return null;
+            }
+
+            if (verification == PasswordVerificationResult.SuccessRehashNeeded)
+            {
+                user.PasswordHash = _passwordHasher.HashPassword(user, password);
+            }
         }
 
         user.LastLoginAt = DateTime.UtcNow;
@@ -83,17 +109,31 @@ public class UserService : IUserService
             .ToListAsync();
     }
 
-    private string HashPassword(string password)
+    private bool VerifyLegacyPassword(string password, string hash)
     {
         using var sha256 = SHA256.Create();
         var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(hashedBytes);
+        try
+        {
+            var legacyHash = Convert.FromBase64String(hash);
+            return legacyHash.Length == hashedBytes.Length && CryptographicOperations.FixedTimeEquals(hashedBytes, legacyHash);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
-    private bool VerifyPassword(string password, string hash)
+    private static bool IsLegacyHash(string hash)
     {
-        var passwordHash = HashPassword(password);
-        return passwordHash == hash;
+        try
+        {
+            return Convert.FromBase64String(hash).Length == 32;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }
 

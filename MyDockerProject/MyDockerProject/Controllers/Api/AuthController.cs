@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using MyDockerProject.Models;
 using MyDockerProject.Services;
 
@@ -38,6 +39,10 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "Email already registered" });
         }
 
+        HttpContext.Session.SetString("UserId", user.Id.ToString());
+        HttpContext.Session.SetString("UserEmail", user.Email);
+        HttpContext.Session.SetString("UserName", $"{user.FirstName} {user.LastName}");
+
         return Ok(new
         {
             userId = user.Id,
@@ -67,14 +72,18 @@ public class AuthController : ControllerBase
             userId = user.Id,
             email = user.Email,
             firstName = user.FirstName,
-            lastName = user.LastName,
-            token = GenerateSimpleToken(user.Id) // In production, use JWT or similar
+            lastName = user.LastName
         });
     }
 
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetUser(Guid userId)
     {
+        if (!TryGetSessionUserId(out var currentUserId) || currentUserId != userId)
+        {
+            return Unauthorized();
+        }
+
         var user = await _userService.GetUserByIdAsync(userId);
         
         if (user == null)
@@ -97,6 +106,11 @@ public class AuthController : ControllerBase
     [HttpGet("user/{userId}/bookings")]
     public async Task<IActionResult> GetUserBookings(Guid userId)
     {
+        if (!TryGetSessionUserId(out var currentUserId) || currentUserId != userId)
+        {
+            return Unauthorized();
+        }
+
         var bookings = await _userService.GetUserBookingsAsync(userId);
         
         return Ok(bookings.Select(b => new
@@ -141,12 +155,10 @@ public class AuthController : ControllerBase
         });
     }
 
-    private string GenerateSimpleToken(Guid userId)
+    private bool TryGetSessionUserId(out Guid userId)
     {
-        // Simple token generation - in production, use JWT or similar
-        var tokenData = $"{userId}:{DateTime.UtcNow:O}";
-        var tokenBytes = System.Text.Encoding.UTF8.GetBytes(tokenData);
-        return Convert.ToBase64String(tokenBytes);
+        var userIdValue = HttpContext.Session.GetString("UserId");
+        return Guid.TryParse(userIdValue, out userId);
     }
 }
 

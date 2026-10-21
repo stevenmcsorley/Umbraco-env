@@ -2,11 +2,31 @@ using Microsoft.EntityFrameworkCore;
 using MyDockerProject.Data;
 using MyDockerProject.Services;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
+using MyDockerProject.Models;
+using MyDockerProject.Security;
+using SiteKit.Core.Components;
+using SiteKit.Core.Projects;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add controllers for custom routes
 builder.Services.AddControllers();
+builder.Services.AddSingleton<ISiteKitComponentRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitComponentRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "components"));
+});
+builder.Services.AddSingleton<ISiteKitProjectRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitProjectRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "projects"));
+});
+builder.Services.AddSingleton<ISiteKitPlacementRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitPlacementRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "placements"));
+});
 
 // Add session support for authentication
 builder.Services.AddDistributedMemoryCache();
@@ -15,6 +35,8 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Strict;
 });
 
 // Add HttpClient for booking engine proxy
@@ -33,6 +55,7 @@ if (!string.IsNullOrEmpty(connectionString))
     builder.Services.AddScoped<DataImportService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<PasswordHasher<User>>();
     
     // Register payment service (can be swapped for real provider)
     var paymentProvider = builder.Configuration["Payment:Provider"] ?? "Mock";
@@ -50,11 +73,15 @@ if (!string.IsNullOrEmpty(connectionString))
 // Cloudflare uses these headers, so we need to trust all proxies
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
-    // Trust all proxies (Cloudflare)
-    options.ForwardLimit = null;
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    foreach (var proxyAddress in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+    {
+        if (System.Net.IPAddress.TryParse(proxyAddress, out var proxyIp))
+        {
+            options.KnownProxies.Add(proxyIp);
+        }
+    }
 });
 
 builder.CreateUmbracoBuilder()

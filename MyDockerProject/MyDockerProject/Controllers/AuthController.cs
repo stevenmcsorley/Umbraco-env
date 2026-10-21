@@ -21,6 +21,7 @@ public class AuthController : Controller
     }
 
     [HttpPost("/register")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(string email, string password, string firstName, string lastName, string? phone = null)
     {
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
@@ -48,6 +49,7 @@ public class AuthController : Controller
     }
 
     [HttpPost("/login")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(string email, string password)
     {
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))

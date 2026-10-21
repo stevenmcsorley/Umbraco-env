@@ -1,2 +1,19 @@
 # Umbraco export directories are now included in the repo
 
+# SiteKit local configuration and generated artifacts
+.env
+.env.*
+!.env.example
+**/node_modules/
+*.bak
+*.zip
+umbraco-export-*/
+**/bin/
+**/obj/
+**/dist/
+**/umbraco/Data/SiteKit/
+
+
+# Local Playwright CLI browser traces
+.playwright-cli/
+

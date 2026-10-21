@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using MyDockerProject.Data;
 using MyDockerProject.Models;
 using MyDockerProject.Services;
+using MyDockerProject.Security;
 
 namespace MyDockerProject.Controllers;
 
+[TypeFilter(typeof(SiteKitAdminAuthorizationFilter))]
 public class AdminController : Controller
 {
     private readonly BookingDbContext _context;
@@ -103,6 +105,7 @@ public class AdminController : Controller
     }
 
     [HttpPost("/admin/bookings/{bookingReference}/cancel")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> CancelBooking(string bookingReference)
     {
         try
