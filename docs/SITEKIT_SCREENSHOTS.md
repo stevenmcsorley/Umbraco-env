@@ -29,6 +29,20 @@ different data and independent appearance overrides. The placement and preview
 API endpoints returned HTTP 200 for each project. The UI contrast fix ensures
 the descriptive text inherits the configured placement color.
 
+## Live business record and permission grant
+
+![SiteKit Studio Customer model with the Alder & Finch SQL-backed record and its CRUD grant](../output/playwright/sitekit-studio-customer-records-live.png)
+
+The authenticated Studio session created a Customer entity record in the
+Umbraco host's SQL Server store. Its `Alder & Finch` data and the explicit
+read/create/update/delete grant for the local test principal remained available
+after restarting the application container. A separate CRUD probe received
+201 on create, 200 on update/read, and 204 on soft delete; reading the deleted
+record then returned 404. Removing the read grant produced 403, and restoring
+it returned 200. SQL inspection confirmed one active demonstration record and
+one soft-deleted verification record. This exercises the current host SQL
+record store; the independently generated CRM shown below uses SQLite.
+
 ## Generated CRM
 
 ![Generated CRM with sales overview counts, customer records and grouped opportunities](../output/playwright/sitekit-generated-crm-runtime.png)

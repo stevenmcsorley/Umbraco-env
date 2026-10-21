@@ -360,3 +360,23 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   shared SiteKit host retains
   its separate SQL Server path and permission grants. These generated defaults
   are a deployable reference, not production-grade multi-user persistence.
+
+## Live Umbraco SQL record and HTTPS checkpoint (2026-10-21)
+
+- The local HTTPS overlay serves the backoffice at
+  `https://localhost:44373/umbraco`. The HTTP listener at port 44372 redirects
+  to HTTPS. OpenIddict returns `ID2083` when an authorization request itself
+  reaches it over HTTP; use the HTTPS URL directly for backoffice sign-in.
+- In Studio, created the Northstar Advisory `Customer` record `Alder & Finch`
+  and an explicit local principal grant for read/create/update/delete. Confirmed
+  the record and grant were still available after restarting only the web
+  container; SQL data volumes were retained.
+- Live host CRUD probe returned 201 create, 200 update/read, 204 soft delete,
+  then 404 when reading the deleted record. With the read operation removed
+  from the grant, list returned 403; restoring the grant returned 200. SQL
+  inspection showed one active demo row and one soft-deleted verification row.
+- Screenshot: `output/playwright/sitekit-studio-customer-records-live.png`;
+  provenance and boundaries are recorded in `SITEKIT_SCREENSHOTS.md`.
+- Scope: this verifies one entity and a local test principal against the
+  Umbraco host SQL store. It does not validate multi-entity relational
+  migrations, production role administration, or a complete CRM journey.
