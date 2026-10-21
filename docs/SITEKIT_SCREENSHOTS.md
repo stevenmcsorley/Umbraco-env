@@ -26,6 +26,15 @@ CRUD APIs. The screenshot uses fixture data and does not imply a live
 backoffice or database connection; those new controls still need runtime
 verification against Umbraco and SQL.
 
+## Universal Imports Studio
+
+![SiteKit Imports Studio static visual preview](../output/playwright/sitekit-imports-static-preview.png)
+
+This fixture screenshot shows project/entity mapping setup, CSV/JSON/XML
+selection, a saved customers mapping and a sample row-validation preview. The
+authenticated API and mapping controls compile, and core parser/import tests
+pass; the screenshot is not connected to a running Umbraco instance.
+
 ## Generated website runtime
 
 ![SiteKit generated website running locally](../output/playwright/sitekit-generated-website.png)

@@ -17,4 +17,7 @@ public sealed class SiteKitStudioController : Controller
 
     [HttpGet("/studio/modules")]
     public IActionResult Modules() => View("Modules");
+
+    [HttpGet("/studio/imports")]
+    public IActionResult Imports() => View("Imports");
 }

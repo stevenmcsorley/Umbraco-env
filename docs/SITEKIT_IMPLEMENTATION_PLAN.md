@@ -10,14 +10,14 @@ solution; each milestone records implementation and validation evidence here.
 | Milestone | Scope | Status |
 |---|---|---|
 | M0 — Security and baseline | Audit existing code, remove committed secrets/build artifacts, secure administrative operations, establish reproducible build | Build verified; runtime smoke checks pending |
-| M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | In progress |
-| M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | In progress |
+| M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | Partial: foundations and project/data contracts implemented; code SDK and full module lifecycle incomplete |
+| M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas and safe renderer/editor implemented; drag/drop composition and compiled developer SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component and module projection remains |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/importer/exporter and installer; official Automate 17.5.1 plus project/entity/operation-scoped SiteKit record-change trigger compile; operational actions and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | In progress: Release build workflow, failing NuGet vulnerability gate and focused SiteKit Core tests added; local dependency scan and core tests pass; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 7 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -29,7 +29,7 @@ solution; each milestone records implementation and validation evidence here.
 | Booking and inventory | Implemented | EF Core `BookingDbContext`, services, API and TypeScript engine |
 | Payments | Partial | Mock and Stripe implementations; production configuration and end-to-end verification pending |
 | Customer login | Partial | Session based login with ASP.NET Identity password hashing and allowlisted administration; native backoffice identity integration remains separate work |
-| Data importer | Partial | JSON/file importer is hotel specific; universal mappings, retries and audit trail planned |
+| Data importer | Partial | Hotel importer preserved; universal project/entity mappings now support CSV/JSON/XML preview and idempotent upsert; queueing, audit history, media and live host verification remain |
 | Content type generation | Implemented | Seed API creates document types and element types; administrative endpoint security is critical |
 | React/TypeScript booking UI | Implemented | Separate frontend and generated bundle |
 | Docker deployment | Partial | Compose includes SQL Server, Umbraco and engine; credentials and development configuration need hardening |
@@ -221,3 +221,24 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   generation and record-preserving AI modification remain incomplete. Screen
   Studio record editor controls call the permission-checked CRUD APIs, but the
   new controls have not been exercised against a live Umbraco/SQL installation.
+
+## Universal import progress
+
+- Preserved the existing hotel/content importer and added independent
+  project-scoped import mapping contracts and JSON-backed mapping storage.
+- Added CSV, JSON-array and XML-row parsing with UTF-8 validation, XML DTD and
+  external entity protections, 10 MiB and 5,000-row bounds, typed field
+  conversion, validation previews and upserts by declared unique fields.
+  Existing entity fields omitted from an import row are preserved on update.
+- Added authenticated import mapping APIs and `/studio/imports`. Preview
+  requires entity read/manage access; execution requires import/manage and
+  records the acting account. Mapping definitions are persisted for repeatable
+  runs. Added import navigation across Studio areas.
+- Validation: all 7 Release core tests pass, including CSV/JSON/XML import and
+  preview, unique-key repeat updates, retention of omitted data and invalid-row
+  reporting. The Umbraco Debug host compiles with 0 errors (154 existing
+  warnings). Added a static fixture screenshot; live authenticated endpoint
+  and SQL-backed import verification remain outstanding.
+- Current boundaries: no media transfer, background/resumable jobs, AI mapping,
+  execution audit log or relationship-aware deduplication. See
+  [SITEKIT_IMPORTS.md](SITEKIT_IMPORTS.md).

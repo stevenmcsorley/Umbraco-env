@@ -9,6 +9,7 @@ using SiteKit.Core.Components;
 using SiteKit.Core.Projects;
 using SiteKit.Core.Data;
 using SiteKit.Core.Modules;
+using SiteKit.Core.Importing;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +55,12 @@ builder.Services.AddSingleton<ISiteKitModuleRegistry>(services =>
     var environment = services.GetRequiredService<IWebHostEnvironment>();
     return new JsonSiteKitModuleRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "modules"));
 });
+builder.Services.AddSingleton<ISiteKitImportMappingRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitImportMappingRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "imports"));
+});
+builder.Services.AddSingleton<SiteKitDataImportService>();
 
 // Add session support for authentication
 builder.Services.AddDistributedMemoryCache();
