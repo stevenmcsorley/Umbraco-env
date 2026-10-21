@@ -11,11 +11,26 @@ using SiteKit.Core.Data;
 using SiteKit.Core.Importing;
 using SiteKit.Core.Modules;
 using SiteKit.Core.Projects;
+using SiteKit.AgentHost;
 
 namespace SiteKit.Core.Tests;
 
 public sealed class SiteKitCoreContractTests
 {
+    [Fact]
+    public void ChatGptPlanConsentUsesOnlyScopesGrantedByTheTokenResponse()
+    {
+        Assert.Empty(ChatGptAccount.ParseGrantedScopes(null));
+        Assert.Empty(ChatGptAccount.ParseGrantedScopes("  "));
+        Assert.Equal(new[] { "openid", "offline_access" }, ChatGptAccount.ParseGrantedScopes("openid offline_access openid"));
+        var account = new ChatGptAccount
+        {
+            Issuer = "https://auth.openai.com", Subject = "subject", ClientId = "client", HostId = "urn:uuid:00000000-0000-0000-0000-000000000001",
+            IdToken = "id", AccessToken = "access", RefreshToken = "refresh", Scopes = ChatGptAccount.ParseGrantedScopes(null)
+        };
+        Assert.False(account.IsEligibleForPlanUsage);
+    }
+
     [Fact]
     public void ComponentRendererEncodesUntrustedText()
     {

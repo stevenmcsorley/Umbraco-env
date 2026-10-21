@@ -17,4 +17,8 @@ public sealed record ChatGptAccount
     public bool HasPlanUsageConsent => Scopes.Contains("chatgpt.tokens.use.direct", StringComparer.Ordinal);
     public bool IsEligibleForPlanUsage => HasPlanUsageConsent &&
         Scopes.Contains("resource.invoke", StringComparer.Ordinal) && Scopes.Contains("offline_access", StringComparer.Ordinal);
+
+    public static string[] ParseGrantedScopes(string? value)
+        => (value ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.Ordinal).ToArray();
 }

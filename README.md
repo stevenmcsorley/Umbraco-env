@@ -163,7 +163,7 @@ output/playwright/                    Committed generated-runtime screenshots
 
 ## Validation snapshot
 
-At the current checkpoint, `SiteKit.Core.Tests` has **19 passing Release tests** and the solution builds with **0 errors**. Docker builds the Umbraco host with 0 errors, SQL is healthy, and the login form plus booking assets and health endpoint return HTTP 200. The host build reports 154 existing warnings. Local generated website, CRM, and Umbraco login captures are committed. Authenticated Studio/SQL journeys, eligible ChatGPT subscription, accessibility, performance, backup/restore, and deployment acceptance still need further verification; see the ledger before relying on any capability in production.
+At the current checkpoint, `SiteKit.Core.Tests` has **20 passing Release tests** and the solution builds with **0 errors**. Docker builds the Umbraco host with 0 errors, SQL is healthy, and the login form plus booking assets and health endpoint return HTTP 200. The host build reports 154 existing warnings. Local generated website, CRM, and Umbraco login captures are committed. Authenticated Studio/SQL journeys, eligible ChatGPT subscription, accessibility, performance, backup/restore, and deployment acceptance still need further verification; see the ledger before relying on any capability in production.
 
 ## Contributing
 

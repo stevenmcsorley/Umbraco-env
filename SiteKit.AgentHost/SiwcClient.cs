@@ -109,9 +109,10 @@ public sealed class SiwcClient(HttpClient httpClient, CredentialStore credential
             var identity = await ValidateIdTokenAsync(idToken, issuedClientId, nonce, metadata, cancellationToken);
             if (existing is not null && identity.Subject != existing.Subject)
                 throw new InvalidOperationException("The newly authenticated ChatGPT account does not match the selected saved account.");
-            var grantedScopes = (GetString(root, "scope") ?? callback.QueryString["scope"] ?? string.Empty)
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Distinct(StringComparer.Ordinal).ToArray();
+            // Only the token response establishes granted plan-usage scopes.
+            // Callback scopes describe the authorization request and are not proof
+            // that the token endpoint granted them.
+            var grantedScopes = ChatGptAccount.ParseGrantedScopes(GetString(root, "scope"));
             var accessToken = GetString(root, "access_token") ?? throw new InvalidOperationException("The token response did not include an access token.");
             var refreshToken = GetString(root, "refresh_token") ?? throw new InvalidOperationException("The token response did not include a refresh token.");
             var expiresIn = root.TryGetProperty("expires_in", out var expires) && expires.TryGetInt32(out var seconds) ? seconds : 3600;

@@ -17,7 +17,7 @@ solution; each milestone records implementation and validation evidence here.
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; generated apps include model-driven screens, SQLite-backed CRUD, per-principal operation grants, relationship reference validation and delete protection; identity federation, database-enforced relationships and live SQL verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade with project version pins, SemVer dependency ranges and dependent-upgrade checks; official Automate 17.5.1 plus scoped record-change trigger and permission-checked update action compile; uninstall, executable workflow provisioning and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; generated apps now render tables, search, kanban, calendars and entity-count dashboards over SQLite CRUD; complete CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 19 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 20 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -102,7 +102,7 @@ solution; each milestone records implementation and validation evidence here.
   controls are edited. Project
   manifest CRUD is exposed at `/api/sitekit/projects`. Project placements and project-local appearance overrides are implemented; a drag/drop canvas and developer package build pipeline remain.
 - Build verification: the solution builds with 0 errors and 154 existing
-  warnings, and 19 Release core contract tests pass. Generated-site and CRM
+  warnings, and 20 Release core contract tests pass. Generated-site and CRM
   browser evidence is recorded in `SITEKIT_SCREENSHOTS.md`; Studio previews
   still use fixture data and are not a live SQL-backed backoffice capture.
 
@@ -120,6 +120,10 @@ solution; each milestone records implementation and validation evidence here.
   CRUD, placement, validation, inspection and the fixed solution build. An MCP
   protocol smoke invocation exercised initialize, tools/list and
   `sitekit.list_components` successfully.
+- Changed plan-usage consent to use only scopes returned by the token endpoint;
+  callback scopes are no longer treated as proof of consent. Added a regression
+  test for missing, duplicate and whitespace-delimited scopes. The .NET 10
+  Release suite now passes 20 tests.
 - `dotnet build UmbraccoEnv.sln --no-restore` succeeds. Live OAuth, refresh and
   Responses inference remain unverified because no ChatGPT account is connected
   in this environment. Docker and SQL were unavailable when this entry was
@@ -343,7 +347,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   emitted application. It starts the generated project and verifies unauthenticated
   denial, read-only write denial, create/update/read/delete behavior, and record
   retention while a screen changes and the project is regenerated/restarted. All
-  19 Release core tests pass; live browser captures are documented
+  20 Release core tests pass; live browser captures are documented
   in `SITEKIT_SCREENSHOTS.md`.
 - Boundaries: generated app CRUD currently uses local SQLite and a single
   administrator token, with no record-level role grants or soft-delete. The

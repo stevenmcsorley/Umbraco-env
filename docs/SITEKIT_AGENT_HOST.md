@@ -32,6 +32,14 @@ access. Usage limits are surfaced as a recoverable error. Requests use
 `store:false`, `stream:true`, and local conversation history; unsupported
 hosted tools and APIs are not used.
 
+The token endpoint's returned scopes are the authority for plan usage; callback
+scopes are never treated as proof of consent. The current preview contract
+requires the full input history on each HTTP request and disallows hosted MCP,
+connectors, file search, image generation, Code Interpreter and other listed
+hosted tools. See OpenAI's [open-source sign-in flow](https://developers.openai.com/siwc/token-sharing-open-source/sign-in),
+[inference contract](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference),
+and [preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
+
 ## Local storage and configuration
 
 The default directory is `%LOCALAPPDATA%/SiteKit/AgentHost` on Windows and the
