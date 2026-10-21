@@ -5,6 +5,8 @@ Application and combined project generation now writes:
 - `sitekit.entities.json` and `sitekit.screens.json` as validated project
   definitions.
 - A small .NET 10 host with a model-driven screen runtime.
+- Generated dashboard metrics, searchable tables, calendar lists and kanban
+  lanes with permission-checked stage updates.
 - `GET /api/sitekit/screens` and `GET /api/sitekit/entities` metadata routes.
 - Entity record `GET`, `POST`, `PUT` and `DELETE` routes under
   `/api/sitekit/records/{entity}`.

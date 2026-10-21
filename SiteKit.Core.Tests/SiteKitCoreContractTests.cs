@@ -306,17 +306,27 @@ public sealed class SiteKitCoreContractTests
         var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "projects"));
         var entities = new JsonSiteKitEntityRegistry(Path.Combine(root, "entities"));
         var screens = new JsonSiteKitScreenRegistry(Path.Combine(root, "screens"));
-        var project = new SiteKitProjectManifest { Id = "sales-crm", Name = "Sales CRM", Category = "application", Entities = ["customer"], Screens = ["customers"] };
+        var project = new SiteKitProjectManifest { Id = "sales-crm", Name = "Sales CRM", Category = "application", Entities = ["customer", "opportunity"], Screens = ["customers", "opportunity-pipeline"] };
         await projects.SaveAsync(project);
         await entities.SaveAsync(new SiteKitEntityDefinition
         {
             ProjectId = project.Id, Alias = "customer", Name = "Customer",
             Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "name", Name = "Name", Type = "text", Required = true }]
         });
+        await entities.SaveAsync(new SiteKitEntityDefinition
+        {
+            ProjectId = project.Id, Alias = "opportunity", Name = "Opportunity",
+            Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "title", Name = "Title", Type = "text", Required = true }, new() { Alias = "stage", Name = "Stage", Type = "text", Required = true }]
+        });
         await screens.SaveAsync(new SiteKitApplicationScreenDefinition
         {
             ProjectId = project.Id, Alias = "customers", Name = "Customers", Type = "table", EntityAlias = "customer",
             Columns = ["name"], FormFields = ["name"]
+        });
+        await screens.SaveAsync(new SiteKitApplicationScreenDefinition
+        {
+            ProjectId = project.Id, Alias = "opportunity-pipeline", Name = "Opportunity Pipeline", Type = "kanban", EntityAlias = "opportunity",
+            Columns = ["title", "stage"], FormFields = ["title", "stage"], GroupField = "stage"
         });
         try
         {
@@ -325,7 +335,9 @@ public sealed class SiteKitCoreContractTests
             Assert.Contains("MapPost(\"/api/sitekit/records/{entity}\"", program);
             Assert.Contains("SITEKIT_ADMIN_TOKEN", program);
             Assert.Contains("Normalize(Entity model", program);
-            Assert.True(File.Exists(Path.Combine(destination, "wwwroot", "sitekit-runtime.js")));
+            var screenRuntime = await File.ReadAllTextAsync(Path.Combine(destination, "wwwroot", "sitekit-runtime.js"));
+            Assert.Contains("screen.type==='kanban'", screenRuntime);
+            Assert.Contains("screen.type==='dashboard'", screenRuntime);
             Assert.True(File.Exists(Path.Combine(destination, "sitekit.screens.json")));
             Assert.True(File.Exists(Path.Combine(destination, "sitekit.entities.json")));
             using var build = Process.Start(new ProcessStartInfo("dotnet", $"build \"{project.Id}.csproj\" --configuration Release --nologo")

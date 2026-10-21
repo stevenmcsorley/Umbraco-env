@@ -59,11 +59,12 @@ This screenshot is from a running independently generated .NET website. The gene
 ![SiteKit generated CRM runtime](../output/playwright/sitekit-generated-crm-runtime.png)
 
 This capture is from a running generated application project. Its screen
-definition loaded from the exported manifest, the token-gated screen API
-returned the Customers table and create form, and the browser reported no
-JavaScript errors. The integration test also built the emitted project and
-verified unauthorized access, create/update/read/delete operations and record
-retention across an application restart in SQLite. Access uses
-one administrator bearer token; this is not evidence for production RBAC or SQL.
+definitions loaded from the exported manifests; the UI shows a Customers table
+and an Opportunity Pipeline board with persisted records across two stages. A
+stage move was saved through the generated update API, and the browser reported
+no JavaScript errors. The integration test also built the emitted project and
+verified unauthorized access, read-only write denial, create/update/read/delete
+operations and record retention across an application restart in SQLite. This
+is starter-level token/RBAC evidence, not production identity federation.
 
 Reproducible Studio fixture HTML pages are included beside the screenshots.

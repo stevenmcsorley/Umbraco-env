@@ -121,7 +121,7 @@ app.Use(async (context, next) =>
     await next();
 });
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
-app.MapGet("/api/sitekit/screens", (HttpContext context) => screens.Where(screen => screen.EntityAlias is null ? IsAdmin(context) : Can(context, screen.EntityAlias, "read")));
+app.MapGet("/api/sitekit/screens", (HttpContext context) => screens.Where(screen => screen.EntityAlias is null ? CanAnyRead(context) : Can(context, screen.EntityAlias, "read")));
 app.MapGet("/api/sitekit/entities", (HttpContext context) => entities.Where(entity => Can(context, entity.Alias, "read")).Select(entity => new { entity.Alias, entity.Name, entity.Fields }));
 app.MapGet("/api/sitekit/records/{entity}", async (HttpContext context, string entity) =>
 {
@@ -170,6 +170,8 @@ Entity? Find(string alias) => Valid(alias) ? entities.FirstOrDefault(entity => e
 bool Exists(string alias) => Find(alias) is not null;
 bool Valid(string alias) => Regex.IsMatch(alias, "^[a-z][a-z0-9-]{1,63}$", RegexOptions.CultureInvariant);
 bool IsAdmin(HttpContext context) => context.Items.TryGetValue("sitekit-is-admin", out var value) && value is true;
+bool CanAnyRead(HttpContext context) => IsAdmin(context) ||
+    (context.Items.TryGetValue("sitekit-principal", out var value) && value is string principal && grants.TryGetValue(principal, out var entityGrants) && entityGrants.Values.Any(operations => operations.Contains("read", StringComparer.Ordinal)));
 bool Can(HttpContext context, string entity, string operation) => IsAdmin(context) ||
     (context.Items.TryGetValue("sitekit-principal", out var value) && value is string principal && grants.TryGetValue(principal, out var entityGrants) && entityGrants.TryGetValue(entity, out var operations) && operations.Contains(operation, StringComparer.Ordinal));
 bool FixedEquals(string expected, string supplied) => CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(supplied));
@@ -258,13 +260,49 @@ record Screen(string Alias, string Name, string Type, string? EntityAlias, strin
 
     private static string BuildScreenRuntime() => """
 (()=>{
- const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
- let token=sessionStorage.getItem('sitekitToken')||'';
- async function request(url,options={}){options.headers={...options.headers,Authorization:`Bearer ${token}`};const response=await fetch(url,options);if(!response.ok)throw new Error(`Request failed (${response.status})`);return response.status===204?null:response.json()}
- function connect(){const host=document.getElementById('sitekit-screens');host.innerHTML='<form id="token-form"><label>Application access token <input name="token" type="password" autocomplete="current-password" required></label><button>Connect</button></form>';host.querySelector('form').onsubmit=async event=>{event.preventDefault();token=new FormData(event.currentTarget).get('token');sessionStorage.setItem('sitekitToken',token);await renderScreens()}}
- async function renderScreens(){const host=document.getElementById('sitekit-screens');try{const screens=await request('/api/sitekit/screens');if(!screens.length){host.innerHTML='<p>No application screens are configured.</p>';return}host.innerHTML=screens.map(screen=>`<section class="screen"><h2>${esc(screen.name)}</h2><div id="screen-${esc(screen.alias)}">Loading…</div></section>`).join('');for(const screen of screens){const target=document.getElementById(`screen-${screen.alias}`);if(!screen.entityAlias){target.innerHTML='<p>Dashboard screen</p>';continue}const records=await request(`/api/sitekit/records/${encodeURIComponent(screen.entityAlias)}`);const columns=screen.columns?.length?screen.columns:screen.formFields;target.innerHTML=`<form class="form">${(screen.formFields||[]).map(field=>`<label>${esc(field)}<input name="${esc(field)}"></label>`).join('')}<button>Create</button></form><table><thead><tr>${columns.map(field=>`<th>${esc(field)}</th>`).join('')}<th></th></tr></thead><tbody>${records.map(record=>`<tr>${columns.map(field=>`<td>${esc(record.data[field])}</td>`).join('')}<td><button data-delete="${esc(record.id)}">Delete</button></td></tr>`).join('')}</tbody></table>`;target.querySelector('form').onsubmit=async event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.currentTarget));await request(`/api/sitekit/records/${encodeURIComponent(screen.entityAlias)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});await renderScreens()};target.querySelectorAll('[data-delete]').forEach(button=>button.onclick=async()=>{await request(`/api/sitekit/records/${encodeURIComponent(screen.entityAlias)}/${encodeURIComponent(button.dataset.delete)}`,{method:'DELETE'});await renderScreens()})}}catch(error){host.innerHTML=`<p>${esc(error.message)} <button id="reconnect">Reconnect</button></p>`;host.querySelector('button').onclick=connect}}
- function start(){if(token)renderScreens();else connect()}
- window.SiteKit={start};
+  const esc=value=>String(value??'').replace(/[&<>"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[char]));
+  let token=sessionStorage.getItem('sitekitToken')||'';
+  async function request(url,options={}){options.headers={...options.headers,Authorization:`Bearer ${token}`};const response=await fetch(url,options);if(!response.ok)throw new Error(`Request failed (${response.status})`);return response.status===204?null:response.json()}
+  function connect(){const host=document.getElementById('sitekit-screens');host.innerHTML='<form id="token-form"><label>Application access token <input name="token" type="password" autocomplete="current-password" required></label><button>Connect</button></form>';host.querySelector('form').onsubmit=async event=>{event.preventDefault();token=new FormData(event.currentTarget).get('token');sessionStorage.setItem('sitekitToken',token);await renderScreens()}}
+  async function renderScreens(){
+    const host=document.getElementById('sitekit-screens');
+    try{
+      const [screens,entities]=await Promise.all([request('/api/sitekit/screens'),request('/api/sitekit/entities')]);
+      if(!screens.length){host.innerHTML='<p>No application screens are configured.</p>';return}
+      host.innerHTML=screens.map(screen=>`<section class="screen"><h2>${esc(screen.name)}</h2><div id="screen-${esc(screen.alias)}">Loading…</div></section>`).join('');
+      for(const screen of screens){
+        const target=document.getElementById(`screen-${screen.alias}`);
+        if(screen.type==='dashboard'){
+          const stats=await Promise.all(entities.map(async entity=>({entity,count:(await request(`/api/sitekit/records/${encodeURIComponent(entity.alias)}`)).length})));
+          target.innerHTML=`<div class="metrics">${stats.map(stat=>`<article><strong>${stat.count}</strong><span>${esc(stat.entity.name)}</span></article>`).join('')}</div>`;
+          continue;
+        }
+        if(!screen.entityAlias){target.innerHTML='<p>This screen does not yet have an entity binding.</p>';continue}
+        const model=entities.find(entity=>entity.alias===screen.entityAlias);
+        if(!model){target.innerHTML='<p>You do not have read access to this entity.</p>';continue}
+        const records=await request(`/api/sitekit/records/${encodeURIComponent(screen.entityAlias)}`);
+        const columns=screen.columns?.length?screen.columns:screen.formFields;
+        const fields=(screen.formFields||[]).map(alias=>model.fields.find(field=>field.alias===alias)).filter(Boolean);
+        const form=`<form class="form">${fields.map(field=>`<label>${esc(field.name)}<input name="${esc(field.alias)}" type="${field.type==='number'?'number':field.type==='date'?'date':field.type==='email'?'email':'text'}" ${field.required?'required':''}></label>`).join('')}<button>Create</button></form>`;
+        if(screen.type==='kanban'&&screen.groupField){
+          const lanes=[...new Set(records.map(record=>String(record.data[screen.groupField]||'Backlog')))];
+          if(!lanes.length)lanes.push('Backlog');
+          target.innerHTML=form+`<div class="kanban">${lanes.map(lane=>`<section><h3>${esc(lane)}</h3>${records.filter(record=>String(record.data[screen.groupField]||'Backlog')===lane).map(record=>`<article><strong>${esc(record.data[columns[0]]||record.id)}</strong><p>${columns.slice(1).map(field=>`${esc(field)}: ${esc(record.data[field])}`).join('<br>')}</p><label>Move to<select data-move="${esc(record.id)}">${lanes.map(option=>`<option ${option===lane?'selected':''}>${esc(option)}</option>`).join('')}</select></label><button data-delete="${esc(record.id)}">Delete</button></article>`).join('')}</section>`).join('')}</div>`;
+          target.querySelectorAll('[data-move]').forEach(select=>select.onchange=async()=>{const record=records.find(item=>item.id===select.dataset.move);const data={...record.data,[screen.groupField]:select.value};await request(`/api/sitekit/records/${encodeURIComponent(screen.entityAlias)}/${encodeURIComponent(record.id)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});await renderScreens()});
+        }else if(screen.type==='calendar'){
+          const dateField=model.fields.find(field=>field.type==='date'||field.type==='datetime');
+          target.innerHTML=form+`<ol>${records.map(record=>`<li>${esc(dateField?record.data[dateField.alias]:'No date set')} · ${esc(record.data[columns[0]]||record.id)}</li>`).join('')}</ol>`;
+        }else{
+          target.innerHTML=form+`<input aria-label="Search records" data-search placeholder="Search records"><table><thead><tr>${columns.map(field=>`<th>${esc(field)}</th>`).join('')}<th>Actions</th></tr></thead><tbody>${records.map(record=>`<tr>${columns.map(field=>`<td>${esc(record.data[field])}</td>`).join('')}<td><button data-delete="${esc(record.id)}">Delete</button></td></tr>`).join('')}</tbody></table>`;
+          const search=target.querySelector('[data-search]');if(screen.type==='search')search.oninput=()=>target.querySelectorAll('tbody tr').forEach(row=>row.hidden=!row.textContent.toLowerCase().includes(search.value.toLowerCase()));
+        }
+        target.querySelector('form').onsubmit=async event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.currentTarget));for(const field of fields)if(field.type==='number'&&data[field.alias]!==undefined)data[field.alias]=Number(data[field.alias]);await request(`/api/sitekit/records/${encodeURIComponent(screen.entityAlias)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});await renderScreens()};
+        target.querySelectorAll('[data-delete]').forEach(button=>button.onclick=async()=>{await request(`/api/sitekit/records/${encodeURIComponent(screen.entityAlias)}/${encodeURIComponent(button.dataset.delete)}`,{method:'DELETE'});await renderScreens()});
+      }
+    }catch(error){host.innerHTML=`<p>${esc(error.message)} <button id="reconnect">Reconnect</button></p>`;host.querySelector('button').onclick=connect}
+  }
+  function start(){if(token)renderScreens();else connect()}
+  window.SiteKit={start};
 })();
 """;
 }

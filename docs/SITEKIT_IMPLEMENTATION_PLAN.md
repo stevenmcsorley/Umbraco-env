@@ -16,7 +16,7 @@ solution; each milestone records implementation and validation evidence here.
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component projection and full production hosting configuration remain |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; generated apps now include model-driven screens, SQLite-backed CRUD and per-principal entity operation grants; identity federation, database-enforced relationships and live SQL verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade with project version pins, SemVer dependency ranges and dependent-upgrade checks; official Automate 17.5.1 plus scoped record-change trigger and permission-checked update action compile; uninstall, executable workflow provisioning and live runtime verification remain |
-| M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
+| M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; generated apps now render tables, search, kanban, calendars and entity-count dashboards over SQLite CRUD; complete CRM journey and live eligible ChatGPT verification remain |
 | M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 18 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
@@ -224,10 +224,11 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   application project with its entity; both screen definitions were listed
   afterwards. Project generation exported the saved screens to
   `sitekit.screens.json` and entity definitions to `sitekit.entities.json`.
-- Limitations: generated applications currently export screen definitions as
-  metadata and the Studio preview reads records, but deployable generated
-  applications do not yet include screen rendering/runtime CRUD. CRM end-to-end
-  generation and record-preserving AI modification remain incomplete. Screen
+- Limitations: generated app screens currently cover tables, search, kanban,
+  calendars and entity-count dashboards with token/grant-protected SQLite CRUD.
+  Charts, richer form/detail interactions, related-record editors and the
+  end-to-end AI-generated CRM journey remain incomplete. Record-preserving AI
+  modification remains incomplete. Screen
   Studio record editor controls call the permission-checked CRUD APIs, but the
   new controls have not been exercised against a live Umbraco/SQL installation.
 
