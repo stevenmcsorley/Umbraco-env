@@ -2,10 +2,8 @@
 
 These showcase captures come from independently generated .NET applications
 running locally. They demonstrate working project output; they are **not** a
-hosted SiteKit URL or a live Umbraco backoffice. The CRM uses its generated
-SQLite store and a local test access token. Screenshots of the authenticated
-Umbraco Studio views are pending a live Umbraco and SQL Server run; no fixture
-mockups are included in this gallery.
+hosted SiteKit URL. The CRM uses its generated SQLite store and a local test
+access token. No fixture mockups are included in this gallery.
 
 ## Generated CRM
 
@@ -28,3 +26,15 @@ definition. Northstar Advisory uses blue styling and strategy copy; Lumen House
 uses a warm palette, serif typography, and hospitality copy. Both sites were
 built and served locally from generated project output. Each screenshot shows
 the shared component receiving independent project data and appearance.
+
+## Live Umbraco availability check
+
+![Live Umbraco 17 login page served by the Docker Compose host](../output/playwright/sitekit-umbraco-login-live.png)
+
+Captured from the running Umbraco container at
+`http://localhost:44372/umbraco/login`. This verifies the real Umbraco login
+form is served by Docker; it does not show an authenticated SiteKit Studio
+view. The local Compose port is HTTP only, and OpenIddict rejects the sign-in
+authorization request until HTTPS is configured with a trusted local
+certificate. SQL Server was healthy and the booking-engine `/health` endpoint
+returned HTTP 200 during the same smoke check.

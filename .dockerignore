@@ -1,0 +1,13 @@
+.git
+.playwright-cli
+output
+generated-projects
+umbraco-export-*
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/wwwroot/media/
+**/umbraco/Logs/
+MyDockerProject/.env
+MyDockerProject/.env.*

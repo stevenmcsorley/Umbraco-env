@@ -113,10 +113,10 @@ For Release builds, set `SIXLABORS_LICENSE_KEY` in your environment. Debug build
 
 ```powershell
 Set-Location MyDockerProject
-docker compose up -d
+docker compose up -d --build
 ```
 
-The compose stack exposes Umbraco at `https://localhost:44372` and the booking engine API at `http://localhost:3001`. Build the React booking bundle separately before starting the stack; see [booking engine build instructions](BUILD_BOOKING_ENGINE.md). The first Umbraco administrator must be provisioned through the documented allowlist/bootstrap flow; keep `.env` private and remove the temporary registration code after setup.
+The compose stack exposes Umbraco at `http://localhost:44372` and the booking engine API at `http://localhost:3001`. Docker builds the React booking bundle as part of the Umbraco image. ASP.NET Core data-protection keys persist in the existing Docker data volume, and the Umbraco 17 Automate package shares the CMS SQL database. Session storage remains in memory, so active sessions reset when the app container restarts. The local stack serves HTTP only: the Umbraco login form is viewable, but OpenIddict rejects the sign-in flow over HTTP. Configure HTTPS with a trusted local certificate before signing in. Production also needs key encryption at rest and TLS termination. The first SiteKit administrator must be provisioned through the documented allowlist/bootstrap flow; keep `.env` private and remove the temporary registration code after setup.
 
 ### Generate a project
 

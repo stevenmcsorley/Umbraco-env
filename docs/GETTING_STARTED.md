@@ -24,7 +24,7 @@ chmod +x build-booking-engine.sh
 
 ```bash
 cd MyDockerProject
-docker-compose up -d
+docker compose up -d --build
 ```
 
 This starts:
@@ -32,9 +32,18 @@ This starts:
 - Umbraco CMS (port 44372)
 - Booking Engine Backend (port 3001)
 
+The Umbraco Dockerfile builds the React booking bundle. The Compose host uses
+HTTP locally and persists ASP.NET Core data-protection keys in the existing
+Umbraco data volume. The login form is reachable, but Umbraco sign-in requires
+HTTPS because OpenIddict rejects its authorization request over HTTP. Configure
+a trusted local HTTPS certificate before signing in. Production hosting must
+also provide key encryption. Session storage is in-memory, so container
+restarts log active sessions out even though the data-protection key ring stays
+intact.
+
 ### 3. Access Services
 
-- **Umbraco Backoffice**: https://localhost:44372/umbraco
+- **Umbraco Backoffice**: http://localhost:44372/umbraco
 - **Umbraco API**: http://localhost:44372/api/hotels
 - **Booking Engine API**: http://localhost:3001/health
 
@@ -84,14 +93,14 @@ cp dist/booking-engine.iife.js ../MyDockerProject/MyDockerProject/wwwroot/script
 
 ```bash
 cd MyDockerProject
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Viewing Logs
 
 ```bash
-docker-compose logs -f mydockerproject
-docker-compose logs -f booking_engine
+docker compose logs -f mydockerproject
+docker compose logs -f booking_engine
 ```
 
 ## Project Structure

@@ -99,9 +99,10 @@ connection.
 - No OpenAI account was connected in this environment, so OAuth, token refresh,
   model discovery and streaming inference remain unverified against a live
   account.
-- The Docker Desktop Linux engine was unavailable, and no SQL Server service is
-  running here. The Umbraco Studio pages have not yet been verified in the live
-  CMS UI.
+- The Docker and SQL Server stack now starts locally, and the real Umbraco
+  login route returns HTTP 200. No administrator session was provisioned for
+  this verification, so authenticated Studio pages and database-backed AI tool
+  calls remain unverified in the live CMS UI.
 
 
 ## Administrator bootstrap

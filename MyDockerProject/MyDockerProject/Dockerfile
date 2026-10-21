@@ -16,7 +16,9 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["MyDockerProject/MyDockerProject/MyDockerProject.csproj", "MyDockerProject/MyDockerProject/"]
+COPY ["SiteKit.Core/SiteKit.Core.csproj", "SiteKit.Core/"]
 RUN dotnet restore "MyDockerProject/MyDockerProject/MyDockerProject.csproj"
+COPY SiteKit.Core/ SiteKit.Core/
 COPY MyDockerProject/MyDockerProject/ MyDockerProject/MyDockerProject/
 # Copy built React app from frontend-build stage to wwwroot
 COPY --from=frontend-build /src/frontend/dist/booking-engine.iife.js MyDockerProject/MyDockerProject/wwwroot/scripts/booking-engine.js

@@ -9,7 +9,7 @@ solution; each milestone records implementation and validation evidence here.
 
 | Milestone | Scope | Status |
 |---|---|---|
-| M0 — Security and baseline | Audit existing code, remove committed secrets/build artifacts, secure administrative operations, establish reproducible build | Build verified; runtime smoke checks pending |
+| M0 — Security and baseline | Audit existing code, protect existing installations, secure administrative operations, establish reproducible build | Docker build verified; SQL healthy; Umbraco login form and booking-engine health endpoint return HTTP 200; data-protection key persists across container recreation; authenticated Studio checks pending; local HTTPS setup still needed for Umbraco sign-in |
 | M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | Partial: foundations and project/data contracts implemented; code SDK and full module lifecycle incomplete |
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, multi-property visual editor, composed/reorderable layout builder, preview and safe renderer implemented; drag/drop canvas and compiled developer SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
@@ -32,7 +32,7 @@ solution; each milestone records implementation and validation evidence here.
 | Data importer | Partial | Hotel importer preserved; universal project/entity mappings now support CSV/JSON/XML preview, idempotent upsert and value-free execution history; queueing, media and live host verification remain |
 | Content type generation | Implemented | Seed API creates document types and element types; administrative endpoint security is critical |
 | React/TypeScript booking UI | Implemented | Separate frontend and generated bundle |
-| Docker deployment | Partial | Compose includes SQL Server, Umbraco and engine; credentials and development configuration need hardening |
+| Docker deployment | Partial | Compose SQL Server, Umbraco and booking engine started and smoke checked. SQL health is green; Umbraco login form and booking `/health` return HTTP 200. ASP.NET Core data-protection keys persist in the existing `umb_data` volume across app-container recreation. Automate completes its nine startup migrations using the shared CMS SQL connection. Development compose still uses HTTP and does not encrypt the key ring at rest; local Umbraco sign-in needs a trusted HTTPS certificate, and production TLS and key encryption remain required. |
 | Component registry / Studio | Partial | Versioned declarative JSON registry, schema/data validation, import/export, safe primitive renderer, authenticated `/studio/components` editor with searchable persistent tags, project registry and project-local placements/appearance in `/studio/projects`; reusable definitions are projected by reference into generated websites with validated per-project overrides. Umbraco-published page integration and developer package pipeline remain planned |
 | Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, explicit grants and a basic data model/record editor; database-enforced relationships, screen composition and live SQL verification remain |
 | Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component, entity and screen definitions; official Umbraco Automate and a scoped SiteKit record-change trigger are integrated; record actions are missing and module workflow JSON remains inert |
@@ -122,8 +122,9 @@ solution; each milestone records implementation and validation evidence here.
   `sitekit.list_components` successfully.
 - `dotnet build UmbraccoEnv.sln --no-restore` succeeds. Live OAuth, refresh and
   Responses inference remain unverified because no ChatGPT account is connected
-  in this environment. Docker Desktop's Linux engine and SQL Server are also
-  unavailable, preventing live Umbraco Studio verification. `SITEKIT_SCREENSHOTS.md` now contains generated runtime captures only; live Studio screenshots remain pending.
+  in this environment. Docker and SQL were unavailable when this entry was
+  recorded; they have since been started and basic service smoke checks now
+  pass. Authenticated Umbraco Studio screenshots remain pending.
 
 ## M4 and M5 progress
 
@@ -181,6 +182,34 @@ solution; each milestone records implementation and validation evidence here.
 ## Screenshot evidence
 
 Studio visual previews and their validation limits are documented in [SITEKIT_SCREENSHOTS.md](SITEKIT_SCREENSHOTS.md). Module format and CLI documentation is in [SITEKIT_MODULE_PACKAGES.md](SITEKIT_MODULE_PACKAGES.md).
+
+## M0 live Docker verification update — 2026-10-21
+
+- Started the Compose SQL Server, Umbraco host and booking engine without
+  deleting or recreating named data volumes. The stale Compose network
+  reference was cleared by recreating containers only.
+- SQL Server reported `healthy`; `http://localhost:44372/umbraco/login` served
+  the real Umbraco login form and returned HTTP 200; the booking engine
+  `/health` endpoint returned HTTP 200. The local compose port is HTTP only, so
+  OpenIddict rejects the sign-in authorization request until HTTPS is set up.
+- Captured `output/playwright/sitekit-umbraco-login-live.png` from the live
+  container. It shows the genuine Umbraco login form, not an authenticated
+  SiteKit Studio screen.
+- Configured ASP.NET Core data-protection keys to persist to the existing
+- Configured ASP.NET Core data-protection keys to persist to the existing
+  `umb_data` volume and confirmed the same key file survives app-container
+  recreation. Session values still use in-memory storage and do not survive an
+  app restart. Added the Umbraco v17 development-mode backoffice package needed
+  for `InMemoryAuto`, and configured Automate to reuse the CMS SQL connection.
+  Automate's nine startup migrations completed.
+- Corrected `SiteKitDataImportService` to scoped lifetime because its SQL record
+  store dependency is scoped. A Docker build caught the invalid singleton
+  dependency during startup validation.
+- Added `.dockerignore` and copied the `SiteKit.Core` project file before
+  restore. Build context fell from about 587 MB to about 40 KB on the final
+  build. Docker Debug build completed with 0 errors and 154 existing warnings.
+- The host does not have the pinned .NET 10 SDK installed. Validation used the
+  .NET 10 Docker SDK image. Authenticated Studio routes remain unverified.
 
 
 

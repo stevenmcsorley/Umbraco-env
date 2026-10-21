@@ -3,6 +3,7 @@ using MyDockerProject.Data;
 using MyDockerProject.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.DataProtection;
 using MyDockerProject.Models;
 using MyDockerProject.Security;
 using SiteKit.Core.Components;
@@ -12,6 +13,16 @@ using SiteKit.Core.Modules;
 using SiteKit.Core.Importing;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// Docker deployments can point ASP.NET Core's key ring at a persistent volume.
+// Keep the default host behavior for local development and non-Docker hosts.
+var dataProtectionKeyPath = builder.Configuration["SiteKit:DataProtectionKeyPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeyPath))
+{
+    var keyDirectory = new DirectoryInfo(dataProtectionKeyPath);
+    keyDirectory.Create();
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(keyDirectory);
+}
 
 // Add controllers for custom routes
 builder.Services.AddControllers();
@@ -65,7 +76,7 @@ builder.Services.AddSingleton<ISiteKitImportRunRegistry>(services =>
     var environment = services.GetRequiredService<IWebHostEnvironment>();
     return new JsonSiteKitImportRunRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "import-runs"));
 });
-builder.Services.AddSingleton<SiteKitDataImportService>();
+builder.Services.AddScoped<SiteKitDataImportService>();
 
 // Add session support for authentication
 builder.Services.AddDistributedMemoryCache();
