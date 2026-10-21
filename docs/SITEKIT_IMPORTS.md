@@ -65,5 +65,7 @@ Umbraco/SQL installation for end-to-end verification.
 upserts, retention of fields omitted by an input, invalid-row and conversion
 error preview, explicit import grants and the local JSON record-store behavior.
 The Admin API and Razor Studio compile in the
-Umbraco host. See [SITEKIT_SCREENSHOTS.md](SITEKIT_SCREENSHOTS.md) for the
-fixture screenshot and its runtime limitations.
+Umbraco host. The generated runtime screenshot gallery is in
+[SITEKIT_SCREENSHOTS.md](SITEKIT_SCREENSHOTS.md); it does not include a live
+Studio import screen because Umbraco and SQL Server were unavailable during
+capture.

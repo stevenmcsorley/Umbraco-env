@@ -1,83 +1,30 @@
-# SiteKit Studio and generated project screenshots
+# SiteKit runtime screenshots
 
-The Component Studio and Projects Studio captures are static Playwright previews backed by local fixture data. They are **not** screenshots from the running Umbraco backoffice. This machine has no SQL Server service and its Docker Desktop Linux engine is unavailable. Their banner marks this limitation.
+These showcase captures come from independently generated .NET applications
+running locally. They demonstrate working project output; they are **not** a
+hosted SiteKit URL or a live Umbraco backoffice. The CRM uses its generated
+SQLite store and a local test access token. Screenshots of the authenticated
+Umbraco Studio views are pending a live Umbraco and SQL Server run; no fixture
+mockups are included in this gallery.
 
-## Component Studio
+## Generated CRM
 
-![SiteKit Components Studio static visual preview](../output/playwright/sitekit-components-static-preview.png)
+![Generated CRM with sales overview counts, customer records and grouped opportunities](../output/playwright/sitekit-generated-crm-runtime.png)
 
-This shows the component catalogue, multi-property visual schema builder,
-composed/reorderable layout editor, advanced schema controls and preview. It is
-a static fixture preview, not a running Umbraco screen.
+The application was running locally with three persisted customers and three
+opportunities. The screenshot shows its overview, customer table, and pipeline
+board. Browser console check reported no errors. The integration test separately
+verifies permission denial, CRUD, relationship validation, delete protection,
+and data retention through restart.
 
-## Projects Studio
+## Shared component across two generated websites
 
-![SiteKit Projects Studio static visual preview](../output/playwright/sitekit-projects-static-preview.png)
+![Northstar Advisory shared component example](../output/playwright/sitekit-generated-shared-component-one.png)
 
-This shows the project list, visual entity identity/field editor, field types,
-relationship targets, validation and explicit import permissions. The live UI
-and operational database are not connected; the screenshot uses fixture data.
+![Lumen House shared component example](../output/playwright/sitekit-generated-shared-component-two.png)
 
-## Application Screens Studio
-
-![SiteKit application screen builder static visual preview](../output/playwright/sitekit-screens-static-preview.png)
-
-This static Playwright capture shows a project-bound opportunity pipeline screen
-definition, entity and field bindings, and a sample kanban preview. The live
-screen definition API and MCP create/list/validation tools were smoke-tested,
-and the view now includes record editing controls wired to permission-checked
-CRUD APIs. The screenshot uses fixture data and does not imply a live
-backoffice or database connection; those new controls still need runtime
-verification against Umbraco and SQL.
-
-## Universal Imports Studio
-
-![SiteKit Imports Studio static visual preview](../output/playwright/sitekit-imports-static-preview.png)
-
-This fixture screenshot shows project/entity mapping setup, CSV/JSON/XML
-selection, a saved customers mapping and a sample row-validation preview. The
-authenticated API and mapping controls compile, and core parser/import tests
-pass; the screenshot is not connected to a running Umbraco instance.
-
-## Module Studio
-
-![SiteKit Modules Studio static visual preview](../output/playwright/sitekit-modules-static-preview.png)
-
-This fixture shows verified packages, per-project installed version pins,
-explicit upgrade controls and package import/export. The UI wiring compiles and
-module version/upgrade rules are covered by core contract tests; the screenshot
-is not connected to a running Umbraco instance.
-
-## Generated website runtime
-
-![SiteKit generated website running locally](../output/playwright/sitekit-generated-website.png)
-
-This screenshot is from a running independently generated .NET website. The generated site built with .NET 10; `/health` returned `{"status":"healthy"}` and `/` returned HTTP 200. This is runtime evidence for project generation, not live Umbraco, SQL CRUD or authorization coverage.
-
-## Shared component in independent generated sites
-
-![Shared component in Site One](../output/playwright/sitekit-generated-shared-component-one.png)
-
-![Shared component in Site Two](../output/playwright/sitekit-generated-shared-component-two.png)
-
-These are two independently generated and running .NET websites that use one
-registered component definition. Site One and Site Two receive distinct
-placement data and appearance settings; each rendered its own heading and
-styling. Both projects compiled successfully. This verifies component reuse
-across generated sites, while project-specific editing in the live Umbraco
-Studio still needs runtime verification.
-
-## Generated application runtime
-
-![SiteKit generated CRM runtime](../output/playwright/sitekit-generated-crm-runtime.png)
-
-This capture is from a running generated application project. Its screen
-definitions loaded from the exported manifests; the UI shows a Customers table
-and an Opportunity Pipeline board with persisted records across two stages. A
-stage move was saved through the generated update API, and the browser reported
-no JavaScript errors. The integration test also built the emitted project and
-verified unauthorized access, read-only write denial, create/update/read/delete
-operations and record retention across an application restart in SQLite. This
-is starter-level token/RBAC evidence, not production identity federation.
-
-Reproducible Studio fixture HTML pages are included beside the screenshots.
+These two running .NET sites share one registered `shared-banner` component
+definition. Northstar Advisory uses blue styling and strategy copy; Lumen House
+uses a warm palette, serif typography, and hospitality copy. Both sites were
+built and served locally from generated project output. Each screenshot shows
+the shared component receiving independent project data and appearance.

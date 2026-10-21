@@ -36,9 +36,9 @@ SiteKit is not limited to a shipped component catalogue. Component definitions a
 
 The same registered component definition is rendered by two independent generated websites. Each project supplies its own placement data and appearance.
 
-| Site One | Site Two |
+| Northstar Advisory | Lumen House |
 | --- | --- |
-| ![Generated Site One uses the shared component with its own content and styling](output/playwright/sitekit-generated-shared-component-one.png) | ![Generated Site Two uses the same shared component with independent content and styling](output/playwright/sitekit-generated-shared-component-two.png) |
+| ![Northstar Advisory: shared component, independent content and cool blue appearance](output/playwright/sitekit-generated-shared-component-one.png) | ![Lumen House: same shared component, warm colors and serif theme](output/playwright/sitekit-generated-shared-component-two.png) |
 
 ### Build and work with an application
 
@@ -48,17 +48,11 @@ The generated CRM runtime uses SQLite-backed CRUD, token-based principals, and e
 
 ### Explore SiteKit Studio
 
-These Studio screens are **static visual previews** built from fixture data. They show the intended editing experience and are not screenshots of a live Umbraco backoffice.
-
-| Components | Application screens |
-| --- | --- |
-| ![Component Studio visual schema and layout builder preview](output/playwright/sitekit-components-static-preview.png) | ![Application screen builder preview](output/playwright/sitekit-screens-static-preview.png) |
-
-| Projects and data models | Modules |
-| --- | --- |
-| ![Projects and data model Studio preview](output/playwright/sitekit-projects-static-preview.png) | ![Verified module packages and version pins Studio preview](output/playwright/sitekit-modules-static-preview.png) |
-
-More images and their provenance: [screenshot guide](docs/SITEKIT_SCREENSHOTS.md).
+The authenticated Studio surfaces live inside the Umbraco backoffice at
+`/studio/projects`, `/studio/components`, `/studio/screens`, `/studio/imports`,
+and `/studio/modules`. This environment did not have a running SQL-backed
+backoffice, so the images above are limited to real generated runtime screens.
+See the [screenshot guide](docs/SITEKIT_SCREENSHOTS.md) for capture provenance.
 
 ## How the pieces fit
 
@@ -137,7 +131,7 @@ SiteKit.AgentHost/                    Local ChatGPT orchestration, credentials, 
 MyDockerProject/MyDockerProject/      Umbraco 17 host, Studio, hotel app, APIs, Automate hooks
 frontend/                             React + TypeScript booking engine
 docs/                                 Implementation ledger, runtime guides, screenshots
-output/playwright/                    Committed screenshot evidence and Studio previews
+output/playwright/                    Committed generated-runtime screenshots
 ```
 
 ## Documentation

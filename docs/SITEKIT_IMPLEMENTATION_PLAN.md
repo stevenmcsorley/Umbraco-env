@@ -123,7 +123,7 @@ solution; each milestone records implementation and validation evidence here.
 - `dotnet build UmbraccoEnv.sln --no-restore` succeeds. Live OAuth, refresh and
   Responses inference remain unverified because no ChatGPT account is connected
   in this environment. Docker Desktop's Linux engine and SQL Server are also
-  unavailable, preventing live Umbraco Studio verification. Static fixture screenshots are documented in `SITEKIT_SCREENSHOTS.md`.
+  unavailable, preventing live Umbraco Studio verification. `SITEKIT_SCREENSHOTS.md` now contains generated runtime captures only; live Studio screenshots remain pending.
 
 ## M4 and M5 progress
 
@@ -136,6 +136,9 @@ solution; each milestone records implementation and validation evidence here.
   primitive renderer. A contract test generates two independent sites from one
   component definition and confirms that each uses separate data and appearance.
   Both generated projects were run locally and captured in `SITEKIT_SCREENSHOTS.md`.
+- Generated website and application templates now use responsive theme styling;
+  project manifest screen order is preserved when emitting the application.
+  The CRM capture shows the overview, customers table and opportunity pipeline.
 - Added project-scoped typed entity definitions with explicit per-principal
   operation grants and schema version checks. Existing fields, types, constraints
   and relationships cannot be removed or changed; schema evolution currently
@@ -231,8 +234,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   exports both entity and screen schema metadata.
 - Validation: .NET 10 solution build succeeds (0 errors). MCP protocol smoke
   created an application project and Opportunity entity, created/listed a
-  kanban screen, and returned `valid: true` from project validation. A static
-  Playwright screenshot documents the Screen Studio layout. A second MCP smoke
+  kanban screen, and returned `valid: true` from project validation. A second MCP smoke
   packed/imported a Contact Directory screen module and installed it into the
   application project with its entity; both screen definitions were listed
   afterwards. Project generation exported the saved screens to
@@ -262,8 +264,8 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 - Validation: all 11 Release core tests pass, including CSV/JSON/XML import and
   preview, unique-key repeat updates, retention of omitted data and invalid-row
   reporting. The Umbraco Debug host compiles with 0 errors (154 existing
-  warnings). Added a static fixture screenshot; live authenticated endpoint
-  and SQL-backed import verification remain outstanding.
+  warnings). Live authenticated endpoint and SQL-backed import verification
+  remain outstanding; no fixture screenshot is presented as runtime evidence.
 - Current boundaries: no media transfer, background/resumable jobs, AI mapping,
   execution audit log or relationship-aware deduplication. See
   [SITEKIT_IMPORTS.md](SITEKIT_IMPORTS.md).

@@ -103,25 +103,25 @@ public sealed class SiteKitCoreContractTests
         var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "projects"));
         var components = new JsonSiteKitComponentRegistry(Path.Combine(root, "components"));
         var placements = new JsonSiteKitPlacementRegistry(Path.Combine(root, "placements"));
-        await projects.SaveAsync(new SiteKitProjectManifest { Id = "site-one", Name = "Site One", Category = "website", Components = ["shared-banner"] });
-        await projects.SaveAsync(new SiteKitProjectManifest { Id = "site-two", Name = "Site Two", Category = "website", Components = ["shared-banner"] });
+        await projects.SaveAsync(new SiteKitProjectManifest { Id = "site-one", Name = "Northstar Advisory", Description = "Independent thinking for your next chapter.", Category = "website", Components = ["shared-banner"] });
+        await projects.SaveAsync(new SiteKitProjectManifest { Id = "site-two", Name = "Lumen House", Description = "Spaces made for slower mornings.", Category = "website", Components = ["shared-banner"], ThemeSettings = new() { PrimaryColor = "#b45840", SurfaceColor = "#fffaf4", TextColor = "#32231f", Radius = "20px", FontFamily = "serif" } });
         await components.SaveAsync(new SiteKitComponentDefinition
         {
-            Alias = "shared-banner", Name = "Shared Banner", Category = "marketing",
-            Properties = [new() { Alias = "title", Label = "Title", Type = "text", Required = true }],
-            Layout = new() { Type = "card", Children = [new() { Type = "heading", Bind = "title", HeadingLevel = 2 }] }
+            Alias = "shared-banner", Name = "Studio Hero", Category = "marketing",
+            Properties = [new() { Alias = "eyebrow", Label = "Eyebrow", Type = "text", Required = true }, new() { Alias = "title", Label = "Title", Type = "text", Required = true }, new() { Alias = "intro", Label = "Introduction", Type = "text", Required = true }, new() { Alias = "action", Label = "Action", Type = "link", Required = true }],
+            Layout = new() { Type = "card", Children = [new() { Type = "text", Bind = "eyebrow" }, new() { Type = "heading", Bind = "title", HeadingLevel = 2 }, new() { Type = "text", Bind = "intro" }, new() { Type = "button", Bind = "action" }] }
         });
-        using var firstData = JsonDocument.Parse("{\"title\":\"Welcome to Site One\"}");
-        using var secondData = JsonDocument.Parse("{\"title\":\"Discover Site Two\"}");
+        using var firstData = JsonDocument.Parse("{\"eyebrow\":\"STRATEGY · DESIGN · GROWTH\",\"title\":\"Clarity for what comes next\",\"intro\":\"We help ambitious teams turn complex moments into clear direction and meaningful progress.\",\"action\":{\"url\":\"/contact\",\"label\":\"Start a conversation\"}}");
+        using var secondData = JsonDocument.Parse("{\"eyebrow\":\"A SMALLER PACE, A BETTER STAY\",\"title\":\"Room to breathe, space to reconnect\",\"intro\":\"Thoughtful places, considered details, and room to find a rhythm of your own.\",\"action\":{\"url\":\"/stays\",\"label\":\"Explore our stays\"}}");
         await placements.SaveAsync("site-one", new SiteKitComponentPlacement
         {
             Id = "homepage-banner", ComponentAlias = "shared-banner", Data = firstData.RootElement,
-            Appearance = new() { BackgroundColor = "#f0f8ff", Padding = "24px" }
+            Appearance = new() { BackgroundColor = "#e9f1fa", Padding = "32px", BorderRadius = "24px" }
         });
         await placements.SaveAsync("site-two", new SiteKitComponentPlacement
         {
             Id = "homepage-banner", ComponentAlias = "shared-banner", Data = secondData.RootElement,
-            Appearance = new() { BackgroundColor = "#fff4e8", Padding = "40px" }
+            Appearance = new() { BackgroundColor = "#f4e2d2", Padding = "44px", BorderRadius = "24px" }
         });
 
         try
@@ -131,12 +131,12 @@ public sealed class SiteKitCoreContractTests
             var second = await generator.GenerateAsync("site-two");
             var firstProgram = await File.ReadAllTextAsync(Path.Combine(first, "Program.cs"));
             var secondProgram = await File.ReadAllTextAsync(Path.Combine(second, "Program.cs"));
-            Assert.Contains("Welcome to Site One", firstProgram);
-            Assert.Contains("Discover Site Two", secondProgram);
-            Assert.Contains("#f0f8ff", firstProgram);
-            Assert.Contains("#fff4e8", secondProgram);
-            Assert.DoesNotContain("Discover Site Two", firstProgram);
-            Assert.DoesNotContain("Welcome to Site One", secondProgram);
+            Assert.Contains("Clarity for what comes next", firstProgram);
+            Assert.Contains("Room to breathe, space to reconnect", secondProgram);
+            Assert.Contains("#e9f1fa", firstProgram);
+            Assert.Contains("#f4e2d2", secondProgram);
+            Assert.DoesNotContain("Room to breathe, space to reconnect", firstProgram);
+            Assert.DoesNotContain("Clarity for what comes next", secondProgram);
             using var build = Process.Start(new ProcessStartInfo("dotnet", "build site-one.csproj --configuration Release --nologo")
             {
                 WorkingDirectory = first, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false
@@ -356,10 +356,11 @@ public sealed class SiteKitCoreContractTests
     public async Task ApplicationProjectGenerationIncludesScreenRuntimeAndProtectedCrud()
     {
         var root = Path.Combine(Path.GetTempPath(), "sitekit-generator-tests", Guid.NewGuid().ToString("N"));
+        var preserveFixture = string.Equals(Environment.GetEnvironmentVariable("SITEKIT_KEEP_GENERATOR_FIXTURE"), "1", StringComparison.Ordinal);
         var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "projects"));
         var entities = new JsonSiteKitEntityRegistry(Path.Combine(root, "entities"));
         var screens = new JsonSiteKitScreenRegistry(Path.Combine(root, "screens"));
-        var project = new SiteKitProjectManifest { Id = "sales-crm", Name = "Sales CRM", Category = "application", Entities = ["customer", "opportunity"], Screens = ["customers", "opportunity-pipeline"] };
+        var project = new SiteKitProjectManifest { Id = "sales-crm", Name = "Sales CRM", Description = "A clear view of your customer relationships and the opportunities ahead.", Category = "application", Entities = ["customer", "opportunity"], Screens = ["sales-overview", "customers", "opportunity-pipeline"] };
         await projects.SaveAsync(project);
         await entities.SaveAsync(new SiteKitEntityDefinition
         {
@@ -370,6 +371,11 @@ public sealed class SiteKitCoreContractTests
         {
             ProjectId = project.Id, Alias = "opportunity", Name = "Opportunity",
             Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "title", Name = "Title", Type = "text", Required = true }, new() { Alias = "stage", Name = "Stage", Type = "text", Required = true }, new() { Alias = "customer", Name = "Customer", Type = "relationship", RelatedEntity = "customer", Required = true }]
+        });
+        await screens.SaveAsync(new SiteKitApplicationScreenDefinition
+        {
+            ProjectId = project.Id, Alias = "sales-overview", Name = "Sales Overview", Type = "dashboard",
+            Columns = [], FormFields = [], Components = []
         });
         await screens.SaveAsync(new SiteKitApplicationScreenDefinition
         {
@@ -394,6 +400,8 @@ public sealed class SiteKitCoreContractTests
             Assert.Contains("screen.type==='kanban'", screenRuntime);
             Assert.Contains("screen.type==='dashboard'", screenRuntime);
             Assert.True(File.Exists(Path.Combine(destination, "sitekit.screens.json")));
+            var generatedScreenOrder = JsonSerializer.Deserialize<SiteKitApplicationScreenDefinition[]>(await File.ReadAllTextAsync(Path.Combine(destination, "sitekit.screens.json")), new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            Assert.Equal(project.Screens, generatedScreenOrder!.Select(screen => screen.Alias));
             Assert.True(File.Exists(Path.Combine(destination, "sitekit.entities.json")));
             using var build = Process.Start(new ProcessStartInfo("dotnet", $"build \"{project.Id}.csproj\" --configuration Release --nologo")
             {
@@ -478,9 +486,12 @@ public sealed class SiteKitCoreContractTests
                     Assert.Equal("Ada Byron", listed![0].GetProperty("data").GetProperty("name").GetString());
                     var opportunities = await client.GetFromJsonAsync<JsonElement[]>("/api/sitekit/records/opportunity");
                     Assert.Equal(id, opportunities![0].GetProperty("data").GetProperty("customer").GetString());
-                    Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/sitekit/records/opportunity/{opportunityId}")).StatusCode);
-                    var deleteResponse = await client.DeleteAsync($"/api/sitekit/records/customer/{id}");
-                    Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+                    if (!preserveFixture)
+                    {
+                        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/sitekit/records/opportunity/{opportunityId}")).StatusCode);
+                        var deleteResponse = await client.DeleteAsync($"/api/sitekit/records/customer/{id}");
+                        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+                    }
                 }
                 finally
                 {
@@ -494,7 +505,7 @@ public sealed class SiteKitCoreContractTests
                 await app.WaitForExitAsync();
             }
         }
-        finally { if (!string.Equals(Environment.GetEnvironmentVariable("SITEKIT_KEEP_GENERATOR_FIXTURE"), "1", StringComparison.Ordinal) && Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+        finally { if (!preserveFixture && Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 
     private static SiteKitEntityDefinition CustomerEntity() => new()

@@ -35,7 +35,12 @@ public sealed class SiteKitProjectGenerator
         var manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true });
         await WriteAtomicAsync(Path.Combine(destination, "sitekit.project.json"), manifestJson, cancellationToken);
         if (_screens is not null)
-            await WriteAtomicAsync(Path.Combine(destination, "sitekit.screens.json"), JsonSerializer.Serialize(await _screens.ListAsync(projectId, cancellationToken), new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }), cancellationToken);
+        {
+            var availableScreens = await _screens.ListAsync(projectId, cancellationToken);
+            var orderedScreens = manifest.Screens.Select(alias => availableScreens.FirstOrDefault(screen => screen.Alias == alias)
+                ?? throw new InvalidOperationException($"Project screen '{alias}' was not found in the screen registry.")).ToArray();
+            await WriteAtomicAsync(Path.Combine(destination, "sitekit.screens.json"), JsonSerializer.Serialize(orderedScreens, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }), cancellationToken);
+        }
         if (_entities is not null)
             await WriteAtomicAsync(Path.Combine(destination, "sitekit.entities.json"), JsonSerializer.Serialize(await _entities.ListAsync(projectId, cancellationToken), new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }), cancellationToken);
         await WriteAtomicAsync(Path.Combine(destination, "global.json"), "{\n  \"sdk\": { \"version\": \"10.0.100\", \"rollForward\": \"latestFeature\" }\n}\n", cancellationToken);
@@ -89,7 +94,7 @@ public sealed class SiteKitProjectGenerator
             return "var app = WebApplication.Create(args);\napp.MapGet(\"/\", () => Results.Ok(new { name = " + name + ", category = \"api\", platform = \"SiteKit\" }));\napp.MapGet(\"/health\", () => Results.Ok(new { status = \"healthy\" }));\napp.MapGet(\"/favicon.ico\", () => Results.NoContent());\napp.Run();\n";
         if (manifest.Category is "application" or "combined") return BuildApplicationProgram(manifest, renderedComponents);
         var fontFamily = manifest.ThemeSettings.FontFamily switch { "serif" => "Georgia,serif", "sans-serif" => "Arial,sans-serif", "monospace" => "ui-monospace,monospace", _ => "system-ui,sans-serif" };
-        var html = $"<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{WebUtility.HtmlEncode(manifest.Name)}</title><style>:root{{--primary:{manifest.ThemeSettings.PrimaryColor};--surface:{manifest.ThemeSettings.SurfaceColor};--text:{manifest.ThemeSettings.TextColor}}}body{{margin:0;background:var(--surface);color:var(--text);font:16px {fontFamily}}}main{{max-width:1100px;margin:auto;padding:4rem 2rem}}h1{{font-size:clamp(2rem,5vw,4rem)}}.button{{display:inline-block;background:var(--primary);color:#fff;padding:.8rem 1.1rem;border-radius:{manifest.ThemeSettings.Radius};text-decoration:none}}.notice{{padding:1rem;border:1px solid #dce3e8;border-radius:12px}}</style><main><small>SITEKIT {WebUtility.HtmlEncode(manifest.Category.ToUpperInvariant())}</small><h1>{WebUtility.HtmlEncode(manifest.Name)}</h1><p>{WebUtility.HtmlEncode(manifest.Description)}</p><div class=\"notice\">Your independent SiteKit project is ready. Add content, components and application modules from SiteKit Studio.</div><section class=\"sitekit-components\">{renderedComponents}</section></main></html>";
+        var html = $"<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{WebUtility.HtmlEncode(manifest.Name)}</title><style>:root{{--primary:{manifest.ThemeSettings.PrimaryColor};--surface:{manifest.ThemeSettings.SurfaceColor};--text:{manifest.ThemeSettings.TextColor}}}*{{box-sizing:border-box}}body{{margin:0;background:linear-gradient(145deg,#f4f7fb,var(--surface) 45%,#eef3f8);color:var(--text);font:16px/1.6 {fontFamily};min-height:100vh}}main{{max-width:1160px;margin:auto;padding:clamp(2rem,7vw,6rem) 2rem}}main>small{{display:inline-flex;padding:.4rem .7rem;border-radius:999px;background:#e7f4f2;color:#12685f;letter-spacing:.12em;font-size:.7rem;font-weight:800}}h1{{font-size:clamp(2.8rem,7vw,5.4rem);letter-spacing:-.055em;line-height:1.02;margin:1.4rem 0 .8rem}}main>p{{max-width:700px;color:#59687b;font-size:1.1rem}}.sitekit-components{{display:grid;gap:1.25rem;margin-top:2.5rem}}.sitekit-component{{display:block;overflow:hidden}}.sitekit-card{{border:1px solid #ffffffb8;box-shadow:0 24px 70px #172b4d18;border-radius:24px}}.sitekit-component>.sitekit-card{{border:0;box-shadow:none;border-radius:inherit}}.sitekit-section{{padding:clamp(1.5rem,5vw,3.5rem)}}.sitekit-heading{{font-size:clamp(2.1rem,5vw,3.8rem);letter-spacing:-.045em;line-height:1.04;max-width:17ch;margin:.6rem 0 1rem}}.sitekit-text{{color:#526176;max-width:62ch}}.sitekit-component>.sitekit-card>.sitekit-text:first-child{{color:var(--primary);font-size:.75rem;font-weight:800;letter-spacing:.13em}}.sitekit-grid{{display:grid;grid-template-columns:repeat(var(--sitekit-columns,2),minmax(0,1fr));gap:1rem}}.sitekit-button{{display:inline-flex;margin-top:1.1rem;padding:.8rem 1.1rem;border-radius:{manifest.ThemeSettings.Radius};background:var(--primary);color:#fff;text-decoration:none;font-weight:700;box-shadow:0 8px 20px color-mix(in srgb,var(--primary),transparent 72%)}}@media(max-width:640px){{main{{padding:2.5rem 1.1rem}}.sitekit-grid{{grid-template-columns:1fr}}}}</style><main><small>SITEKIT {WebUtility.HtmlEncode(manifest.Category.ToUpperInvariant())}</small><h1>{WebUtility.HtmlEncode(manifest.Name)}</h1><p>{WebUtility.HtmlEncode(manifest.Description)}</p><section class=\"sitekit-components\">{renderedComponents}</section></main></html>";
         var serializedHtml = JsonSerializer.Serialize(html);
         return "var app = WebApplication.Create(args);\napp.MapGet(\"/health\", () => Results.Ok(new { status = \"healthy\" }));\napp.MapGet(\"/favicon.ico\", () => Results.NoContent());\napp.MapGet(\"/\", () => Results.Content(" + serializedHtml + ", \"text/html; charset=utf-8\"));\napp.Run();\n";
     }
@@ -97,7 +102,44 @@ public sealed class SiteKitProjectGenerator
     private static string BuildApplicationProgram(SiteKitProjectManifest manifest, string renderedComponents)
     {
         var fontFamily = manifest.ThemeSettings.FontFamily switch { "serif" => "Georgia,serif", "sans-serif" => "Arial,sans-serif", "monospace" => "ui-monospace,monospace", _ => "system-ui,sans-serif" };
-        var html = $"<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{WebUtility.HtmlEncode(manifest.Name)}</title><style>:root{{--primary:{manifest.ThemeSettings.PrimaryColor};--surface:{manifest.ThemeSettings.SurfaceColor};--text:{manifest.ThemeSettings.TextColor}}}body{{margin:0;background:var(--surface);color:var(--text);font:16px {fontFamily}}}main{{max-width:1120px;margin:auto;padding:3rem 2rem}}h1{{font-size:clamp(2rem,5vw,4rem)}}table{{width:100%;border-collapse:collapse}}td,th{{padding:.65rem;text-align:left;border-bottom:1px solid #dce3e8}}input,button{{font:inherit;padding:.6rem;border:1px solid #b8c5cc;border-radius:6px}}button{{cursor:pointer}}.screen{{margin-top:2rem}}.form{{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0}}.form label{{display:grid;gap:.2rem}}</style><main><small>SITEKIT {WebUtility.HtmlEncode(manifest.Category.ToUpperInvariant())}</small><h1>{WebUtility.HtmlEncode(manifest.Name)}</h1><p>{WebUtility.HtmlEncode(manifest.Description)}</p><section class=\"sitekit-components\">{renderedComponents}</section><div id=\"sitekit-screens\">Loading application screens…</div></main><script src=\"/sitekit-runtime.js\"></script><script>SiteKit.start();</script></html>";
+        var css = $$$"""
+            :root{--primary:{{{manifest.ThemeSettings.PrimaryColor}}};--surface:{{{manifest.ThemeSettings.SurfaceColor}}};--text:{{{manifest.ThemeSettings.TextColor}}};color-scheme:light}
+            *{box-sizing:border-box}
+            body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 80% 0%,#e8f0ff 0,transparent 42%),#f4f6fa;color:#172033;font:15px/1.55 {{{fontFamily}}}}
+            main{max-width:1280px;margin:auto;padding:clamp(2rem,5vw,4.5rem) clamp(1.1rem,4vw,3.5rem)}
+            main>small{display:inline-flex;align-items:center;padding:.4rem .75rem;border-radius:999px;background:#e6f4f1;color:#17685e;letter-spacing:.12em;font-size:.68rem;font-weight:800}
+            h1{font-size:clamp(2.5rem,5vw,4.25rem);line-height:1.05;letter-spacing:-.055em;margin:1rem 0 .5rem}
+            main>p{color:#647087;margin:.25rem 0 2rem;font-size:1.05rem}
+            #sitekit-screens{display:grid;gap:1.4rem}
+            .screen{margin:0;padding:1.5rem;border:1px solid #e2e8f0;border-radius:18px;background:#fff;box-shadow:0 14px 40px #1e293b0a;min-width:0}
+            .screen h2{font-size:1.12rem;letter-spacing:-.02em;margin:0 0 1rem}
+            .form{display:flex;align-items:end;gap:.8rem;flex-wrap:wrap;margin:0 0 1rem;padding:1rem;background:#f8fafc;border:1px solid #e8edf4;border-radius:12px}
+            .form label,#token-form label{display:grid;gap:.35rem;color:#536176;font-size:.82rem;font-weight:650}
+            input,select,button{font:inherit;border-radius:9px}
+            input,select{min-height:42px;padding:.62rem .78rem;border:1px solid #d8e0eb;background:#fff;color:#172033;outline:none}
+            input:focus,select:focus{border-color:#17867a;box-shadow:0 0 0 3px #17867a20}
+            button{min-height:42px;padding:.62rem 1rem;border:1px solid #087f73;background:#087f73;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 5px 12px #087f7325;transition:transform .15s,box-shadow .15s}
+            button:hover{transform:translateY(-1px);box-shadow:0 8px 18px #087f7330}
+            table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid #e5eaf1;border-radius:12px}
+            th,td{padding:.85rem 1rem;text-align:left;border-bottom:1px solid #edf0f5}
+            th{background:#f8fafc;color:#69768a;text-transform:uppercase;font-size:.7rem;letter-spacing:.08em}
+            tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#fbfcfe}
+            td button{min-height:34px;padding:.4rem .7rem;background:#fff;color:#59677a;border-color:#dce3ed;box-shadow:none;font-size:.8rem}
+            .kanban{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:1rem;overflow-x:auto;padding:.1rem .1rem .7rem}
+            .kanban>section{padding:.85rem;background:#f4f6fa;border:1px solid #e8edf3;border-radius:14px;min-height:190px}
+            .kanban>section h3{margin:.15rem .2rem .8rem;color:#536176;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em}
+            .kanban article{padding:1rem;margin:.55rem 0;background:#fff;border:1px solid #e7ebf2;border-radius:12px;box-shadow:0 5px 15px #172b4d0a}
+            .kanban article strong{display:block;font-size:.92rem;line-height:1.35}
+            .kanban article p{color:#758196;font-size:.78rem;margin:.5rem 0}
+            .kanban article label{display:inline-flex;align-items:center;gap:.4rem;color:#758196;font-size:.72rem}
+            .kanban article select{min-height:32px;padding:.3rem;font-size:.75rem}.kanban article button{margin-left:.3rem}
+            .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem}
+            .metrics article{display:grid;gap:.3rem;padding:1.25rem;border:1px solid #e6ebf2;border-radius:14px;background:linear-gradient(145deg,#fff,#f7fafc);box-shadow:0 8px 24px #172b4d08}
+            .metrics strong{font-size:2rem;letter-spacing:-.05em}.metrics span{color:#69768a;font-size:.82rem}
+            #token-form{display:flex;align-items:end;gap:.8rem;flex-wrap:wrap;padding:1.3rem;border:1px solid #e2e8f0;border-radius:14px;background:white;box-shadow:0 12px 32px #172b4d0a}
+            @media(max-width:640px){.screen{padding:1rem}.form{align-items:stretch}.form label{flex:1 1 100%}.kanban{grid-auto-columns:minmax(82vw,1fr)}th,td{padding:.65rem .7rem}}
+            """;
+        var html = $"<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{WebUtility.HtmlEncode(manifest.Name)}</title><style>{css}</style><main><small>SITEKIT {WebUtility.HtmlEncode(manifest.Category.ToUpperInvariant())}</small><h1>{WebUtility.HtmlEncode(manifest.Name)}</h1><p>{WebUtility.HtmlEncode(manifest.Description)}</p><section class=\"sitekit-components\">{renderedComponents}</section><div id=\"sitekit-screens\">Loading application screens…</div></main><script src=\"/sitekit-runtime.js\"></script><script>SiteKit.start();</script></html>";
         var template = """
 using System.Security.Cryptography;
 using System.Text;
