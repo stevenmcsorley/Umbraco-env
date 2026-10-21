@@ -44,5 +44,6 @@ permission registry and SQL Server record-store implementation.
 
 The generated-app build is covered by the generator contract test. The test
 starts the emitted app, exercises administrator and read-only principal grants,
-CRUD over HTTP, restarts the process and verifies records remain available.
+CRUD over HTTP, renames a screen and regenerates the project, then verifies the
+updated screen manifest and existing records are still available after restart.
 Production identity federation and database performance have not been verified.

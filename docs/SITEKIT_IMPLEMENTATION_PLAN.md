@@ -283,8 +283,9 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 - Validation: the generator contract test verifies project manifests, screen
   runtime assets and protected CRUD source, and invokes `dotnet build` on the
   emitted application. It starts the generated project and verifies unauthenticated
-  denial, read-only write denial, create/update/read/delete behavior, and record retention after an app
-  restart. All 18 Release core tests pass; a live browser capture is documented
+  denial, read-only write denial, create/update/read/delete behavior, and record
+  retention while a screen changes and the project is regenerated/restarted. All
+  18 Release core tests pass; a live browser capture is documented
   in `SITEKIT_SCREENSHOTS.md`.
 - Boundaries: generated app CRUD currently uses local SQLite and a single
   administrator token, with no record-level role grants or soft-delete. The

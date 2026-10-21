@@ -323,14 +323,16 @@ public sealed class SiteKitCoreContractTests
             ProjectId = project.Id, Alias = "customers", Name = "Customers", Type = "table", EntityAlias = "customer",
             Columns = ["name"], FormFields = ["name"]
         });
-        await screens.SaveAsync(new SiteKitApplicationScreenDefinition
+        var pipelineScreen = new SiteKitApplicationScreenDefinition
         {
             ProjectId = project.Id, Alias = "opportunity-pipeline", Name = "Opportunity Pipeline", Type = "kanban", EntityAlias = "opportunity",
             Columns = ["title", "stage"], FormFields = ["title", "stage"], GroupField = "stage"
-        });
+        };
+        await screens.SaveAsync(pipelineScreen);
         try
         {
-            var destination = await new SiteKitProjectGenerator(Path.Combine(root, "generated"), projects, screens, entities).GenerateAsync(project.Id);
+            var generator = new SiteKitProjectGenerator(Path.Combine(root, "generated"), projects, screens, entities);
+            var destination = await generator.GenerateAsync(project.Id);
             var program = await File.ReadAllTextAsync(Path.Combine(destination, "Program.cs"));
             Assert.Contains("MapPost(\"/api/sitekit/records/{entity}\"", program);
             Assert.Contains("SITEKIT_ADMIN_TOKEN", program);
@@ -394,6 +396,8 @@ public sealed class SiteKitCoreContractTests
                 Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
                 app.Kill(entireProcessTree: true);
                 await app.WaitForExitAsync();
+                await screens.SaveAsync(pipelineScreen with { Name = "Sales Pipeline" });
+                await generator.GenerateAsync(project.Id);
                 using var restarted = Process.Start(new ProcessStartInfo("dotnet", $"run --no-build --configuration Release --project \"{project.Id}.csproj\" -- --urls http://127.0.0.1:{port}")
                 {
                     WorkingDirectory = destination, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
@@ -408,6 +412,8 @@ public sealed class SiteKitCoreContractTests
                         catch (HttpRequestException) { await Task.Delay(150); }
                     }
                     Assert.True(recovered, "Generated app did not restart.");
+                    var updatedScreens = await client.GetFromJsonAsync<JsonElement[]>("/api/sitekit/screens");
+                    Assert.Contains(updatedScreens!, screen => screen.GetProperty("name").GetString() == "Sales Pipeline");
                     var listed = await client.GetFromJsonAsync<JsonElement[]>("/api/sitekit/records/customer");
                     Assert.Equal("Ada Byron", listed![0].GetProperty("data").GetProperty("name").GetString());
                     var deleteResponse = await client.DeleteAsync($"/api/sitekit/records/customer/{id}");
