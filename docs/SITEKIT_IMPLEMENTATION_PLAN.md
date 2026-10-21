@@ -196,7 +196,11 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 - Validation: .NET 10 solution build succeeds (0 errors). MCP protocol smoke
   created an application project and Opportunity entity, created/listed a
   kanban screen, and returned `valid: true` from project validation. A static
-  Playwright screenshot documents the Screen Studio layout.
+  Playwright screenshot documents the Screen Studio layout. A second MCP smoke
+  packed/imported a Contact Directory screen module and installed it into the
+  application project with its entity; both screen definitions were listed
+  afterwards. Project generation exported the saved screens to
+  `sitekit.screens.json`.
 - Limitations: generated applications currently export screen definitions as
   metadata and the Studio preview reads records, but deployable generated
   applications do not yet include screen rendering/runtime CRUD. CRM end-to-end
