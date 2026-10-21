@@ -44,10 +44,16 @@ data or emitting a duplicate event. The step output contains only project,
 entity and record IDs. The action publishes the same record-changed event as
 the authenticated API on first creation.
 
+SiteKit also contributes a **Delete SiteKit Operational Record** Automate
+action. It resolves the executing service account, requires an explicit
+`delete` or `manage` entity grant, and calls the same record store as the API.
+SQL relationship protections apply to this path too. Deleting a record that is
+already absent is an idempotent success; a first deletion publishes the shared
+record-change event. The output contains project, entity and record IDs and an
+`alreadyDeleted` flag, never business-record data.
+
 Imported module `workflows/*.json` remain inert declarations; they are not
-installed as executable automations. A SiteKit delete-record action is not
-registered; deletion remains available through the permission-checked SiteKit
-API and publishes the record-changed event.
+installed as executable automations.
 
 Do not treat imported workflow JSON as executable instructions. The trigger
 and actions compile against Automate's extension API, but discovery, execution
