@@ -7,7 +7,7 @@
 
 ### Build websites and business applications on Umbraco. Keep the building blocks.
 
-SiteKit is an open-source platform for creating **content-driven websites, internal business systems, and reusable software modules**. Compose validated components, model operational data, build application screens, install modules, and generate independently deployable .NET projects.
+SiteKit is being developed as an open-source platform for creating **content-driven websites, internal business systems, and reusable software modules**. Compose validated components, model operational data, build application screens, install modules, and generate independently deployable .NET projects.
 
 The platform grows with what you make: a component, entity, screen, or module can become a building block for the next project. Umbraco remains the CMS for editorial content; operational records live in application data stores suited to transactional work.
 
