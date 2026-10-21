@@ -13,21 +13,29 @@ initial persistence setup and execution history. Those runtime checks have not
 been possible in this workspace because Docker's Linux engine and SQL Server
 are unavailable.
 
-## Current boundary
+## SiteKit record trigger
 
-Automate's built-in content events and actions are available to the Umbraco
-installation after startup. SiteKit operational record operations are still
-served by SiteKit's separate entity APIs. A SiteKit-specific Automate trigger
-and action provider that dispatches and consumes customer, booking, inventory
-and other operational-record events has not yet been implemented. Existing
-module `workflows/*.json` files remain inert package declarations; they are not
-installed as executable automations.
+SiteKit registers a native Automate trigger named **SiteKit Operational Record
+Changed**. It is published after an authorized operational record is created,
+updated or deleted. Trigger settings scope it to one project, entity and
+operation. The trigger output contains the project, entity and record IDs,
+operation and timestamp; it deliberately does not copy business-record fields
+into workflow payloads. The event has an idempotency key derived from the
+record identity and update timestamp.
 
-Do not treat imported workflow JSON as executable instructions. The next
-integration step must add typed, permission-checked providers using Automate's
-extension API and its persistent run/history infrastructure. External HTTP
-actions must retain the Automate package's SSRF protections and require
-workspace-scoped credentials.
+Automations are configured, published and reviewed in the native Automate
+backoffice. The SiteKit endpoint still enforces the initiating user's explicit
+entity permission before publishing an event. SiteKit has not yet added
+Automate actions for reading or changing operational records, and imported
+module `workflows/*.json` remain inert declarations; they are not installed as
+executable automations.
+
+Do not treat imported workflow JSON as executable instructions. The trigger
+compiles against Automate's extension API, but its delivery and run history
+have not been exercised in a live Umbraco/database runtime. The next
+integration step must add narrowly scoped actions with service-account and
+entity permission checks. External HTTP actions must retain Automate's SSRF
+protections and require workspace-scoped credentials.
 
 ## Version and security
 

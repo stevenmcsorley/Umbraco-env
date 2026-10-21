@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using MyDockerProject.Security;
 using SiteKit.Core.Data;
 using SiteKit.Core.Projects;
+using Umbraco.Cms.Core.Events;
+using MyDockerProject.Services.SiteKitAutomate;
 
 namespace MyDockerProject.Controllers.Api;
 
@@ -16,9 +18,10 @@ public sealed class SiteKitEntitiesController : ControllerBase
     private readonly ISiteKitRecordStore _records;
     private readonly ISiteKitPermissionRegistry _permissions;
     private readonly IConfiguration _configuration;
+    private readonly IScopedNotificationPublisher _notifications;
 
-    public SiteKitEntitiesController(ISiteKitEntityRegistry entities, ISiteKitProjectRegistry projects, ISiteKitRecordStore records, ISiteKitPermissionRegistry permissions, IConfiguration configuration)
-    { _entities = entities; _projects = projects; _records = records; _permissions = permissions; _configuration = configuration; }
+    public SiteKitEntitiesController(ISiteKitEntityRegistry entities, ISiteKitProjectRegistry projects, ISiteKitRecordStore records, ISiteKitPermissionRegistry permissions, IConfiguration configuration, IScopedNotificationPublisher notifications)
+    { _entities = entities; _projects = projects; _records = records; _permissions = permissions; _configuration = configuration; _notifications = notifications; }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SiteKitEntityDefinition>>> List(string projectId, CancellationToken ct)
@@ -119,7 +122,9 @@ public sealed class SiteKitEntitiesController : ControllerBase
         var entity = await _entities.GetAsync(projectId, alias, ct);
         if (entity is null) return NotFound();
         if (!await Can("delete", projectId, alias, ct)) return Forbid();
-        return await _records.DeleteAsync(projectId, alias, id, HttpContext.Session.GetString("UserEmail")!, ct) ? NoContent() : NotFound();
+        if (!await _records.DeleteAsync(projectId, alias, id, HttpContext.Session.GetString("UserEmail")!, ct)) return NotFound();
+        _notifications.Publish(new SiteKitOperationalRecordChangedNotification(projectId, alias, id, "deleted", DateTimeOffset.UtcNow));
+        return NoContent();
     }
 
     private async Task<IActionResult> SaveRecord(string projectId, string alias, JsonElement data, string? id, string permission, CancellationToken ct)
@@ -132,6 +137,7 @@ public sealed class SiteKitEntitiesController : ControllerBase
             var relationshipErrors = await ValidateRelationships(entity, data, ct);
             if (relationshipErrors.Count > 0) return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]> { ["relationships"] = relationshipErrors.ToArray() }));
             var record = await _records.SaveAsync(entity, data, HttpContext.Session.GetString("UserEmail")!, id, ct);
+            _notifications.Publish(new SiteKitOperationalRecordChangedNotification(projectId, alias, record.Id, id is null ? "created" : "updated", record.UpdatedAt));
             return id is null ? CreatedAtAction(nameof(GetRecord), new { projectId, alias, id = record.Id }, record) : Ok(record);
         }
         catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
