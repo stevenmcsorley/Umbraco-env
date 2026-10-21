@@ -140,6 +140,23 @@ public sealed class SiteKitCoreContractTests
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task ImportOperationCanBeGrantedExplicitly()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-permission-tests", Guid.NewGuid().ToString("N"));
+        var permissions = new JsonSiteKitPermissionRegistry(root);
+        try
+        {
+            var saved = await permissions.SaveAsync(new SiteKitEntityPermissionGrant
+            {
+                ProjectId = "crm-smoke", EntityAlias = "customer", Principal = "importer@example.test", Operations = ["read", "import"]
+            });
+            Assert.Contains("import", saved.Operations);
+            Assert.Equal(saved, await permissions.GetAsync(saved.ProjectId, saved.EntityAlias, saved.Principal));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
     private static SiteKitEntityDefinition CustomerEntity() => new()
     {
         ProjectId = "crm-smoke",
