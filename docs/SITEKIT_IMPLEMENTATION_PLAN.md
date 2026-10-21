@@ -11,7 +11,7 @@ solution; each milestone records implementation and validation evidence here.
 |---|---|---|
 | M0 — Security and baseline | Audit existing code, remove committed secrets/build artifacts, secure administrative operations, establish reproducible build | Build verified; runtime smoke checks pending |
 | M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | Partial: foundations and project/data contracts implemented; code SDK and full module lifecycle incomplete |
-| M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas and safe renderer/editor implemented; drag/drop composition and compiled developer SDK incomplete |
+| M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, multi-property visual editor, composed/reorderable layout builder, preview and safe renderer implemented; drag/drop canvas and compiled developer SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component and module projection remains |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
@@ -93,9 +93,12 @@ solution; each milestone records implementation and validation evidence here.
   source or JavaScript.
 - Added administrator-authorized list/get/save/delete/import/export/data
   validation/preview API endpoints and the initial Component Studio route at
-  `/studio/components`. The editor has quick fields plus advanced JSON schema
-  editors for nested properties, variants and composed layouts. Project
-  manifest CRUD is exposed at `/api/sitekit/projects`. Project placements and project-local appearance overrides are implemented; richer visual composition and developer package build pipeline remain.
+  `/studio/components`. The editor has quick fields, a repeatable visual
+  property builder and a composed/reorderable layout builder, plus advanced
+  JSON schema editors for nested properties, variants and detailed layouts.
+  Existing nested properties and layout metadata are preserved when visual
+  controls are edited. Project
+  manifest CRUD is exposed at `/api/sitekit/projects`. Project placements and project-local appearance overrides are implemented; a drag/drop canvas and developer package build pipeline remain.
 - Build verification after these changes: `dotnet build UmbraccoEnv.sln
   --no-restore` succeeds with 0 errors and 154 warnings. No runtime UI or
   database smoke check has been performed yet. Static Playwright previews use fixture data; see `SITEKIT_SCREENSHOTS.md`.

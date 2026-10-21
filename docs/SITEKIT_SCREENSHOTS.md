@@ -6,7 +6,9 @@ The Component Studio and Projects Studio captures are static Playwright previews
 
 ![SiteKit Components Studio static visual preview](../output/playwright/sitekit-components-static-preview.png)
 
-This shows the component catalogue, definition editor, schema/layout controls, variants and preview.
+This shows the component catalogue, multi-property visual schema builder,
+composed/reorderable layout editor, advanced schema controls and preview. It is
+a static fixture preview, not a running Umbraco screen.
 
 ## Projects Studio
 
