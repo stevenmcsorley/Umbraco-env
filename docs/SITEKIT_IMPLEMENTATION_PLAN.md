@@ -263,8 +263,20 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   the Automate workspace service account, checks its SiteKit entity grant,
   validates and merges its JSON patch and emits the change event. The action
   output contains identifiers and changed-field count only. Automate discovery
-  and run history still require live Umbraco/database verification; create and
-  delete actions are not yet registered, and module workflow JSON remains inert.
+  and run history still require live Umbraco/database verification; module
+  workflow JSON remains inert. Added a native record-create action with
+  explicit service-account grants, typed-record and relationship validation,
+  deterministic IDs derived from a required workflow idempotency key, and the
+  shared record-change notification. Replays return the existing record
+  without overwriting it or emitting another event. A delete action remains
+  unimplemented.
+- Validation 2026-10-21: `dotnet build
+  MyDockerProject/MyDockerProject/MyDockerProject.csproj --configuration Debug`
+  succeeded in the .NET 10 SDK container with 0 errors and 164 existing
+  warnings. The warning set includes Umbraco obsolete/nullability warnings and
+  ImageSharp advisories already covered by the narrowly-scoped CI advisory
+  allowlist. Automate discovery and action execution remain unverified in the
+  live backoffice.
 
 ## M7 progress
 

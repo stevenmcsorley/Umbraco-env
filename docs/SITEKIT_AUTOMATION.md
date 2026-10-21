@@ -8,10 +8,10 @@ provider model; SiteKit does not maintain a second general-purpose workflow
 engine.
 
 The package is discovered through the existing Umbraco composer startup. A
-running Umbraco installation and database are required to verify its dashboard,
-initial persistence setup and execution history. Those runtime checks have not
-been possible in this workspace because Docker's Linux engine and SQL Server
-are unavailable.
+running Umbraco installation and database are required to verify dashboard
+discovery, initial persistence setup and execution history. The local Docker
+host and SQL Server are available; these Automate-specific runtime checks have
+not yet been performed.
 
 ## SiteKit record trigger
 
@@ -34,12 +34,23 @@ requires an explicit SiteKit `update` or `manage` entity grant for that
 service-account email. Its step output includes IDs and an updated-field count,
 not business data. The update is safe to retry against the same record.
 
+SiteKit also contributes a **Create SiteKit Operational Record** Automate
+action. It resolves the service account from the Automate execution context,
+requires that account's explicit `create` or `manage` grant for the selected
+entity, validates the typed fields and relationship targets, and creates a
+record with a deterministic SiteKit ID derived from a required stable
+idempotency key. Replays return the existing record ID without overwriting its
+data or emitting a duplicate event. The step output contains only project,
+entity and record IDs. The action publishes the same record-changed event as
+the authenticated API on first creation.
+
 Imported module `workflows/*.json` remain inert declarations; they are not
-installed as executable automations. No SiteKit create-record or delete-record
-actions are registered yet.
+installed as executable automations. A SiteKit delete-record action is not
+registered; deletion remains available through the permission-checked SiteKit
+API and publishes the record-changed event.
 
 Do not treat imported workflow JSON as executable instructions. The trigger
-and action compile against Automate's extension API, but discovery, execution
+and actions compile against Automate's extension API, but discovery, execution
 and run history have not been exercised in a live Umbraco/database runtime.
 External HTTP actions must retain Automate's SSRF
 protections and require workspace-scoped credentials.
