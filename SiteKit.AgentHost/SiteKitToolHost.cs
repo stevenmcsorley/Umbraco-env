@@ -32,7 +32,7 @@ public sealed class SiteKitToolHost
         _entities = new JsonSiteKitEntityRegistry(Path.Combine(dataRoot, "entities"));
         _screens = new JsonSiteKitScreenRegistry(Path.Combine(dataRoot, "screens"));
         _modules = new JsonSiteKitModuleRegistry(Path.Combine(dataRoot, "modules"));
-        _generator = new SiteKitProjectGenerator(Path.Combine(_root, "generated-projects"), _projects, _screens);
+        _generator = new SiteKitProjectGenerator(Path.Combine(_root, "generated-projects"), _projects, _screens, _entities);
         _moduleInstaller = new SiteKitModuleInstaller(Path.Combine(dataRoot, "modules"), _modules, _projects, _components, _entities, _screens);
         _auditPath = Path.Combine(dataRoot, "audit", "agent-tools.jsonl");
     }
@@ -239,6 +239,16 @@ public sealed class SiteKitToolHost
             if (await _components.GetAsync(alias, cancellationToken: ct) is null) errors.Add($"Component '{alias}' is not installed.");
         foreach (var alias in project.Entities)
             if (await _entities.GetAsync(id, alias, ct) is null) errors.Add($"Entity '{alias}' is missing its definition.");
+        foreach (var alias in project.Screens)
+        {
+            var screen = await _screens.GetAsync(id, alias, ct);
+            if (screen is null) { errors.Add($"Screen '{alias}' is missing its definition."); continue; }
+            var entity = screen.EntityAlias is null ? null : await _entities.GetAsync(id, screen.EntityAlias, ct);
+            if (screen.EntityAlias is not null && entity is null) errors.Add($"Screen '{alias}' references missing entity '{screen.EntityAlias}'.");
+            errors.AddRange(SiteKitScreenValidator.Validate(screen, entity).Select(error => $"Screen '{alias}': {error}"));
+            foreach (var component in screen.Components)
+                if (await _components.GetAsync(component, cancellationToken: ct) is null) errors.Add($"Screen '{alias}' references missing component '{component}'.");
+        }
         foreach (var placement in await _placements.ListAsync(id, ct))
         {
             var component = await _components.GetAsync(placement.ComponentAlias, placement.Version, ct);
