@@ -189,8 +189,11 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   component definitions; project manifests track screen aliases.
 - Added the authenticated Screen Studio at `/studio/screens`, project/entity
   selection, screen editing, and previews backed by the operational record
-  store. Screen previews enforce the same per-principal `read` grant as record
-  APIs. Screen metadata is included when generating an independent project.
+  store. Table, form and kanban previews include a live record list/editor for
+  create, edit and delete operations. Screen previews enforce the same
+  per-principal `read` grant as record APIs, and mutations reuse the existing
+  operation-specific grants. Screen metadata is included when generating an
+  independent project.
 - Added local agent/MCP `sitekit.create_screen` and `sitekit.list_screens` tools.
   Module packages now validate and install screen definitions with component
   and entity references. MCP and authenticated Studio APIs validate a
@@ -207,4 +210,6 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 - Limitations: generated applications currently export screen definitions as
   metadata and the Studio preview reads records, but deployable generated
   applications do not yet include screen rendering/runtime CRUD. CRM end-to-end
-  generation and record-preserving AI modification remain incomplete.
+  generation and record-preserving AI modification remain incomplete. Screen
+  Studio record editor controls call the permission-checked CRUD APIs, but the
+  new controls have not been exercised against a live Umbraco/SQL installation.

@@ -68,6 +68,7 @@ public sealed class SiteKitScreensController : ControllerBase
         if (screen is null) return NotFound();
         SiteKitEntityDefinition? entity = screen.EntityAlias is null ? null : await _entities.GetAsync(projectId, screen.EntityAlias, ct);
         if (screen.EntityAlias is not null && entity is null) return Conflict(new { error = "Screen entity is missing." });
+        string[] allowedOperations = [];
         if (entity is not null)
         {
             var principal = HttpContext.Session.GetString("UserEmail");
@@ -75,6 +76,7 @@ public sealed class SiteKitScreensController : ControllerBase
             var grant = await _permissions.GetAsync(projectId, entity.Alias, principal, ct);
             if (grant?.Operations.Contains("read", StringComparer.Ordinal) != true && grant?.Operations.Contains("manage", StringComparer.Ordinal) != true)
                 return Forbid();
+            allowedOperations = grant?.Operations ?? [];
         }
         var schemaErrors = SiteKitScreenValidator.Validate(screen, entity);
         if (schemaErrors.Count > 0) return Conflict(new { errors = schemaErrors });
@@ -82,7 +84,7 @@ public sealed class SiteKitScreensController : ControllerBase
         var fields = screen.Columns.Concat(screen.FormFields).Distinct(StringComparer.Ordinal)
             .Select(alias => entity?.Fields.FirstOrDefault(field => field.Alias == alias))
             .Where(field => field is not null).ToArray();
-        return Ok(new { screen, entity, fields, records });
+        return Ok(new { screen, entity, fields, records, allowedOperations });
     }
 
     private async Task<bool> ProjectExists(string projectId, CancellationToken ct)

@@ -21,8 +21,10 @@ This shows the project list, shared component placement, project-local appearanc
 This static Playwright capture shows a project-bound opportunity pipeline screen
 definition, entity and field bindings, and a sample kanban preview. The live
 screen definition API and MCP create/list/validation tools were smoke-tested,
-but this screenshot uses fixture data and does not imply a live backoffice or
-database connection.
+and the view now includes record editing controls wired to permission-checked
+CRUD APIs. The screenshot uses fixture data and does not imply a live
+backoffice or database connection; those new controls still need runtime
+verification against Umbraco and SQL.
 
 ## Generated website runtime
 
