@@ -14,7 +14,7 @@ solution; each milestone records implementation and validation evidence here.
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, multi-property visual editor, composed/reorderable layout builder, preview and safe renderer implemented; drag/drop canvas and compiled developer SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component and module projection remains |
-| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
+| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/importer/exporter and installer; official Automate 17.5.1 plus scoped record-change trigger and permission-checked, idempotent update action compile; live runtime verification and create/delete actions remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
 | M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 7 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
@@ -134,7 +134,11 @@ solution; each milestone records implementation and validation evidence here.
   permits optional additive fields one version at a time.
 - Added a SiteKit entity editor and record screen to Projects Studio. Authenticated
   endpoints enforce explicit read/create/update/delete grants for every record
-  operation. Allowlisted SiteKit admins grant access to account emails.
+  operation. Allowlisted SiteKit admins grant access to account emails. The
+  visual data model editor now creates and edits entity name, alias, schema
+  version and typed fields with required/unique, max length and relationship
+  target settings; advanced JSON remains available for fields not represented
+  in the visual editor.
 - SQL Server deployments persist operational records in a separate
   `SiteKitOperationalRecord` table with audit columns and soft deletion. The
   table is created idempotently by the SQL provider on first record access; the

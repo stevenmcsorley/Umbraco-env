@@ -14,7 +14,9 @@ a static fixture preview, not a running Umbraco screen.
 
 ![SiteKit Projects Studio static visual preview](../output/playwright/sitekit-projects-static-preview.png)
 
-This shows the project list, shared component placement, project-local appearance settings and rendered preview. It predates the data-model editor added in M5.
+This shows the project list, visual entity identity/field editor, field types,
+relationship targets, validation and explicit import permissions. The live UI
+and operational database are not connected; the screenshot uses fixture data.
 
 ## Application Screens Studio
 
