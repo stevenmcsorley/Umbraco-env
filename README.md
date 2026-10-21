@@ -99,7 +99,7 @@ The [milestone ledger](docs/SITEKIT_IMPLEMENTATION_PLAN.md) distinguishes implem
 - .NET 10 SDK (Umbraco 17 LTS)
 - Docker Desktop with its Linux engine, for the full Umbraco/SQL Server stack
 - Node.js 22+, for building the booking engine outside Docker
-- A Six Labors community license key for Release builds using ImageSharp 4.1.3; never commit the key
+- A Six Labors key for Release builds of the Umbraco web project (Debug builds need no key)
 
 ### Build the platform
 
@@ -109,7 +109,9 @@ dotnet build UmbraccoEnv.sln --no-restore
 dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --configuration Release
 ```
 
-For Release builds, set `SIXLABORS_LICENSE_KEY` in your environment. Debug builds do not require it.
+GitHub Actions uses a Release build when `SIXLABORS_LICENSE_KEY` is configured;
+otherwise it verifies the Debug build so contributors can validate the public
+source without a private license credential.
 
 ### Run the existing Umbraco starter
 

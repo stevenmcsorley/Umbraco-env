@@ -58,7 +58,8 @@ session. The certificate directory is ignored by Git and Docker build context.
 
 ### 3. Access Services
 
-- **Umbraco Backoffice**: http://localhost:44372/umbraco
+- **Umbraco Backoffice (sign-in)**: https://localhost:44373/umbraco (HTTPS overlay required)
+- **Umbraco HTTP endpoint**: http://localhost:44372/umbraco (sign-in is rejected over HTTP)
 - **Umbraco API**: http://localhost:44372/api/hotels
 - **Booking Engine API**: http://localhost:3001/health
 

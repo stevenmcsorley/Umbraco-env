@@ -68,14 +68,15 @@ solution; each milestone records implementation and validation evidence here.
   salted password hasher and legacy SHA-256 hashes are upgraded on successful
   login. HTML login, registration and booking cancellation forms use antiforgery
   tokens. Forwarded headers accept only configured proxy IPs.
-- The ImageSharp 4.1.2 security override removes a newly disclosed vulnerable
-  transitive version. Updated to 4.1.3 to include current security fixes.
-  ImageSharp 4 requires a Six Labors community/commercial key for direct
-  dependencies. The open-source project must apply for a community key; never
-  commit it. Release builds and GitHub CI consume `SIXLABORS_LICENSE_KEY` from
-  the environment/repository secret. Debug builds remain available without it.
-- No tests are present in the tracked solution. Validation will start with
-  reproducible builds and focused smoke checks as features are implemented.
+- Umbraco resolves ImageSharp transitively. Pin to ImageSharp 3.2.0, the vendor's
+  security-fixed release. The NuGet advisory records currently still report
+  five advisories against 3.2.0; vendor documentation confirms they were
+  backported, so the CI vulnerability checker allows only those five advisory
+  IDs for that exact version. ImageSharp 3.2.0 requires a Six Labors key for
+  Release builds. CI builds Release when `SIXLABORS_LICENSE_KEY` is configured
+  and otherwise validates Debug, which does not require the key.
+- The SiteKit core contract and storage test suite is present and currently
+  passes 20 tests. Broader application journey tests remain planned below.
 - The previously committed database password is a test credential according to
   the repository owner; its historical Git object remains in history. Runtime
   startup still requires database-backed smoke verification.

@@ -25,4 +25,10 @@ jobs:
       - name: Build solution
         env:
           SIXLABORS_LICENSE_KEY: ${{ secrets.SIXLABORS_LICENSE_KEY }}
-        run: dotnet build UmbraccoEnv.sln --no-restore --configuration Release -p:SixLaborsLicenseKey="$SIXLABORS_LICENSE_KEY"
+        run: |
+          if [[ -n "$SIXLABORS_LICENSE_KEY" ]]; then
+            dotnet build UmbraccoEnv.sln --no-restore --configuration Release -p:SixLaborsLicenseKey="$SIXLABORS_LICENSE_KEY"
+          else
+            echo "No Six Labors build key configured; validating the open-source Debug build."
+            dotnet build UmbraccoEnv.sln --no-restore --configuration Debug
+          fi

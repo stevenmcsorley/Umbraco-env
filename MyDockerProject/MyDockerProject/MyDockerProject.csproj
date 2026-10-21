@@ -13,11 +13,13 @@
     <ProjectReference Include="..\..\SiteKit.Core\SiteKit.Core.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.13" />
     <PackageReference Include="Umbraco.Cms" Version="17.7.1" />
+    <!-- Umbraco currently resolves ImageSharp 3.1.12, which has known security advisories.
+         3.2.0 backports those fixes; Debug builds do not require the vendor license key. -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.13" />
     <!-- Keep transitive dependencies on patched releases after the 2026 advisories. -->
     <PackageReference Include="MessagePack" Version="3.1.9" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="4.1.3" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 

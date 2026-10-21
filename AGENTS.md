@@ -62,11 +62,14 @@ dotnet build UmbraccoEnv.sln --no-restore
 dotnet list MyDockerProject/MyDockerProject/MyDockerProject.csproj package --vulnerable --include-transitive
 ```
 
-Release builds directly reference ImageSharp 4.1.3 and require the free
-Six Labors community key for this open-source project. Set
-`SIXLABORS_LICENSE_KEY` locally or in GitHub repository secrets; never commit
-it. Docker and SQL-backed runtime checks require Docker Desktop and a reachable
-SQL Server. Do not report static Playwright fixtures as live Umbraco evidence.
+Umbraco resolves ImageSharp transitively. The web project pins the vendor's
+security-fixed 3.2.0 release; NuGet's advisory records still list the previous
+affected versions, so `scripts/check_nuget_vulnerabilities.py` narrowly
+allowlists only the vendor-confirmed fixed advisories for that exact version.
+Do not broaden this exception. ImageSharp 3.2.0 requires a Six Labors key for
+Release builds; local Debug builds work without one. Docker and SQL-backed
+runtime checks require Docker Desktop and a reachable SQL Server. Do not report
+static Playwright fixtures as live Umbraco evidence.
 
 Use the fixed SiteKit MCP tools for project/component/entity/screen/module
 operations. `sitekit.validate_project` should pass before project generation.

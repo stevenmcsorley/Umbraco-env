@@ -8,14 +8,38 @@ from pathlib import Path
 from typing import Any
 
 
+# Six Labors confirms these advisories were fixed in ImageSharp 3.2.0, but the
+# advisory database had not yet been corrected when this exception was added.
+# Keep the exception narrow: package ID, exact version, and exact advisory IDs.
+# Reference: https://sixlabors.com/posts/security-support-and-license-enforcement/
+PATCHED_IMAGESHARP_ADVISORIES = {
+    "ghsa-gwg2-r3hj-4w44",
+    "ghsa-j3p4-wp97-rph4",
+    "ghsa-j9gm-c75j-xc9q",
+    "ghsa-jjfr-hcj7-qf5w",
+    "ghsa-wmxv-xphr-5c9g",
+}
+
+
 def find_vulnerabilities(value: Any, location: str = "report") -> list[str]:
     findings: list[str] = []
     if isinstance(value, dict):
         for key, child in value.items():
             current = f"{location}.{key}"
-            if key.casefold() in {"vulnerabilities", "vulnerability"} and child:
+            if key.casefold() == "vulnerabilities" and child:
                 if isinstance(child, list):
-                    findings.extend(f"{current}: {item}" for item in child)
+                    package_id = str(value.get("id", ""))
+                    version = str(value.get("resolvedVersion", ""))
+                    is_verified_imagesharp_patch = (
+                        package_id.casefold() == "sixlabors.imagesharp"
+                        and version == "3.2.0"
+                    )
+                    for item in child:
+                        advisory_url = item.get("advisoryurl", "") if isinstance(item, dict) else ""
+                        advisory = str(advisory_url).rstrip("/").rsplit("/", 1)[-1].casefold()
+                        if is_verified_imagesharp_patch and advisory in PATCHED_IMAGESHARP_ADVISORIES:
+                            continue
+                        findings.append(f"{current}: {item}")
                 else:
                     findings.append(f"{current}: {child}")
             else:
