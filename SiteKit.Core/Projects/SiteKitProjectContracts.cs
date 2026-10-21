@@ -35,6 +35,14 @@ public static class SiteKitProjectValidator
         if (manifest.ThemeSettings is not null && manifest.ThemeSettings.FontFamily is not ("system" or "serif" or "sans-serif" or "monospace"))
             errors.Add("theme fontFamily must be system, serif, sans-serif or monospace.");
         ValidateIds(manifest.Modules, "modules", errors);
+        if (manifest.ModuleVersions is null) errors.Add("moduleVersions are required.");
+        else
+        {
+            if (manifest.Modules is null || manifest.ModuleVersions.Keys.Any(id => !manifest.Modules.Contains(id, StringComparer.Ordinal))) errors.Add("moduleVersions may only pin modules listed on the project.");
+            foreach (var (id, version) in manifest.ModuleVersions)
+                if (!IsAlias(id) || !System.Text.RegularExpressions.Regex.IsMatch(version ?? string.Empty, "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"))
+                    errors.Add("moduleVersions contains an invalid module id or semantic version.");
+        }
         ValidateIds(manifest.Components, "components", errors);
         ValidateIds(manifest.Entities, "entities", errors);
         ValidateIds(manifest.Screens, "screens", errors);

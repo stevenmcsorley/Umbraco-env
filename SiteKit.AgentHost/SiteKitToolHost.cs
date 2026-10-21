@@ -51,6 +51,7 @@ public sealed class SiteKitToolHost
         Function("sitekit_list_screens", "List application screens in a project.", new { projectId = Schema("string") }, "projectId"),
         Function("sitekit_list_modules", "List verified declarative modules installed in the local package registry."),
         Function("sitekit_install_module", "Install a verified declarative module and its schemas into a project.", new { projectId = Schema("string"), moduleId = Schema("string"), version = Schema("string") }, "projectId", "moduleId", "version"),
+        Function("sitekit_upgrade_module", "Explicitly upgrade a project's pinned module version. Downgrades are rejected.", new { projectId = Schema("string"), moduleId = Schema("string"), version = Schema("string") }, "projectId", "moduleId", "version"),
         Function("sitekit_create_placement", "Place an existing reusable component in a project with independent data and appearance.", new { projectId = Schema("string"), placement = Schema("object") }, "projectId", "placement"),
         Function("sitekit_preview_project", "Render all validated component placements in a project for an HTML preview.", new { projectId = Schema("string") }, "projectId"),
         Function("sitekit_validate_project", "Validate the project's module, component and placement references without changing data.", new { projectId = Schema("string") }, "projectId"),
@@ -70,6 +71,7 @@ public sealed class SiteKitToolHost
         McpTool("sitekit.list_screens", "List application screens in a project.", ObjectSchema("projectId")),
         McpTool("sitekit.list_modules", "List verified local modules.", EmptySchema()),
         McpTool("sitekit.install_module", "Install an existing verified declarative module.", ObjectSchema("projectId", "moduleId", "version")),
+        McpTool("sitekit.upgrade_module", "Explicitly upgrade a project's pinned module version; downgrades are rejected.", ObjectSchema("projectId", "moduleId", "version")),
         McpTool("sitekit.create_component", "Create a validated declarative component version.", ObjectSchema("definition")),
         McpTool("sitekit.create_placement", "Place a shared component into a project with local styling and data.", ObjectSchema("projectId", "placement")),
         McpTool("sitekit.preview_project", "Render validated component placements for a project.", ObjectSchema("projectId")),
@@ -95,6 +97,7 @@ public sealed class SiteKitToolHost
                 "sitekit_list_screens" or "sitekit.list_screens" => await ListScreensAsync(arguments, cancellationToken),
                 "sitekit_list_modules" or "sitekit.list_modules" => await _modules.ListAsync(cancellationToken),
                 "sitekit_install_module" or "sitekit.install_module" => await InstallModuleAsync(arguments, cancellationToken),
+                "sitekit_upgrade_module" or "sitekit.upgrade_module" => await UpgradeModuleAsync(arguments, cancellationToken),
                 "sitekit_create_placement" or "sitekit.create_placement" => await CreatePlacementAsync(arguments, cancellationToken),
                 "sitekit_preview_project" or "sitekit.preview_project" => await PreviewProjectAsync(arguments, cancellationToken),
                 "sitekit_validate_project" or "sitekit.validate_project" => await ValidateProjectAsync(arguments, cancellationToken),
@@ -196,6 +199,14 @@ public sealed class SiteKitToolHost
         var moduleId = RequiredString(args, "moduleId");
         var version = RequiredString(args, "version");
         return await _moduleInstaller.InstallAsync(projectId, moduleId, version, ct);
+    }
+
+    private async Task<object> UpgradeModuleAsync(JsonElement args, CancellationToken ct)
+    {
+        var projectId = RequiredString(args, "projectId");
+        var moduleId = RequiredString(args, "moduleId");
+        var version = RequiredString(args, "version");
+        return await _moduleInstaller.UpgradeAsync(projectId, moduleId, version, ct);
     }
 
     private async Task<object> CreatePlacementAsync(JsonElement args, CancellationToken ct)

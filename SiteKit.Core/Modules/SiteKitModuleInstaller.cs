@@ -21,10 +21,29 @@ public sealed class SiteKitModuleInstaller
     public SiteKitModuleInstaller(string packageRoot, ISiteKitModuleRegistry modules, ISiteKitProjectRegistry projects, ISiteKitComponentRegistry components, ISiteKitEntityRegistry entities, ISiteKitScreenRegistry screens)
     { _packageRoot = Path.GetFullPath(packageRoot); _modules = modules; _projects = projects; _components = components; _entities = entities; _screens = screens; }
 
-    public async Task<SiteKitProjectManifest> InstallAsync(string projectId, string moduleId, string version, CancellationToken cancellationToken = default)
+    public Task<SiteKitProjectManifest> InstallAsync(string projectId, string moduleId, string version, CancellationToken cancellationToken = default)
+        => InstallInternalAsync(projectId, moduleId, version, false, cancellationToken);
+
+    public Task<SiteKitProjectManifest> UpgradeAsync(string projectId, string moduleId, string version, CancellationToken cancellationToken = default)
+        => InstallInternalAsync(projectId, moduleId, version, true, cancellationToken);
+
+    private async Task<SiteKitProjectManifest> InstallInternalAsync(string projectId, string moduleId, string version, bool allowUpgrade, CancellationToken cancellationToken)
     {
         var project = await _projects.GetAsync(projectId, cancellationToken) ?? throw new InvalidOperationException("Project not found.");
         var module = await _modules.GetAsync(moduleId, version, cancellationToken) ?? throw new InvalidOperationException("Module version is not installed in the local registry.");
+        var alreadyInstalled = project.Modules.Contains(module.Id, StringComparer.Ordinal);
+        var hasVersionPin = (project.ModuleVersions ?? new Dictionary<string, string>()).TryGetValue(module.Id, out var installedVersion);
+        if (alreadyInstalled && !hasVersionPin && !allowUpgrade)
+            throw new InvalidOperationException($"Module '{module.Id}' is installed without a version pin; use the explicit upgrade operation to pin {module.Version}.");
+        if (hasVersionPin)
+        {
+            if (string.IsNullOrWhiteSpace(installedVersion)) throw new InvalidDataException($"Project module version pin for '{module.Id}' is empty.");
+            if (!string.Equals(installedVersion, module.Version, StringComparison.Ordinal))
+            {
+                if (!allowUpgrade) throw new InvalidOperationException($"Module '{module.Id}' is pinned to {installedVersion}; use the explicit upgrade operation to install {module.Version}.");
+                if (CompareVersions(module.Version, installedVersion) <= 0) throw new InvalidOperationException($"Module upgrade must move '{module.Id}' forward from {installedVersion}; downgrades are not allowed.");
+            }
+        }
         var manifestErrors = JsonSiteKitModuleRegistry.ValidateManifest(module);
         if (manifestErrors.Count > 0) throw new InvalidDataException(string.Join(" ", manifestErrors));
         if (module.ProjectCategories.Length > 0 && !module.ProjectCategories.Contains(project.Category, StringComparer.Ordinal))
@@ -115,26 +134,43 @@ public sealed class SiteKitModuleInstaller
                 throw new InvalidOperationException($"Screen '{screen.Alias}' does not match its installed entity schema.");
         }
 
-        foreach (var definition in definitions)
-        {
-            await _components.SaveAsync(definition, cancellationToken);
-            installedComponents.Add(definition.Alias);
-        }
-        foreach (var definition in entityDefinitions)
-        {
-            await _entities.SaveAsync(definition, cancellationToken);
-            installedEntities.Add(definition.Alias);
-        }
-        foreach (var screen in installedScreens) await _screens.SaveAsync(screen, cancellationToken);
+        installedComponents.AddRange(definitions.Select(definition => definition.Alias));
+        installedEntities.AddRange(entityDefinitions.Select(definition => definition.Alias));
         var updated = project with
         {
             Modules = project.Modules.Contains(module.Id, StringComparer.Ordinal) ? project.Modules : project.Modules.Append(module.Id).ToArray(),
+            ModuleVersions = new Dictionary<string, string>(project.ModuleVersions ?? new Dictionary<string, string>(), StringComparer.Ordinal) { [module.Id] = module.Version },
             Components = project.Components.Concat(installedComponents).Distinct(StringComparer.Ordinal).ToArray(),
             Entities = project.Entities.Concat(installedEntities).Distinct(StringComparer.Ordinal).ToArray(),
             Screens = project.Screens.Concat(installedScreens.Select(screen => screen.Alias)).Distinct(StringComparer.Ordinal).ToArray()
         };
         var errors = SiteKitProjectValidator.Validate(updated);
         if (errors.Count > 0) throw new InvalidOperationException(string.Join(" ", errors));
+
+        foreach (var definition in definitions)
+        {
+            await _components.SaveAsync(definition, cancellationToken);
+        }
+        foreach (var definition in entityDefinitions)
+        {
+            await _entities.SaveAsync(definition, cancellationToken);
+        }
+        foreach (var screen in installedScreens) await _screens.SaveAsync(screen, cancellationToken);
         return await _projects.SaveAsync(updated, cancellationToken);
+    }
+
+    private static int CompareVersions(string left, string right)
+    {
+        static (Version Core, string? Prerelease) Parse(string value)
+        {
+            var pieces = value.Split('-', 2);
+            return (Version.Parse(pieces[0]), pieces.Length == 2 ? pieces[1] : null);
+        }
+        var a = Parse(left); var b = Parse(right);
+        var coreComparison = a.Core.CompareTo(b.Core);
+        if (coreComparison != 0) return coreComparison;
+        if (a.Prerelease is null) return b.Prerelease is null ? 0 : 1;
+        if (b.Prerelease is null) return -1;
+        return string.Compare(a.Prerelease, b.Prerelease, StringComparison.OrdinalIgnoreCase);
     }
 }

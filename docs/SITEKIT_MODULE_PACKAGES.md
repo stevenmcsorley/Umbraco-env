@@ -42,6 +42,13 @@ dotnet run --project SiteKit.AgentHost -- import-module ./my-crm-module.sitekit-
 
 Alternatively, upload the ZIP in `/studio/modules`. The UI lists verified packages, exports them, and installs them into a selected project. MCP agents can install a verified local module with `sitekit.install_module`.
 
-The project manifest records installed module IDs plus the component/entity references. Component definitions are shared by reference; entity schemas are copied into the target project's schema registry. Existing component versions cannot be silently overwritten; entity schemas use SiteKit's additive version rules. Installation checks module/file hashes again before applying content. Dependencies must already be installed in the project and each module declares allowed project categories.
+The project manifest records installed module IDs, pinned module versions and the component/entity/screen references. Component definitions are shared by reference; entity schemas are copied into the target project's schema registry. Existing component versions cannot be silently overwritten; entity schemas use SiteKit's additive version rules. Installation checks module/file hashes again before applying content. Dependencies must already be installed in the project and each module declares allowed project categories.
 
-This package format is declarative. Screen files are validated and installed as project-bound SiteKit screen definitions, then can be previewed against operational records in Screen Studio. Generated projects currently receive the screen definitions as metadata; a generated screen runtime remains outstanding. Workflow files remain inert JSON. The Umbraco host installs the official Automate package; SiteKit-specific record event providers remain outstanding. See [SITEKIT_AUTOMATION.md](SITEKIT_AUTOMATION.md) and [SITEKIT_IMPLEMENTATION_PLAN.md](SITEKIT_IMPLEMENTATION_PLAN.md).
+Studio distinguishes first install from upgrade. A project pinned to a different
+version must use the explicit upgrade action; downgrades are rejected. Existing
+projects that have module IDs without a version pin must also pass through that
+explicit upgrade path to establish a pin. Module dependencies currently name
+module IDs but do not declare semantic version ranges; each dependency must be
+installed first.
+
+This package format is declarative. Screen files are validated and installed as project-bound SiteKit screen definitions, then can be previewed against operational records in Screen Studio. Generated projects currently receive the screen definitions as metadata; a generated screen runtime remains outstanding. Workflow files remain inert JSON. Umbraco Automate has a SiteKit record-change trigger and a permission-checked update action, but does not import these package workflows as executable automations. See [SITEKIT_AUTOMATION.md](SITEKIT_AUTOMATION.md) and [SITEKIT_IMPLEMENTATION_PLAN.md](SITEKIT_IMPLEMENTATION_PLAN.md).

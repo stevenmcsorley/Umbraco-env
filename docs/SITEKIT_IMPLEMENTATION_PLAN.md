@@ -15,9 +15,9 @@ solution; each milestone records implementation and validation evidence here.
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component and module projection remains |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
-| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/importer/exporter and installer; official Automate 17.5.1 plus scoped record-change trigger and permission-checked, idempotent update action compile; live runtime verification and create/delete actions remain |
+| M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade with project version pins and downgrade protection; official Automate 17.5.1 plus scoped record-change trigger and permission-checked update action compile; uninstall, version-ranged dependencies, executable workflow provisioning and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 7 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 11 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -245,7 +245,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   runs. Bounded history records run metadata and file hash without row values;
   Studio displays the latest 100 previews/imports. Added import navigation
   across Studio areas.
-- Validation: all 10 Release core tests pass, including CSV/JSON/XML import and
+- Validation: all 11 Release core tests pass, including CSV/JSON/XML import and
   preview, unique-key repeat updates, retention of omitted data and invalid-row
   reporting. The Umbraco Debug host compiles with 0 errors (154 existing
   warnings). Added a static fixture screenshot; live authenticated endpoint
@@ -253,3 +253,17 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 - Current boundaries: no media transfer, background/resumable jobs, AI mapping,
   execution audit log or relationship-aware deduplication. See
   [SITEKIT_IMPORTS.md](SITEKIT_IMPORTS.md).
+
+## M6 module versioning update
+
+- Project manifests now pin the exact installed module version. A package with
+  the same module ID cannot silently replace an installed version; Studio and
+  the local Agent Host expose an explicit upgrade action. Upgrades move forward
+  only, and downgrades are rejected before package assets are written.
+- Validation: all 11 Release core contract tests pass, including first install,
+  blocked implicit upgrade, explicit forward upgrade and blocked downgrade.
+  The .NET 10 Umbraco solution builds with 0 errors (1 existing warning), and
+  the module Studio JavaScript passes `node --check`.
+- Module dependency validation currently checks installed module IDs; version
+  ranges and transactional rollback across multiple registry files remain
+  planned. Static Studio fixture evidence is in `SITEKIT_SCREENSHOTS.md`.

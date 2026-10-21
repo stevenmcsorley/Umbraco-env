@@ -83,6 +83,7 @@ public sealed record SiteKitProjectManifest
     public string Description { get; init; } = string.Empty;
     public string Theme { get; init; } = "default";
     public string[] Modules { get; init; } = [];
+    public Dictionary<string, string> ModuleVersions { get; init; } = new(StringComparer.Ordinal);
     public string[] Components { get; init; } = [];
     public string[] Entities { get; init; } = [];
     public string[] Screens { get; init; } = [];

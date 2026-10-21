@@ -2,6 +2,8 @@ using System.Text.Json;
 using SiteKit.Core.Components;
 using SiteKit.Core.Data;
 using SiteKit.Core.Importing;
+using SiteKit.Core.Modules;
+using SiteKit.Core.Projects;
 
 namespace SiteKit.Core.Tests;
 
@@ -216,6 +218,58 @@ public sealed class SiteKitCoreContractTests
             Assert.DoesNotContain("sensitive customer value", json, StringComparison.Ordinal);
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ModuleVersionsArePinnedAndOnlyMoveForwardThroughUpgrade()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-module-upgrade-tests", Guid.NewGuid().ToString("N"));
+        var packages = Path.Combine(root, "modules");
+        var source = Path.Combine(root, "source");
+        var zip = Path.Combine(root, "packages", "module.zip");
+        var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "projects"));
+        var components = new JsonSiteKitComponentRegistry(Path.Combine(root, "components"));
+        var entities = new JsonSiteKitEntityRegistry(Path.Combine(root, "entities"));
+        var screens = new JsonSiteKitScreenRegistry(Path.Combine(root, "screens"));
+        var modules = new JsonSiteKitModuleRegistry(packages);
+        var installer = new SiteKitModuleInstaller(packages, modules, projects, components, entities, screens);
+        await projects.SaveAsync(new SiteKitProjectManifest { Id = "sales-crm", Name = "Sales CRM", Category = "application" });
+
+        try
+        {
+            await ImportModule("1.0.0");
+            var first = await installer.InstallAsync("sales-crm", "sales-module", "1.0.0");
+            Assert.Equal("1.0.0", first.ModuleVersions["sales-module"]);
+
+            await ImportModule("1.1.0");
+            await Assert.ThrowsAsync<InvalidOperationException>(() => installer.InstallAsync("sales-crm", "sales-module", "1.1.0"));
+            var upgraded = await installer.UpgradeAsync("sales-crm", "sales-module", "1.1.0");
+            Assert.Equal("1.1.0", upgraded.ModuleVersions["sales-module"]);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => installer.UpgradeAsync("sales-crm", "sales-module", "1.0.0"));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+
+        async Task ImportModule(string version)
+        {
+            if (Directory.Exists(source)) Directory.Delete(source, recursive: true);
+            Directory.CreateDirectory(Path.Combine(source, "components"));
+            var component = new SiteKitComponentDefinition
+            {
+                Alias = "crm-card", Name = "CRM Card", Category = "Business", Version = version,
+                Properties = [new() { Alias = "title", Label = "Title", Type = "text", Required = true }],
+                Layout = new() { Type = "heading", Bind = "title", HeadingLevel = 2 }
+            };
+            await File.WriteAllBytesAsync(Path.Combine(source, "components", "crm-card.json"), JsonSerializer.SerializeToUtf8Bytes(component));
+            var manifest = new SiteKitModuleManifest
+            {
+                Id = "sales-module", Name = "Sales Module", Version = version,
+                CompatibleSiteKitVersions = ["2.0.0"], ProjectCategories = ["application"]
+            };
+            await File.WriteAllBytesAsync(Path.Combine(source, "sitekit.module.json"), JsonSerializer.SerializeToUtf8Bytes(manifest));
+            await SiteKitModulePackageBuilder.BuildAsync(source, zip);
+            await using var package = File.OpenRead(zip);
+            await modules.ImportAsync(package);
+        }
     }
 
     private static SiteKitEntityDefinition CustomerEntity() => new()

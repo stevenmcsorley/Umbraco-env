@@ -39,6 +39,15 @@ selection, a saved customers mapping and a sample row-validation preview. The
 authenticated API and mapping controls compile, and core parser/import tests
 pass; the screenshot is not connected to a running Umbraco instance.
 
+## Module Studio
+
+![SiteKit Modules Studio static visual preview](../output/playwright/sitekit-modules-static-preview.png)
+
+This fixture shows verified packages, per-project installed version pins,
+explicit upgrade controls and package import/export. The UI wiring compiles and
+module version/upgrade rules are covered by core contract tests; the screenshot
+is not connected to a running Umbraco instance.
+
 ## Generated website runtime
 
 ![SiteKit generated website running locally](../output/playwright/sitekit-generated-website.png)
