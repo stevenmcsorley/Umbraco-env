@@ -50,6 +50,7 @@ public sealed class SqlSiteKitRecordStore : ISiteKitRecordStore
         var normalizedData = normalizedDocument.RootElement;
 
         await using var transaction = await _database.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await EnsureRelationshipsExistAsync(definition, normalizedData, cancellationToken);
         var existing = await _database.SiteKitOperationalRecords.FromSqlInterpolated($"SELECT * FROM [SiteKitOperationalRecord] WITH (UPDLOCK, HOLDLOCK) WHERE [ProjectId] = {definition.ProjectId} AND [EntityAlias] = {definition.Alias} AND [Id] = {key}")
             .FirstOrDefaultAsync(cancellationToken);
         if (existing?.IsDeleted == true) existing = null;
@@ -79,6 +80,24 @@ public sealed class SqlSiteKitRecordStore : ISiteKitRecordStore
         await _database.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return ToContract(row);
+    }
+
+    private async Task EnsureRelationshipsExistAsync(SiteKitEntityDefinition definition, JsonElement data, CancellationToken cancellationToken)
+    {
+        foreach (var field in definition.Fields.Where(field => field.Type is "relationship" or "relationships" && data.TryGetProperty(field.Alias, out _)))
+        {
+            var value = data.GetProperty(field.Alias);
+            var ids = field.Type == "relationships"
+                ? value.EnumerateArray().Select(item => NormalizeId(item.GetString()!))
+                : [NormalizeId(value.GetString()!)];
+            foreach (var relatedId in ids)
+            {
+                var related = await _database.SiteKitOperationalRecords.FromSqlInterpolated($"SELECT * FROM [SiteKitOperationalRecord] WITH (UPDLOCK, HOLDLOCK) WHERE [ProjectId] = {definition.ProjectId} AND [EntityAlias] = {field.RelatedEntity} AND [Id] = {relatedId} AND [IsDeleted] = 0")
+                    .AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                if (related is null)
+                    throw new InvalidOperationException($"Relationship field '{field.Alias}' references a missing {field.RelatedEntity} record.");
+            }
+        }
     }
 
     public async Task<bool> DeleteAsync(string projectId, string entityAlias, string id, string actor, IReadOnlyList<SiteKitEntityDefinition> entityDefinitions, CancellationToken cancellationToken = default)
