@@ -14,7 +14,7 @@ public sealed class SiteKitImportsController : ControllerBase
 {
     private readonly ISiteKitImportMappingRegistry _mappings;
     private readonly ISiteKitEntityRegistry _entities;
-    private readonly ISiteKitPermissionRegistry _permissions;
+    private readonly SiteKitPermissionEvaluator _permissionEvaluator;
     private readonly ISiteKitProjectRegistry _projects;
     private readonly SiteKitDataImportService _imports;
     private readonly ISiteKitImportRunRegistry _runs;
@@ -23,9 +23,9 @@ public sealed class SiteKitImportsController : ControllerBase
     private const long MaxUploadBytes = SiteKitDataImportService.MaximumBytes;
 
     public SiteKitImportsController(ISiteKitImportMappingRegistry mappings, ISiteKitEntityRegistry entities,
-        ISiteKitPermissionRegistry permissions, ISiteKitProjectRegistry projects, SiteKitDataImportService imports, ISiteKitImportRunRegistry runs,
+        SiteKitPermissionEvaluator permissionEvaluator, ISiteKitProjectRegistry projects, SiteKitDataImportService imports, ISiteKitImportRunRegistry runs,
         IHttpClientFactory httpClientFactory, IConfiguration configuration)
-    { _mappings = mappings; _entities = entities; _permissions = permissions; _projects = projects; _imports = imports; _runs = runs; _httpClientFactory = httpClientFactory; _configuration = configuration; }
+    { _mappings = mappings; _entities = entities; _permissionEvaluator = permissionEvaluator; _projects = projects; _imports = imports; _runs = runs; _httpClientFactory = httpClientFactory; _configuration = configuration; }
 
     [HttpGet]
     public async Task<IActionResult> List(string projectId, CancellationToken ct)
@@ -119,8 +119,7 @@ public sealed class SiteKitImportsController : ControllerBase
     {
         var principal = HttpContext.Session.GetString("UserEmail");
         if (string.IsNullOrWhiteSpace(principal)) return false;
-        var grant = await _permissions.GetAsync(projectId, entityAlias, principal, ct);
-        return grant?.Operations.Contains(operation, StringComparer.Ordinal) == true || grant?.Operations.Contains("manage", StringComparer.Ordinal) == true;
+        return await _permissionEvaluator.CanAsync(projectId, entityAlias, principal, operation, ct);
     }
 
     private Task<SiteKitImportRun> SaveRun(SiteKitImportMapping mapping, string mode, string status, byte[] contentHash,

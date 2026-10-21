@@ -53,15 +53,14 @@ public sealed class SiteKitUpdateOperationalRecordAction : ActionBase<SiteKitUpd
             var services = scope.ServiceProvider;
             var entities = services.GetRequiredService<ISiteKitEntityRegistry>();
             var records = services.GetRequiredService<ISiteKitRecordStore>();
-            var permissions = services.GetRequiredService<ISiteKitPermissionRegistry>();
+            var permissionEvaluator = services.GetRequiredService<SiteKitPermissionEvaluator>();
             var users = services.GetRequiredService<Umbraco.Cms.Core.Services.IUserService>();
             var events = services.GetRequiredService<IEventAggregator>();
             var serviceAccount = await users.GetAsync(context.ExecutionContext.ServiceAccountKey);
             var actor = serviceAccount?.Email;
             if (string.IsNullOrWhiteSpace(actor))
                 return ActionResult.Failed(new UnauthorizedAccessException("The automation service account could not be resolved."), StepRunErrorCategory.Authentication);
-            var grant = await permissions.GetAsync(settings.ProjectId, settings.EntityAlias, actor, cancellationToken);
-            if (grant?.Operations.Contains("update", StringComparer.Ordinal) != true && grant?.Operations.Contains("manage", StringComparer.Ordinal) != true)
+            if (!await permissionEvaluator.CanAsync(settings.ProjectId, settings.EntityAlias, actor, "update", cancellationToken))
                 return ActionResult.Failed(new UnauthorizedAccessException("The automation service account has no SiteKit update grant for this entity."), StepRunErrorCategory.Authentication);
 
             var entity = await entities.GetAsync(settings.ProjectId, settings.EntityAlias, cancellationToken);

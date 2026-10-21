@@ -17,11 +17,31 @@ public sealed class SiteKitEntitiesController : ControllerBase
     private readonly ISiteKitProjectRegistry _projects;
     private readonly ISiteKitRecordStore _records;
     private readonly ISiteKitPermissionRegistry _permissions;
+    private readonly ISiteKitProjectRoleRegistry _roles;
+    private readonly SiteKitPermissionEvaluator _permissionEvaluator;
     private readonly IConfiguration _configuration;
     private readonly IEventAggregator _events;
 
-    public SiteKitEntitiesController(ISiteKitEntityRegistry entities, ISiteKitProjectRegistry projects, ISiteKitRecordStore records, ISiteKitPermissionRegistry permissions, IConfiguration configuration, IEventAggregator events)
-    { _entities = entities; _projects = projects; _records = records; _permissions = permissions; _configuration = configuration; _events = events; }
+    public SiteKitEntitiesController(ISiteKitEntityRegistry entities, ISiteKitProjectRegistry projects, ISiteKitRecordStore records, ISiteKitPermissionRegistry permissions,
+        ISiteKitProjectRoleRegistry roles, SiteKitPermissionEvaluator permissionEvaluator, IConfiguration configuration, IEventAggregator events)
+    { _entities = entities; _projects = projects; _records = records; _permissions = permissions; _roles = roles; _permissionEvaluator = permissionEvaluator; _configuration = configuration; _events = events; }
+
+    [HttpGet("~/api/sitekit/projects/{projectId}/roles")]
+    public async Task<IActionResult> ListProjectRoles(string projectId, CancellationToken ct)
+        => await ProjectExists(projectId, ct) ? Ok(await _roles.ListAsync(projectId, ct)) : NotFound();
+
+    [HttpPut("~/api/sitekit/projects/{projectId}/roles/{alias}")]
+    [RequestSizeLimit(262_144)]
+    public async Task<IActionResult> SaveProjectRole(string projectId, string alias, [FromBody] SiteKitProjectRole role, CancellationToken ct)
+    {
+        if (!await ProjectExists(projectId, ct)) return NotFound();
+        if (role.ProjectId != projectId || role.Alias != alias) return BadRequest(new { error = "Route and role identifiers must match." });
+        if (!IsSiteKitAdministrator(HttpContext.Session.GetString("UserEmail"))) return Forbid();
+        var errors = SiteKitProjectRoleValidator.Validate(role);
+        if (errors.Count > 0) return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]> { ["role"] = errors.ToArray() }));
+        try { return Ok(await _roles.SaveAsync(role, ct)); }
+        catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
+    }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SiteKitEntityDefinition>>> List(string projectId, CancellationToken ct)
@@ -80,9 +100,10 @@ public sealed class SiteKitEntitiesController : ControllerBase
     {
         if (await _entities.GetAsync(projectId, alias, ct) is null) return NotFound();
         var email = HttpContext.Session.GetString("UserEmail");
-        var admins = (_configuration["SiteKit:AdminEmails"] ?? string.Empty).Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (string.IsNullOrWhiteSpace(email) || !admins.Contains(email, StringComparer.OrdinalIgnoreCase)) return Forbid();
+        if (!IsSiteKitAdministrator(email)) return Forbid();
         if (grant.ProjectId != projectId || grant.EntityAlias != alias) return BadRequest(new { error = "Route and grant identifiers must match." });
+        if (SiteKitPermissionEvaluator.TryGetRoleAlias(grant.Principal, out var roleAlias) && await _roles.GetAsync(projectId, roleAlias, ct) is null)
+            return BadRequest(new { error = $"Role '{roleAlias}' is not defined in this project." });
         try { return Ok(await _permissions.SaveAsync(grant, ct)); }
         catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
     }
@@ -171,8 +192,13 @@ public sealed class SiteKitEntitiesController : ControllerBase
     {
         var principal = HttpContext.Session.GetString("UserEmail");
         if (string.IsNullOrWhiteSpace(principal)) return false;
-        var grant = await _permissions.GetAsync(projectId, alias, principal, ct);
-        return grant?.Operations.Contains(operation, StringComparer.Ordinal) == true || grant?.Operations.Contains("manage", StringComparer.Ordinal) == true;
+        return await _permissionEvaluator.CanAsync(projectId, alias, principal, operation, ct);
+    }
+
+    private bool IsSiteKitAdministrator(string? email)
+    {
+        var admins = (_configuration["SiteKit:AdminEmails"] ?? string.Empty).Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return !string.IsNullOrWhiteSpace(email) && admins.Contains(email, StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task<bool> ProjectExists(string projectId, CancellationToken ct)

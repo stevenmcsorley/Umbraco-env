@@ -14,10 +14,10 @@ solution; each milestone records implementation and validation evidence here.
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, C# definition builder, multi-property visual editor, composed/reorderable layout builder, accessible disclosure interactions, preview, safe renderer, and validated cross-registry export/import implemented; drag/drop canvas and compiled Razor/React SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator now projects shared validated component placements with per-project data and appearance; broader module projection and full production hosting configuration remain |
-| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; SQL persistence now verifies and locks relationship targets during writes and prevents deleting referenced records inside serializable transactions; generated apps include model-driven screens, SQLite-backed CRUD, per-principal grants and relationship protection; identity federation, schema migrations for SQL entities and live multi-entity SQL verification remain |
+| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit account and project-role grants, SQL Server CRUD APIs and Studio record editor; SQL persistence now verifies and locks relationship targets during writes and prevents deleting referenced records inside serializable transactions; generated apps include model-driven screens, SQLite-backed CRUD, per-principal grants and relationship protection; identity federation, schema migrations for SQL entities and live multi-entity SQL verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade with project version pins, SemVer dependency ranges and dependent-upgrade checks; official Automate 17.5.1 plus scoped record-change trigger and permission-checked create/update/idempotent delete actions compile; uninstall, executable workflow provisioning and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; generated apps now render tables, search, kanban, calendars and entity-count dashboards over SQLite CRUD; complete CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: license-aware CI build, NuGet vulnerability gate and 23 focused core tests; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: license-aware CI build, NuGet vulnerability gate and 29 focused core tests; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -34,7 +34,7 @@ solution; each milestone records implementation and validation evidence here.
 | React/TypeScript booking UI | Implemented | Separate frontend, Vite 8 / React Router 7, Tailwind 4, generated bundle; npm audit reports no known vulnerabilities |
 | Docker deployment | Partial | Compose SQL Server, Umbraco and booking engine started and smoke checked. SQL health is green; HTTPS Umbraco backoffice and booking `/health` return HTTP 200. ASP.NET Core data-protection keys persist in the existing `umb_data` volume across app-container recreation. Automate completes its nine startup migrations using the shared CMS SQL connection. The optional HTTPS overlay has a locally trusted development certificate. Production TLS and data-protection key encryption remain required. |
 | Component registry / Studio | Partial | Versioned declarative JSON registry, schema/data validation, import/export, safe primitive renderer, authenticated `/studio/components` editor with searchable persistent tags, project registry and project-local placements/appearance in `/studio/projects`; reusable definitions are projected by reference into generated websites with validated per-project overrides. Umbraco-published page integration and developer package pipeline remain planned |
-| Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, explicit grants and a basic data model/record editor; serializable SQL record writes and deletes enforce relationship existence/reference checks; screen composition, SQL entity schema migrations and live multi-entity verification remain |
+| Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, direct and project-role grants and a basic data model/record editor; serializable SQL record writes and deletes enforce relationship existence/reference checks; screen composition, SQL entity schema migrations and live multi-entity verification remain |
 | Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component, entity and screen definitions; official Umbraco Automate provides a scoped SiteKit record-change trigger plus create/update/delete record actions with service-account grants; module workflow JSON remains inert |
 | ChatGPT plan sharing / Agent Host / MCP | Partial | Local Agent Host implements SIWC, Responses streaming, typed tools and local stdio MCP; live eligible account flow remains unverified |
 | Generated business application runtime | Partial | Project generator exports project and screen manifests with model-driven tables, forms, search, kanban, calendar, dashboard counts, SQLite CRUD, token principals, operation grants, relationship validation and delete protection; production identity federation and live external database integration remain |
@@ -69,14 +69,15 @@ solution; each milestone records implementation and validation evidence here.
   login. HTML login, registration and booking cancellation forms use antiforgery
   tokens. Forwarded headers accept only configured proxy IPs.
 - Umbraco resolves ImageSharp transitively. Pin to ImageSharp 3.2.0, the vendor's
-  security-fixed release. The NuGet advisory records currently still report
-  five advisories against 3.2.0; vendor documentation confirms they were
-  backported, so the CI vulnerability checker allows only those five advisory
-  IDs for that exact version. ImageSharp 3.2.0 requires a Six Labors key for
+  security-fixed v3 release. NuGet still reports five advisories for 3.2.0;
+  Six Labors' [security support and license notice](https://sixlabors.com/posts/security-support-and-license-enforcement/)
+  says the corresponding fixes were backported and advisory corrections are
+  awaiting review. CI therefore exempts only those five advisory IDs for that
+  exact package version. ImageSharp 3.2.0 requires a Six Labors key for
   Release builds. CI builds Release when `SIXLABORS_LICENSE_KEY` is configured
   and otherwise validates Debug, which does not require the key.
-- The SiteKit core contract and storage test suite is present and currently
-  passes 23 tests. Broader application journey tests remain planned below.
+- The SiteKit core contract and storage test suite currently passes 29 tests.
+  Broader application journey tests remain planned below.
 - The previously committed database password is a test credential according to
   the repository owner; its historical Git object remains in history. Runtime
   startup still requires database-backed smoke verification.
@@ -208,8 +209,8 @@ solution; each milestone records implementation and validation evidence here.
 | 2026-10-21 | M0 | .NET 10 Docker build succeeded with 0 errors and 164 existing Umbraco/nullability warnings. SQL is healthy; the Umbraco login form, generated booking CSS/JS assets and booking `/health` return HTTP 200. Data-protection key persistence survived app-container recreation. `npm audit` reports zero vulnerabilities in both Node projects. The HTTPS overlay serves OpenIddict metadata with HTTP 200; HTTP requests redirect to HTTPS on the overlay. Full Umbraco backoffice sign-in remains unverified. |
 | 2026-10-21 | M1/M2 | `dotnet build UmbraccoEnv.sln --no-restore` succeeds with 0 errors. An additional build with `RazorCompileOnBuild=true` exposes pre-existing Razor compile failures in the backup view folder and the generated `PublishedModels.Home` type; ordinary project builds intentionally disable build-time Razor compilation. Live authenticated Studio smoke created and retrieved a new versioned component, rendered its preview, created a second website project, and rendered the same component in both projects with distinct data and appearance. All five Studio routes return HTTP 200 after correcting Razor escaping in the responsive styles; Screens and Imports loaded with zero browser console errors. |
 | 2026-10-21 | M8 | `dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --configuration Release` passed all 23 tests with 0 failures and 0 skips in the .NET 10 SDK container. |
-| 2026-10-22 | M5/M8 | SQL Server record deletion now checks relationship references under serializable locks, the JSON store rejects references, and the API maps reference conflicts to HTTP 409. Cross-entity JSON reference protection is covered by the 28-test Release suite. SQL host compiles with 0 errors; runtime SQL multi-entity relationship concurrency remains unverified. Local HTTPS backoffice returned 200 after a web-container rebuild; the direct HTTP member authorization route returned 307 to HTTPS. CI passed for `dd16674`, `465ef53` and `865f18a`; a subsequent SQL write-lock enhancement is in progress. |
-| 2026-10-22 | M6/M8 | Added Automate delete-record action with service-account `delete`/`manage` authorization, safe replays for absent records, relationship-safe store deletion and change-event publication. The Umbraco host compiles with the action and SQL transaction checks (0 errors, 159 existing warnings); the 28 core Release tests pass. Live Automate action discovery/execution is still unverified. |
+| 2026-10-22 | M5/M8 | SQL Server record writes verify/lock relationship targets and deletes check references under serializable locks; the JSON store rejects references and the API maps conflicts to HTTP 409. Project-role permission resolution is covered by an evaluator test. The 29-test Release suite passes; the host build succeeds with 0 errors. Local HTTPS backoffice returns 200 and the HTTP authorization route redirects to HTTPS. CI is green through `75c54bd`; project-role UI/API changes are under validation. |
+| 2026-10-22 | M6/M8 | Added Automate delete-record action with service-account `delete`/`manage` authorization, safe replays for absent records, relationship-safe store deletion and change-event publication. The Umbraco host compiles with the action and SQL transaction checks (0 errors, 159 existing warnings); the 29 core Release tests pass. The protected Automate action catalogue was probed unauthenticated and correctly returned 401; live discovery/execution still needs a backoffice identity. |
 | 2026-10-21 | M5/M7 | Generator integration suite passed 23/23 tests after adding table/kanban edit controls and single/multiple relationship selectors. The suite builds generated projects and exercises token-protected persistent CRUD, relationships and delete protection; the browser screen workflow itself remains unautomated. |
 | 2026-10-21 | M3/M7 | Release suite passed 24/24 tests, including first-run generation and build through the Agent Host tool after restore; generated screen editing and relationship control contracts are asserted. Live ChatGPT orchestration and browser-driven generated-screen editing remain unverified. |
 | 2026-10-22 | M5 | Release suite passed 25/25 tests. A schema migration regression proves existing record data remains intact through an optional field addition and that a required-field addition is rejected without changing the stored schema. |
@@ -293,12 +294,14 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   validates and merges its JSON patch and emits the change event. The action
   output contains identifiers and changed-field count only. Automate discovery
   and run history still require live Umbraco/database verification; module
-  workflow JSON remains inert. Added a native record-create action with
+  workflow JSON remains inert. Added native record-create, record-update and
+  record-delete actions with
   explicit service-account grants, typed-record and relationship validation,
   deterministic IDs derived from a required workflow idempotency key, and the
   shared record-change notification. Replays return the existing record
-  without overwriting it or emitting another event. A delete action remains
-  unimplemented.
+  without overwriting it or emitting another event. Delete requires an
+  explicit service-account grant and replay after deletion succeeds without
+  emitting a duplicate event.
 - Validation 2026-10-21: `dotnet build
   MyDockerProject/MyDockerProject/MyDockerProject.csproj --configuration Debug`
   succeeded in the .NET 10 SDK container with 0 errors and 164 existing

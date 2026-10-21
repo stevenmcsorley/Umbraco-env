@@ -56,6 +56,12 @@ builder.Services.AddSingleton<ISiteKitPermissionRegistry>(services =>
     var environment = services.GetRequiredService<IWebHostEnvironment>();
     return new JsonSiteKitPermissionRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "permissions"));
 });
+builder.Services.AddSingleton<ISiteKitProjectRoleRegistry>(services =>
+{
+    var environment = services.GetRequiredService<IWebHostEnvironment>();
+    return new JsonSiteKitProjectRoleRegistry(Path.Combine(environment.ContentRootPath, "umbraco", "Data", "SiteKit", "roles"));
+});
+builder.Services.AddSingleton<SiteKitPermissionEvaluator>();
 builder.Services.AddSingleton<ISiteKitScreenRegistry>(services =>
 {
     var environment = services.GetRequiredService<IWebHostEnvironment>();

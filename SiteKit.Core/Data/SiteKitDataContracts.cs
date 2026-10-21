@@ -47,6 +47,31 @@ public sealed record SiteKitEntityPermissionGrant
     public required string[] Operations { get; init; }
 }
 
+public sealed record SiteKitProjectRole
+{
+    public int SchemaVersion { get; init; } = 1;
+    public required string ProjectId { get; init; }
+    public required string Alias { get; init; }
+    public required string Name { get; init; }
+    public string[] Members { get; init; } = [];
+    public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
+}
+
+public static class SiteKitProjectRoleValidator
+{
+    public static IReadOnlyList<string> Validate(SiteKitProjectRole role)
+    {
+        var errors = new List<string>();
+        if (role.SchemaVersion != 1) errors.Add("Role schemaVersion must be 1.");
+        if (!SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(role.ProjectId)) errors.Add("Role projectId is invalid.");
+        if (!SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(role.Alias)) errors.Add("Role alias is invalid.");
+        if (string.IsNullOrWhiteSpace(role.Name) || role.Name.Length > 120) errors.Add("Role name is required and must be at most 120 characters.");
+        if (role.Members is null || role.Members.Length > 500 || role.Members.Any(member => string.IsNullOrWhiteSpace(member) || member.Length > 320 || !Regex.IsMatch(member, "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", RegexOptions.CultureInvariant)) || role.Members.Distinct(StringComparer.OrdinalIgnoreCase).Count() != role.Members.Length)
+            errors.Add("Role members must be at most 500 unique email addresses.");
+        return errors;
+    }
+}
+
 public sealed record SiteKitApplicationScreenDefinition
 {
     public int SchemaVersion { get; init; } = 1;
@@ -102,6 +127,13 @@ public interface ISiteKitPermissionRegistry
     Task<IReadOnlyList<SiteKitEntityPermissionGrant>> ListAsync(string projectId, string entityAlias, CancellationToken cancellationToken = default);
     Task<SiteKitEntityPermissionGrant?> GetAsync(string projectId, string entityAlias, string principal, CancellationToken cancellationToken = default);
     Task<SiteKitEntityPermissionGrant> SaveAsync(SiteKitEntityPermissionGrant grant, CancellationToken cancellationToken = default);
+}
+
+public interface ISiteKitProjectRoleRegistry
+{
+    Task<IReadOnlyList<SiteKitProjectRole>> ListAsync(string projectId, CancellationToken cancellationToken = default);
+    Task<SiteKitProjectRole?> GetAsync(string projectId, string alias, CancellationToken cancellationToken = default);
+    Task<SiteKitProjectRole> SaveAsync(SiteKitProjectRole role, CancellationToken cancellationToken = default);
 }
 
 public static partial class SiteKitEntityValidator

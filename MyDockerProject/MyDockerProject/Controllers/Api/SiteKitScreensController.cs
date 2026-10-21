@@ -16,11 +16,11 @@ public sealed class SiteKitScreensController : ControllerBase
     private readonly ISiteKitEntityRegistry _entities;
     private readonly ISiteKitComponentRegistry _components;
     private readonly ISiteKitRecordStore _records;
-    private readonly ISiteKitPermissionRegistry _permissions;
+    private readonly SiteKitPermissionEvaluator _permissionEvaluator;
 
     public SiteKitScreensController(ISiteKitScreenRegistry screens, ISiteKitProjectRegistry projects, ISiteKitEntityRegistry entities,
-        ISiteKitComponentRegistry components, ISiteKitRecordStore records, ISiteKitPermissionRegistry permissions)
-    { _screens = screens; _projects = projects; _entities = entities; _components = components; _records = records; _permissions = permissions; }
+        ISiteKitComponentRegistry components, ISiteKitRecordStore records, SiteKitPermissionEvaluator permissionEvaluator)
+    { _screens = screens; _projects = projects; _entities = entities; _components = components; _records = records; _permissionEvaluator = permissionEvaluator; }
 
     [HttpGet]
     public async Task<IActionResult> List(string projectId, CancellationToken ct)
@@ -73,10 +73,10 @@ public sealed class SiteKitScreensController : ControllerBase
         {
             var principal = HttpContext.Session.GetString("UserEmail");
             if (string.IsNullOrWhiteSpace(principal)) return Unauthorized();
-            var grant = await _permissions.GetAsync(projectId, entity.Alias, principal, ct);
-            if (grant?.Operations.Contains("read", StringComparer.Ordinal) != true && grant?.Operations.Contains("manage", StringComparer.Ordinal) != true)
+            var operations = await _permissionEvaluator.GetOperationsAsync(projectId, entity.Alias, principal, ct);
+            if (!operations.Contains("read") && !operations.Contains("manage"))
                 return Forbid();
-            allowedOperations = grant?.Operations ?? [];
+            allowedOperations = operations.Order(StringComparer.Ordinal).ToArray();
         }
         var schemaErrors = SiteKitScreenValidator.Validate(screen, entity);
         if (schemaErrors.Count > 0) return Conflict(new { errors = schemaErrors });

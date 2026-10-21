@@ -34,6 +34,11 @@ requires an explicit SiteKit `update` or `manage` entity grant for that
 service-account email. Its step output includes IDs and an updated-field count,
 not business data. The update is safe to retry against the same record.
 
+Direct user grants and project-role grants use the same permission evaluator.
+Automate service-account emails can be assigned to a project role, so the
+workspace's service account receives the same scoped entity operations as an
+interactive account.
+
 SiteKit also contributes a **Create SiteKit Operational Record** Automate
 action. It resolves the service account from the Automate execution context,
 requires that account's explicit `create` or `manage` grant for the selected
@@ -68,11 +73,12 @@ brings OpenTelemetry.Api transitively; SiteKit explicitly pins 1.15.3 to avoid
 the vulnerable 1.1.0 version selected by that dependency graph. The package
 vulnerability scan reports no vulnerable packages for the Umbraco project.
 
-References checked 21 October 2026:
+References checked 22 October 2026:
 
 - [Umbraco Automate 17 documentation](https://docs.umbraco.com/umbraco-automate/17)
 - [Umbraco Automate repository and provider overview](https://github.com/umbraco/Umbraco.Automate)
 - [Automate package 17.5.1](https://www.nuget.org/packages/Umbraco.Automate/17.5.1)
 - [Official custom action extension documentation](https://docs.umbraco.com/umbraco-automate/18/extending/custom-action)
+- [Automate custom action discovery](https://docs.umbraco.com/umbraco-automate/18/extending/custom-action) states that attributed actions are discovered at startup without manual registration. Live discovery is still unverified locally because the action catalogue requires a backoffice bearer token.
 - [Automate action execution identity and permissions](https://github.com/umbraco/Umbraco.Automate/blob/v18/dev/docs/identity-ownership-permissions.md)
 - [OpenTelemetry.Api security advisory](https://github.com/advisories/GHSA-g94r-2vxg-569j)

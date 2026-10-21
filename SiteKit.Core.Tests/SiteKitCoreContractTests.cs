@@ -524,6 +524,29 @@ public sealed class SiteKitCoreContractTests
     }
 
     [Fact]
+    public async Task ProjectRolesResolveEntityPermissionsForMembersOnly()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-role-tests", Guid.NewGuid().ToString("N"));
+        var permissions = new JsonSiteKitPermissionRegistry(Path.Combine(root, "permissions"));
+        var roles = new JsonSiteKitProjectRoleRegistry(Path.Combine(root, "roles"));
+        var evaluator = new SiteKitPermissionEvaluator(permissions, roles);
+        try
+        {
+            await roles.SaveAsync(new SiteKitProjectRole
+            { ProjectId = "crm-smoke", Alias = "sales-team", Name = "Sales team", Members = ["ALEX@example.test", "jules@example.test"] });
+            await permissions.SaveAsync(new SiteKitEntityPermissionGrant
+            { ProjectId = "crm-smoke", EntityAlias = "opportunity", Principal = "role:sales-team", Operations = ["read", "update"] });
+
+            Assert.True(await evaluator.CanAsync("crm-smoke", "opportunity", "alex@example.test", "update"));
+            Assert.True((await evaluator.GetOperationsAsync("crm-smoke", "opportunity", "jules@example.test")).Contains("read"));
+            Assert.False(await evaluator.CanAsync("crm-smoke", "opportunity", "outsider@example.test", "read"));
+            Assert.False(await evaluator.CanAsync("another-project", "opportunity", "alex@example.test", "read"));
+            Assert.False(await evaluator.CanAsync("crm-smoke", "customer", "alex@example.test", "read"));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task ImportPreviewContinuesAfterFieldConversionError()
     {
         var root = Path.Combine(Path.GetTempPath(), "sitekit-import-tests", Guid.NewGuid().ToString("N"));

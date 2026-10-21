@@ -38,7 +38,8 @@ public sealed class JsonSiteKitPermissionRegistry : ISiteKitPermissionRegistry
     public async Task<SiteKitEntityPermissionGrant> SaveAsync(SiteKitEntityPermissionGrant grant, CancellationToken cancellationToken = default)
     {
         Validate(grant.ProjectId, grant.EntityAlias);
-        if (string.IsNullOrWhiteSpace(grant.Principal) || grant.Principal.Length > 320 || grant.Principal.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        if (string.IsNullOrWhiteSpace(grant.Principal) || grant.Principal.Length > 320 ||
+            (!SiteKitPermissionEvaluator.TryGetRoleAlias(grant.Principal, out _) && grant.Principal.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0))
             throw new ArgumentException("Permission principal is invalid.", nameof(grant));
         string[] supported = ["read", "create", "update", "delete", "import", "manage"];
         if (grant.Operations is null || grant.Operations.Distinct(StringComparer.Ordinal).Count() != grant.Operations.Length || grant.Operations.Any(x => !supported.Contains(x, StringComparer.Ordinal)))
