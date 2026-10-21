@@ -17,7 +17,7 @@ solution; each milestone records implementation and validation evidence here.
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: typed entity schemas, explicit grants, SQL Server CRUD APIs and basic Studio record editor; database-enforced relationships, richer screen composition and live DB verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/importer/exporter and installer; official Automate 17.5.1 plus project/entity/operation-scoped SiteKit record-change trigger compile; operational actions and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; screen definitions and metadata export work; deployable screen runtime, full CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | In progress: Release build workflow and failing NuGet vulnerability gate added; local dependency scan is clean; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | In progress: Release build workflow, failing NuGet vulnerability gate and focused SiteKit Core tests added; local dependency scan and core tests pass; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -152,6 +152,7 @@ solution; each milestone records implementation and validation evidence here.
 |---|---|---|
 | 2026-10-21 | M0 | `dotnet build UmbraccoEnv.sln` succeeded on .NET SDK 10.0.402; `dotnet list package --vulnerable --include-transitive` reported no vulnerable packages. 154 compiler warnings remain, primarily legacy Umbraco API usage and nullability. Runtime/DB smoke checks remain outstanding. |
 | 2026-10-21 | M1/M2 | `dotnet build UmbraccoEnv.sln --no-restore` succeeds with 0 errors. An additional build with `RazorCompileOnBuild=true` exposes pre-existing Razor compile failures in the backup view folder and the generated `PublishedModels.Home` type; ordinary project builds intentionally disable build-time Razor compilation. Runtime UI smoke checks remain outstanding. |
+| 2026-10-21 | M8 | `dotnet test SiteKit.Core.Tests/SiteKit.Core.Tests.csproj --no-restore --configuration Release` passed 3 tests covering encoded component rendering, screen/entity field validation and JSON record-store CRUD/audit retention. |
 
 
 ## Screenshot evidence
