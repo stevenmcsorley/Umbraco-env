@@ -11,23 +11,36 @@ Application and combined project generation now writes:
 - A SQLite database at `App_Data/sitekit.db`, with an initial migration ledger,
   an entity-scoped primary key, an update-time index and transactional writes.
 
-All `/api/sitekit/*` requests require `Authorization: Bearer <token>`. Configure
-`SITEKIT_ADMIN_TOKEN` in the process or container secret store. With no token,
-the API returns `503`; with an invalid token, it returns `401`. The generated UI
-asks for the token and keeps it in the current browser tab's `sessionStorage`.
-The token is never generated into source or project manifests.
+All `/api/sitekit/*` requests require `Authorization: Bearer <token>`. For a
+single administrator, configure `SITEKIT_ADMIN_TOKEN` in the process or
+container secret store. For multiple principals, configure
+`SITEKIT_PRINCIPAL_TOKENS` as a JSON object mapping SHA-256 token hashes to
+principal names, and `SITEKIT_ENTITY_GRANTS` as a JSON object mapping each
+principal to entity aliases and allowed operations (`read`, `create`, `update`,
+`delete`). For example:
+
+```json
+SITEKIT_PRINCIPAL_TOKENS={"<sha256-token-hash>":"sales-reader"}
+SITEKIT_ENTITY_GRANTS={"sales-reader":{"customer":["read"]}}
+```
+
+With no token configuration, the API returns `503`; with an invalid token, it
+returns `401`; with a valid token but missing entity operation grant, it returns
+`403`. The generated UI asks for a token and keeps it in the current browser
+tab's `sessionStorage`. Tokens are never generated into source or project
+manifests. Use a deployment secret store for plaintext bearer tokens.
 
 ## Scope and production boundary
 
-This runtime is a deployable reference and development starter. It uses one
-administrator token for every API operation. It does not implement user
-identities, per-record roles, soft-delete retention or relational constraints.
-Configure a real identity provider and role grants before using generated
-applications with multiple users or consequential business data. Back up the
-SQLite database as part of deployment. The shared SiteKit/Umbraco host has a
-separate permission-grant and SQL Server record-store implementation.
+This runtime is a deployable reference and development starter. Its built-in
+token grants operate at entity and operation level; it does not implement user
+identity federation, per-record roles, soft-delete retention or relational
+constraints. Configure a real identity provider before using generated
+applications with end users or consequential business data. Back up the SQLite
+database as part of deployment. The shared SiteKit/Umbraco host has a separate
+permission registry and SQL Server record-store implementation.
 
 The generated-app build is covered by the generator contract test. The test
-starts the emitted app, exercises authorization and CRUD over HTTP, restarts
-the process and verifies records remain available. Live multi-user authorization
-and database performance have not been verified.
+starts the emitted app, exercises administrator and read-only principal grants,
+CRUD over HTTP, restarts the process and verifies records remain available.
+Production identity federation and database performance have not been verified.

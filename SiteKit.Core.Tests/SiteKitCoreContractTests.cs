@@ -4,6 +4,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
 using SiteKit.Core.Components;
 using SiteKit.Core.Data;
 using SiteKit.Core.Importing;
@@ -320,10 +322,14 @@ public sealed class SiteKitCoreContractTests
             var port = ((IPEndPoint)portProbe.LocalEndpoint).Port;
             portProbe.Stop();
             const string token = "sitekit-generator-integration-test-token";
+            const string readerToken = "sitekit-generator-readonly-test-token";
+            var readerHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(readerToken)));
+            var principals = JsonSerializer.Serialize(new Dictionary<string, string> { [readerHash] = "sales-reader" });
+            const string grants = "{\"sales-reader\":{\"customer\":[\"read\"]}}";
             using var app = Process.Start(new ProcessStartInfo("dotnet", $"run --no-build --configuration Release --project \"{project.Id}.csproj\" -- --urls http://127.0.0.1:{port}")
             {
                 WorkingDirectory = destination, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
-                Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["Logging__LogLevel__Default"] = "Warning" }
+                Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["SITEKIT_PRINCIPAL_TOKENS"] = principals, ["SITEKIT_ENTITY_GRANTS"] = grants, ["Logging__LogLevel__Default"] = "Warning" }
             })!;
             try
             {
@@ -340,6 +346,12 @@ public sealed class SiteKitCoreContractTests
                 var unauthorized = await client.GetAsync("/api/sitekit/records/customer");
                 Assert.Equal(HttpStatusCode.Unauthorized, unauthorized.StatusCode);
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                using (var readerClient = new HttpClient { BaseAddress = client.BaseAddress })
+                {
+                    readerClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", readerToken);
+                    Assert.Equal(HttpStatusCode.OK, (await readerClient.GetAsync("/api/sitekit/records/customer")).StatusCode);
+                    Assert.Equal(HttpStatusCode.Forbidden, (await readerClient.PostAsJsonAsync("/api/sitekit/records/customer", new { name = "Not allowed" })).StatusCode);
+                }
                 var createdResponse = await client.PostAsJsonAsync("/api/sitekit/records/customer", new { name = "Ada Lovelace" });
                 Assert.Equal(HttpStatusCode.Created, createdResponse.StatusCode);
                 using var created = JsonDocument.Parse(await createdResponse.Content.ReadAsStringAsync());
@@ -353,7 +365,7 @@ public sealed class SiteKitCoreContractTests
                 using var restarted = Process.Start(new ProcessStartInfo("dotnet", $"run --no-build --configuration Release --project \"{project.Id}.csproj\" -- --urls http://127.0.0.1:{port}")
                 {
                     WorkingDirectory = destination, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
-                    Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["Logging__LogLevel__Default"] = "Warning" }
+                    Environment = { ["SITEKIT_ADMIN_TOKEN"] = token, ["SITEKIT_PRINCIPAL_TOKENS"] = principals, ["SITEKIT_ENTITY_GRANTS"] = grants, ["Logging__LogLevel__Default"] = "Warning" }
                 })!;
                 try
                 {
