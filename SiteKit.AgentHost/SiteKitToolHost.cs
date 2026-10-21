@@ -32,7 +32,7 @@ public sealed class SiteKitToolHost
         _entities = new JsonSiteKitEntityRegistry(Path.Combine(dataRoot, "entities"));
         _screens = new JsonSiteKitScreenRegistry(Path.Combine(dataRoot, "screens"));
         _modules = new JsonSiteKitModuleRegistry(Path.Combine(dataRoot, "modules"));
-        _generator = new SiteKitProjectGenerator(Path.Combine(_root, "generated-projects"), _projects, _screens, _entities);
+        _generator = new SiteKitProjectGenerator(Path.Combine(_root, "generated-projects"), _projects, _screens, _entities, _components, _placements);
         _moduleInstaller = new SiteKitModuleInstaller(Path.Combine(dataRoot, "modules"), _modules, _projects, _components, _entities, _screens);
         _auditPath = Path.Combine(dataRoot, "audit", "agent-tools.jsonl");
     }

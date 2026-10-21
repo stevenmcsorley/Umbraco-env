@@ -54,6 +54,19 @@ is not connected to a running Umbraco instance.
 
 This screenshot is from a running independently generated .NET website. The generated site built with .NET 10; `/health` returned `{"status":"healthy"}` and `/` returned HTTP 200. This is runtime evidence for project generation, not live Umbraco, SQL CRUD or authorization coverage.
 
+## Shared component in independent generated sites
+
+![Shared component in Site One](../output/playwright/sitekit-generated-shared-component-one.png)
+
+![Shared component in Site Two](../output/playwright/sitekit-generated-shared-component-two.png)
+
+These are two independently generated and running .NET websites that use one
+registered component definition. Site One and Site Two receive distinct
+placement data and appearance settings; each rendered its own heading and
+styling. Both projects compiled successfully. This verifies component reuse
+across generated sites, while project-specific editing in the live Umbraco
+Studio still needs runtime verification.
+
 ## Generated application runtime
 
 ![SiteKit generated CRM runtime](../output/playwright/sitekit-generated-crm-runtime.png)

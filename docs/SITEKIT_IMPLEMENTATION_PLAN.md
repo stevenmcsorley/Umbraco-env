@@ -13,11 +13,11 @@ solution; each milestone records implementation and validation evidence here.
 | M1 — Universal foundation | Project manifest, platform service boundaries, component registry and module package contracts | Partial: foundations and project/data contracts implemented; code SDK and full module lifecycle incomplete |
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, multi-property visual editor, composed/reorderable layout builder, preview and safe renderer implemented; drag/drop canvas and compiled developer SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
-| M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator and theme tokens; shared component projection and full production hosting configuration remain |
+| M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator now projects shared validated component placements with per-project data and appearance; broader module projection and full production hosting configuration remain |
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit grants, SQL Server CRUD APIs and Studio record editor; generated apps now include model-driven screens, SQLite-backed CRUD and per-principal entity operation grants; identity federation, database-enforced relationships and live SQL verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade with project version pins, SemVer dependency ranges and dependent-upgrade checks; official Automate 17.5.1 plus scoped record-change trigger and permission-checked update action compile; uninstall, executable workflow provisioning and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; generated apps now render tables, search, kanban, calendars and entity-count dashboards over SQLite CRUD; complete CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 18 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: Release build workflow, NuGet vulnerability gate, 19 focused core tests and screenshot set; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -128,6 +128,11 @@ solution; each milestone records implementation and validation evidence here.
   an independent .NET 10 website, internal application, combined or API project
   with a project manifest, runnable ASP.NET Core host, Dockerfile and build/run
   documentation. The Studio and local AI/MCP tools can invoke generation.
+- Website and combined project generation resolve shared component definitions
+  and placements from the registries, then render them through SiteKit's safe
+  primitive renderer. A contract test generates two independent sites from one
+  component definition and confirms that each uses separate data and appearance.
+  Both generated projects were run locally and captured in `SITEKIT_SCREENSHOTS.md`.
 - Added project-scoped typed entity definitions with explicit per-principal
   operation grants and schema version checks. Existing fields, types, constraints
   and relationships cannot be removed or changed; schema evolution currently
@@ -285,7 +290,7 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   emitted application. It starts the generated project and verifies unauthenticated
   denial, read-only write denial, create/update/read/delete behavior, and record
   retention while a screen changes and the project is regenerated/restarted. All
-  18 Release core tests pass; a live browser capture is documented
+  19 Release core tests pass; live browser captures are documented
   in `SITEKIT_SCREENSHOTS.md`.
 - Boundaries: generated app CRUD currently uses local SQLite and a single
   administrator token, with no record-level role grants or soft-delete. The

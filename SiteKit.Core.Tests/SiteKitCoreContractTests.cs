@@ -96,6 +96,59 @@ public sealed class SiteKitCoreContractTests
         }
     }
 
+    [Fact]
+    public async Task WebsiteGeneratorProjectsSharedComponentsWithIndependentPlacementData()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sitekit-component-projection-tests", Guid.NewGuid().ToString("N"));
+        var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "projects"));
+        var components = new JsonSiteKitComponentRegistry(Path.Combine(root, "components"));
+        var placements = new JsonSiteKitPlacementRegistry(Path.Combine(root, "placements"));
+        await projects.SaveAsync(new SiteKitProjectManifest { Id = "site-one", Name = "Site One", Category = "website", Components = ["shared-banner"] });
+        await projects.SaveAsync(new SiteKitProjectManifest { Id = "site-two", Name = "Site Two", Category = "website", Components = ["shared-banner"] });
+        await components.SaveAsync(new SiteKitComponentDefinition
+        {
+            Alias = "shared-banner", Name = "Shared Banner", Category = "marketing",
+            Properties = [new() { Alias = "title", Label = "Title", Type = "text", Required = true }],
+            Layout = new() { Type = "card", Children = [new() { Type = "heading", Bind = "title", HeadingLevel = 2 }] }
+        });
+        using var firstData = JsonDocument.Parse("{\"title\":\"Welcome to Site One\"}");
+        using var secondData = JsonDocument.Parse("{\"title\":\"Discover Site Two\"}");
+        await placements.SaveAsync("site-one", new SiteKitComponentPlacement
+        {
+            Id = "homepage-banner", ComponentAlias = "shared-banner", Data = firstData.RootElement,
+            Appearance = new() { BackgroundColor = "#f0f8ff", Padding = "24px" }
+        });
+        await placements.SaveAsync("site-two", new SiteKitComponentPlacement
+        {
+            Id = "homepage-banner", ComponentAlias = "shared-banner", Data = secondData.RootElement,
+            Appearance = new() { BackgroundColor = "#fff4e8", Padding = "40px" }
+        });
+
+        try
+        {
+            var generator = new SiteKitProjectGenerator(Path.Combine(root, "generated"), projects, components: components, placements: placements);
+            var first = await generator.GenerateAsync("site-one");
+            var second = await generator.GenerateAsync("site-two");
+            var firstProgram = await File.ReadAllTextAsync(Path.Combine(first, "Program.cs"));
+            var secondProgram = await File.ReadAllTextAsync(Path.Combine(second, "Program.cs"));
+            Assert.Contains("Welcome to Site One", firstProgram);
+            Assert.Contains("Discover Site Two", secondProgram);
+            Assert.Contains("#f0f8ff", firstProgram);
+            Assert.Contains("#fff4e8", secondProgram);
+            Assert.DoesNotContain("Discover Site Two", firstProgram);
+            Assert.DoesNotContain("Welcome to Site One", secondProgram);
+            using var build = Process.Start(new ProcessStartInfo("dotnet", "build site-one.csproj --configuration Release --nologo")
+            {
+                WorkingDirectory = first, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false
+            })!;
+            var stdout = await build.StandardOutput.ReadToEndAsync();
+            var stderr = await build.StandardError.ReadToEndAsync();
+            await build.WaitForExitAsync();
+            Assert.True(build.ExitCode == 0, $"Generated website build failed: {stdout}\n{stderr}");
+        }
+        finally { if (!string.Equals(Environment.GetEnvironmentVariable("SITEKIT_KEEP_COMPONENT_FIXTURE"), "1", StringComparison.Ordinal) && Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
     [Theory]
     [InlineData("json", "[{\"email\":\"ada@example.test\",\"name\":\"Ada\",\"status\":\"customer\"}]")]
     [InlineData("csv", "email,name,status\nada@example.test,Ada,customer\n")]

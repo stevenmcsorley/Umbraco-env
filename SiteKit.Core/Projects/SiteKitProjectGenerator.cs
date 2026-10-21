@@ -13,9 +13,11 @@ public sealed class SiteKitProjectGenerator
     private readonly ISiteKitProjectRegistry _projects;
     private readonly ISiteKitScreenRegistry? _screens;
     private readonly ISiteKitEntityRegistry? _entities;
+    private readonly ISiteKitComponentRegistry? _components;
+    private readonly ISiteKitPlacementRegistry? _placements;
 
-    public SiteKitProjectGenerator(string root, ISiteKitProjectRegistry projects, ISiteKitScreenRegistry? screens = null, ISiteKitEntityRegistry? entities = null)
-    { _root = Path.GetFullPath(root); _projects = projects; _screens = screens; _entities = entities; }
+    public SiteKitProjectGenerator(string root, ISiteKitProjectRegistry projects, ISiteKitScreenRegistry? screens = null, ISiteKitEntityRegistry? entities = null, ISiteKitComponentRegistry? components = null, ISiteKitPlacementRegistry? placements = null)
+    { _root = Path.GetFullPath(root); _projects = projects; _screens = screens; _entities = entities; _components = components; _placements = placements; }
 
     public async Task<string> GenerateAsync(string projectId, CancellationToken cancellationToken = default)
     {
@@ -41,7 +43,8 @@ public sealed class SiteKitProjectGenerator
             ? "<ItemGroup><PackageReference Include=\"Microsoft.Data.Sqlite\" Version=\"10.0.13\" /></ItemGroup>"
             : string.Empty;
         await WriteAtomicAsync(Path.Combine(destination, $"{manifest.Id}.csproj"), $"<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>{databaseReference}</Project>\n", cancellationToken);
-        await WriteAtomicAsync(Path.Combine(destination, "Program.cs"), BuildProgram(manifest), cancellationToken);
+        var renderedComponents = await RenderPlacementsAsync(projectId, cancellationToken);
+        await WriteAtomicAsync(Path.Combine(destination, "Program.cs"), BuildProgram(manifest, renderedComponents), cancellationToken);
         if (manifest.Category is "application" or "combined" && _screens is not null)
         {
             Directory.CreateDirectory(Path.Combine(destination, "wwwroot"));
@@ -66,22 +69,35 @@ public sealed class SiteKitProjectGenerator
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }
 
-    private static string BuildProgram(SiteKitProjectManifest manifest)
+    private async Task<string> RenderPlacementsAsync(string projectId, CancellationToken cancellationToken)
+    {
+        if (_components is null || _placements is null) return string.Empty;
+        var rendered = new List<string>();
+        foreach (var placement in await _placements.ListAsync(projectId, cancellationToken))
+        {
+            var component = await _components.GetAsync(placement.ComponentAlias, placement.Version, cancellationToken)
+                ?? throw new InvalidOperationException($"Placed component '{placement.ComponentAlias}' was not found in the shared registry.");
+            rendered.Add(SiteKitComponentRenderer.Render(component, placement.Data, placement.Variant, placement.StyleClass, placement.Appearance));
+        }
+        return string.Join("\n", rendered);
+    }
+
+    private static string BuildProgram(SiteKitProjectManifest manifest, string renderedComponents)
     {
         var name = JsonSerializer.Serialize(manifest.Name);
         if (manifest.Category == "api")
             return "var app = WebApplication.Create(args);\napp.MapGet(\"/\", () => Results.Ok(new { name = " + name + ", category = \"api\", platform = \"SiteKit\" }));\napp.MapGet(\"/health\", () => Results.Ok(new { status = \"healthy\" }));\napp.MapGet(\"/favicon.ico\", () => Results.NoContent());\napp.Run();\n";
-        if (manifest.Category is "application" or "combined") return BuildApplicationProgram(manifest);
+        if (manifest.Category is "application" or "combined") return BuildApplicationProgram(manifest, renderedComponents);
         var fontFamily = manifest.ThemeSettings.FontFamily switch { "serif" => "Georgia,serif", "sans-serif" => "Arial,sans-serif", "monospace" => "ui-monospace,monospace", _ => "system-ui,sans-serif" };
-        var html = $"<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{WebUtility.HtmlEncode(manifest.Name)}</title><style>:root{{--primary:{manifest.ThemeSettings.PrimaryColor};--surface:{manifest.ThemeSettings.SurfaceColor};--text:{manifest.ThemeSettings.TextColor}}}body{{margin:0;background:var(--surface);color:var(--text);font:16px {fontFamily}}}main{{max-width:1100px;margin:auto;padding:4rem 2rem}}h1{{font-size:clamp(2rem,5vw,4rem)}}.button{{display:inline-block;background:var(--primary);color:#fff;padding:.8rem 1.1rem;border-radius:{manifest.ThemeSettings.Radius};text-decoration:none}}.notice{{padding:1rem;border:1px solid #dce3e8;border-radius:12px}}</style><main><small>SITEKIT {WebUtility.HtmlEncode(manifest.Category.ToUpperInvariant())}</small><h1>{WebUtility.HtmlEncode(manifest.Name)}</h1><p>{WebUtility.HtmlEncode(manifest.Description)}</p><div class=\"notice\">Your independent SiteKit project is ready. Add content, components and application modules from SiteKit Studio.</div></main></html>";
+        var html = $"<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{WebUtility.HtmlEncode(manifest.Name)}</title><style>:root{{--primary:{manifest.ThemeSettings.PrimaryColor};--surface:{manifest.ThemeSettings.SurfaceColor};--text:{manifest.ThemeSettings.TextColor}}}body{{margin:0;background:var(--surface);color:var(--text);font:16px {fontFamily}}}main{{max-width:1100px;margin:auto;padding:4rem 2rem}}h1{{font-size:clamp(2rem,5vw,4rem)}}.button{{display:inline-block;background:var(--primary);color:#fff;padding:.8rem 1.1rem;border-radius:{manifest.ThemeSettings.Radius};text-decoration:none}}.notice{{padding:1rem;border:1px solid #dce3e8;border-radius:12px}}</style><main><small>SITEKIT {WebUtility.HtmlEncode(manifest.Category.ToUpperInvariant())}</small><h1>{WebUtility.HtmlEncode(manifest.Name)}</h1><p>{WebUtility.HtmlEncode(manifest.Description)}</p><div class=\"notice\">Your independent SiteKit project is ready. Add content, components and application modules from SiteKit Studio.</div><section class=\"sitekit-components\">{renderedComponents}</section></main></html>";
         var serializedHtml = JsonSerializer.Serialize(html);
         return "var app = WebApplication.Create(args);\napp.MapGet(\"/health\", () => Results.Ok(new { status = \"healthy\" }));\napp.MapGet(\"/favicon.ico\", () => Results.NoContent());\napp.MapGet(\"/\", () => Results.Content(" + serializedHtml + ", \"text/html; charset=utf-8\"));\napp.Run();\n";
     }
 
-    private static string BuildApplicationProgram(SiteKitProjectManifest manifest)
+    private static string BuildApplicationProgram(SiteKitProjectManifest manifest, string renderedComponents)
     {
         var fontFamily = manifest.ThemeSettings.FontFamily switch { "serif" => "Georgia,serif", "sans-serif" => "Arial,sans-serif", "monospace" => "ui-monospace,monospace", _ => "system-ui,sans-serif" };
-        var html = $"<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{WebUtility.HtmlEncode(manifest.Name)}</title><style>:root{{--primary:{manifest.ThemeSettings.PrimaryColor};--surface:{manifest.ThemeSettings.SurfaceColor};--text:{manifest.ThemeSettings.TextColor}}}body{{margin:0;background:var(--surface);color:var(--text);font:16px {fontFamily}}}main{{max-width:1120px;margin:auto;padding:3rem 2rem}}h1{{font-size:clamp(2rem,5vw,4rem)}}table{{width:100%;border-collapse:collapse}}td,th{{padding:.65rem;text-align:left;border-bottom:1px solid #dce3e8}}input,button{{font:inherit;padding:.6rem;border:1px solid #b8c5cc;border-radius:6px}}button{{cursor:pointer}}.screen{{margin-top:2rem}}.form{{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0}}.form label{{display:grid;gap:.2rem}}</style><main><small>SITEKIT {WebUtility.HtmlEncode(manifest.Category.ToUpperInvariant())}</small><h1>{WebUtility.HtmlEncode(manifest.Name)}</h1><p>{WebUtility.HtmlEncode(manifest.Description)}</p><div id=\"sitekit-screens\">Loading application screens…</div></main><script src=\"/sitekit-runtime.js\"></script><script>SiteKit.start();</script></html>";
+        var html = $"<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{WebUtility.HtmlEncode(manifest.Name)}</title><style>:root{{--primary:{manifest.ThemeSettings.PrimaryColor};--surface:{manifest.ThemeSettings.SurfaceColor};--text:{manifest.ThemeSettings.TextColor}}}body{{margin:0;background:var(--surface);color:var(--text);font:16px {fontFamily}}}main{{max-width:1120px;margin:auto;padding:3rem 2rem}}h1{{font-size:clamp(2rem,5vw,4rem)}}table{{width:100%;border-collapse:collapse}}td,th{{padding:.65rem;text-align:left;border-bottom:1px solid #dce3e8}}input,button{{font:inherit;padding:.6rem;border:1px solid #b8c5cc;border-radius:6px}}button{{cursor:pointer}}.screen{{margin-top:2rem}}.form{{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0}}.form label{{display:grid;gap:.2rem}}</style><main><small>SITEKIT {WebUtility.HtmlEncode(manifest.Category.ToUpperInvariant())}</small><h1>{WebUtility.HtmlEncode(manifest.Name)}</h1><p>{WebUtility.HtmlEncode(manifest.Description)}</p><section class=\"sitekit-components\">{renderedComponents}</section><div id=\"sitekit-screens\">Loading application screens…</div></main><script src=\"/sitekit-runtime.js\"></script><script>SiteKit.start();</script></html>";
         var template = """
 using System.Security.Cryptography;
 using System.Text;
