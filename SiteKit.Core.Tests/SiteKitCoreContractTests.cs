@@ -152,7 +152,12 @@ public sealed class SiteKitCoreContractTests
                 ProjectId = "crm-smoke", EntityAlias = "customer", Principal = "importer@example.test", Operations = ["read", "import"]
             });
             Assert.Contains("import", saved.Operations);
-            Assert.Equal(saved, await permissions.GetAsync(saved.ProjectId, saved.EntityAlias, saved.Principal));
+            var loaded = await permissions.GetAsync(saved.ProjectId, saved.EntityAlias, saved.Principal);
+            Assert.NotNull(loaded);
+            Assert.Equal(saved.ProjectId, loaded.ProjectId);
+            Assert.Equal(saved.EntityAlias, loaded.EntityAlias);
+            Assert.Equal(saved.Principal, loaded.Principal);
+            Assert.Equal(saved.Operations, loaded.Operations);
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
