@@ -657,6 +657,9 @@ public sealed class SiteKitCoreContractTests
             Assert.Contains("customer", withoutBaseModule.Entities);
             Assert.Equal("Preserved module customer", (await records.GetAsync("sales-crm", "customer", savedCustomer.Id))!.Data.GetProperty("name").GetString());
             await Assert.ThrowsAsync<InvalidOperationException>(() => installer.UninstallAsync("sales-crm", "sales-module"));
+            Assert.True(await modules.DeleteAsync("sales-addon", "1.0.1"));
+            Assert.Null(await modules.GetAsync("sales-addon", "1.0.1"));
+            Assert.False(await modules.DeleteAsync("sales-addon", "1.0.1"));
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
 

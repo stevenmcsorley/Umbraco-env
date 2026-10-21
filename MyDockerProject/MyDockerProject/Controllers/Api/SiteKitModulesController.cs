@@ -78,4 +78,20 @@ public sealed class SiteKitModulesController : ControllerBase
         catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
         catch (InvalidOperationException exception) { return Conflict(new { error = exception.Message }); }
     }
+
+    [HttpDelete("{id}/{version}")]
+    public async Task<IActionResult> DeletePackage(string id, string version, CancellationToken ct)
+    {
+        try
+        {
+            var projects = await _projects.ListAsync(ct);
+            foreach (var project in projects.Where(project => project.Modules.Contains(id, StringComparer.Ordinal)))
+            {
+                if (project.ModuleVersions is null || !project.ModuleVersions.TryGetValue(id, out var pinnedVersion) || string.Equals(pinnedVersion, version, StringComparison.Ordinal))
+                    return Conflict(new { error = $"Module '{id}' v{version} is pinned by project '{project.Id}'. Remove it from that project first." });
+            }
+            return await _modules.DeleteAsync(id, version, ct) ? NoContent() : NotFound();
+        }
+        catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
+    }
 }

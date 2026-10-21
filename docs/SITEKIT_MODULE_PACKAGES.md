@@ -62,6 +62,15 @@ screen definitions, project references, and operational records. This keeps
 application data intact; preserved assets can continue to be used as ordinary
 project assets after the package association is removed. If dependency metadata
 for another installed module is missing or unpinned, removal fails closed.
+After no project pins a package version, an administrator can delete that
+version from the local registry. The API checks all project pins before
+deletion; removing a registry package never removes project assets or records.
+
+Live Docker validation on 2026-10-22 imported and exported a temporary
+documentation-only package, installed it in a disposable project, confirmed
+registry deletion returned HTTP 409 while pinned, detached it, deleted the
+package version, and deleted the scratch project. The two seeded website
+projects and the existing Northstar customer record remained intact.
 
 Example package manifest fragment:
 

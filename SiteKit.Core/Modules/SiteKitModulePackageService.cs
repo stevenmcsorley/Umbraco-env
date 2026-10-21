@@ -14,6 +14,7 @@ public interface ISiteKitModuleRegistry
     Task<SiteKitModuleManifest?> GetAsync(string id, string version, CancellationToken cancellationToken = default);
     Task<SiteKitModuleManifest> ImportAsync(Stream package, CancellationToken cancellationToken = default);
     Task<byte[]> ExportAsync(string id, string version, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(string id, string version, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Verifies bounded, declarative module ZIP packages. It never loads or executes package code.</summary>
@@ -138,6 +139,32 @@ public sealed class JsonSiteKitModuleRegistry : ISiteKitModuleRegistry
             }
         }
         return output.ToArray();
+    }
+
+    public async Task<bool> DeleteAsync(string id, string version, CancellationToken cancellationToken = default)
+    {
+        ValidateId(id); ValidateVersion(version);
+        var source = Path.GetFullPath(Path.Combine(_root, id, version));
+        var root = Path.GetFullPath(_root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var rootWithSeparator = root + Path.DirectorySeparatorChar;
+        var relative = Path.GetRelativePath(root, source);
+        if (Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) || !source.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Module package path is invalid.");
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!Directory.Exists(source)) return false;
+            var tombstone = Path.Combine(_root, ".deleting-" + Guid.NewGuid().ToString("N"));
+            Directory.Move(source, tombstone);
+            try { Directory.Delete(tombstone, recursive: true); }
+            catch
+            {
+                if (Directory.Exists(tombstone) && !Directory.Exists(source)) Directory.Move(tombstone, source);
+                throw;
+            }
+            return true;
+        }
+        finally { _gate.Release(); }
     }
 
     public static IReadOnlyList<string> ValidateManifest(SiteKitModuleManifest manifest)
