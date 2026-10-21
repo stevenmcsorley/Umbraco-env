@@ -369,7 +369,7 @@ public sealed class SiteKitCoreContractTests
         await entities.SaveAsync(new SiteKitEntityDefinition
         {
             ProjectId = project.Id, Alias = "opportunity", Name = "Opportunity",
-            Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "title", Name = "Title", Type = "text", Required = true }, new() { Alias = "stage", Name = "Stage", Type = "text", Required = true }]
+            Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "title", Name = "Title", Type = "text", Required = true }, new() { Alias = "stage", Name = "Stage", Type = "text", Required = true }, new() { Alias = "customer", Name = "Customer", Type = "relationship", RelatedEntity = "customer", Required = true }]
         });
         await screens.SaveAsync(new SiteKitApplicationScreenDefinition
         {
@@ -447,6 +447,13 @@ public sealed class SiteKitCoreContractTests
                 Assert.True(File.Exists(Path.Combine(destination, "App_Data", "sitekit.db")));
                 var updateResponse = await client.PutAsJsonAsync($"/api/sitekit/records/customer/{id}", new { name = "Ada Byron" });
                 Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+                var invalidRelationship = await client.PostAsJsonAsync("/api/sitekit/records/opportunity", new { title = "Invalid", stage = "Lead", customer = "00000000000000000000000000000000" });
+                Assert.Equal(HttpStatusCode.BadRequest, invalidRelationship.StatusCode);
+                var opportunityResponse = await client.PostAsJsonAsync("/api/sitekit/records/opportunity", new { title = "Renewal", stage = "Qualified", customer = id });
+                Assert.Equal(HttpStatusCode.Created, opportunityResponse.StatusCode);
+                using var opportunity = JsonDocument.Parse(await opportunityResponse.Content.ReadAsStringAsync());
+                var opportunityId = opportunity.RootElement.GetProperty("id").GetString()!;
+                Assert.Equal(HttpStatusCode.Conflict, (await client.DeleteAsync($"/api/sitekit/records/customer/{id}")).StatusCode);
                 app.Kill(entireProcessTree: true);
                 await app.WaitForExitAsync();
                 await screens.SaveAsync(pipelineScreen with { Name = "Sales Pipeline" });
@@ -469,6 +476,9 @@ public sealed class SiteKitCoreContractTests
                     Assert.Contains(updatedScreens!, screen => screen.GetProperty("name").GetString() == "Sales Pipeline");
                     var listed = await client.GetFromJsonAsync<JsonElement[]>("/api/sitekit/records/customer");
                     Assert.Equal("Ada Byron", listed![0].GetProperty("data").GetProperty("name").GetString());
+                    var opportunities = await client.GetFromJsonAsync<JsonElement[]>("/api/sitekit/records/opportunity");
+                    Assert.Equal(id, opportunities![0].GetProperty("data").GetProperty("customer").GetString());
+                    Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/sitekit/records/opportunity/{opportunityId}")).StatusCode);
                     var deleteResponse = await client.DeleteAsync($"/api/sitekit/records/customer/{id}");
                     Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
                 }

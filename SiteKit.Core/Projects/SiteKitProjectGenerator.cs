@@ -175,7 +175,7 @@ app.MapDelete("/api/sitekit/records/{entity}/{id}", async (HttpContext context, 
 {
     if (!Exists(entity) || !Guid.TryParse(id, out _)) return Results.NotFound(); if (!Can(context, entity, "delete")) return Results.StatusCode(StatusCodes.Status403Forbidden);
     await writeGate.WaitAsync();
-    try { var rows = await List(entity); if (rows.RemoveAll(row => row.Id == id) == 0) return Results.NotFound(); await Save(entity, rows); return Results.NoContent(); }
+    try { var rows = await List(entity); if (rows.All(row => row.Id != id)) return Results.NotFound(); if (await IsReferenced(entity, id)) return Results.Conflict(new { error = "The record is referenced by another entity." }); rows.RemoveAll(row => row.Id == id); await Save(entity, rows); return Results.NoContent(); }
     finally { writeGate.Release(); }
 });
 app.MapGet("/favicon.ico", () => Results.NoContent());
@@ -184,6 +184,14 @@ app.Run();
 
 Entity? Find(string alias) => Valid(alias) ? entities.FirstOrDefault(entity => entity.Alias == alias) : null;
 bool Exists(string alias) => Find(alias) is not null;
+async Task<bool> IsReferenced(string alias, string id)
+{
+    foreach (var entity in entities)
+        foreach (var field in entity.Fields.Where(field => field.RelatedEntity == alias))
+            foreach (var row in await List(entity.Alias))
+                if (row.Data.TryGetProperty(field.Alias, out var value) && (value.ValueKind == JsonValueKind.String && value.GetString() == id || value.ValueKind == JsonValueKind.Array && value.EnumerateArray().Any(item => item.ValueKind == JsonValueKind.String && item.GetString() == id))) return true;
+    return false;
+}
 bool Valid(string alias) => Regex.IsMatch(alias, "^[a-z][a-z0-9-]{1,63}$", RegexOptions.CultureInvariant);
 bool IsAdmin(HttpContext context) => context.Items.TryGetValue("sitekit-is-admin", out var value) && value is true;
 bool CanAnyRead(HttpContext context) => IsAdmin(context) ||
@@ -256,6 +264,18 @@ async Task<string[]> Validate(Entity model, JsonElement body, string? excludeId 
     {
         if (!body.TryGetProperty(field.Alias, out var value) || value.ValueKind == JsonValueKind.Null)
         { if (field.Alias != "id" && field.Required) errors.Add(field.Name + " is required."); continue; }
+        if (field.Type is "relationship" or "relationships")
+        {
+            var target = field.RelatedEntity;
+            if (target is null || !Exists(target)) { errors.Add(field.Name + " refers to an unknown entity."); continue; }
+            var ids = field.Type == "relationship"
+                ? value.ValueKind == JsonValueKind.String ? new[] { value.GetString()! } : []
+                : value.ValueKind == JsonValueKind.Array && value.EnumerateArray().All(item => item.ValueKind == JsonValueKind.String) ? value.EnumerateArray().Select(item => item.GetString()!).ToArray() : [];
+            if ((field.Type == "relationship" && value.ValueKind != JsonValueKind.String) || (field.Type == "relationships" && value.ValueKind != JsonValueKind.Array)) { errors.Add(field.Name + " has an invalid relationship value."); continue; }
+            var targetIds = (await List(target)).Select(row => row.Id).ToHashSet(StringComparer.Ordinal);
+            if (ids.Any(id => !targetIds.Contains(id))) errors.Add(field.Name + " refers to a record that does not exist.");
+            continue;
+        }
         if (field.Type is "text" or "email" && value.ValueKind != JsonValueKind.String) errors.Add(field.Name + " must be text.");
         if (field.Type == "number" && value.ValueKind != JsonValueKind.Number) errors.Add(field.Name + " must be a number.");
         if (field.Type == "boolean" && value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) errors.Add(field.Name + " must be a boolean.");
@@ -268,7 +288,7 @@ IResult Problem(string[] errors) => Results.ValidationProblem(errors.Select((err
 T Load<T>(string path, T fallback) => File.Exists(path) ? JsonSerializer.Deserialize<T>(File.ReadAllText(path), jsonOptions) ?? fallback : fallback;
 record Row(string Id, JsonElement Data, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
 record Entity(string Alias, string Name, SiteKitField[] Fields);
-record SiteKitField(string Alias, string Name, string Type, bool Required, bool Unique, int? MaximumLength);
+record SiteKitField(string Alias, string Name, string Type, bool Required, bool Unique, int? MaximumLength, string? RelatedEntity);
 record Screen(string Alias, string Name, string Type, string? EntityAlias, string[] Columns, string[] FormFields, string? GroupField);
 """;
         return template.Replace("{{HTML}}", JsonSerializer.Serialize(html), StringComparison.Ordinal);
