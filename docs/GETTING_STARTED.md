@@ -67,8 +67,14 @@ docker compose -f MyDockerProject/docker-compose.yml -f MyDockerProject/docker-c
 
 Open `https://localhost:44373/umbraco` directly. The HTTP port 44372 redirects
 to HTTPS, but starting at the HTTPS URL avoids an HTTP authorization request.
-Stop the services with the same Compose files and `down`. The certificate
-directory is ignored by Git.
+Do not use the backoffice URL on port 44372: if the HTTPS overlay is not active,
+that listener has no TLS and OpenIddict rejects authorization requests with
+`ID2083` (`This server only accepts HTTPS requests`). Confirm that port 44373 is
+published before signing in. For a reverse proxy, forward `X-Forwarded-Proto:
+https` and configure the proxy's address under `ForwardedHeaders:KnownProxies`;
+the app intentionally does not trust arbitrary forwarded headers. Stop the
+services with the same Compose files and `down`. The certificate directory is
+ignored by Git.
 
 ### 3. Access Services
 

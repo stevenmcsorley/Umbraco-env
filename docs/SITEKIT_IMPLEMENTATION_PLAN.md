@@ -495,3 +495,21 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   verifies the open-source Debug build. Production Release publishing needs a
   valid key for the project's use case.
 - Sources: [ImageSharp 3.2.0 release notes](https://github.com/SixLabors/ImageSharp/releases/tag/v3.2.0), [PR #3208](https://github.com/SixLabors/ImageSharp/pull/3208), and [Six Labors security support notice](https://sixlabors.com/posts/security-support-and-license-enforcement/).
+
+## M0 booking endpoint ownership check (2026-10-22)
+
+- `GET /api/bookings/{reference}` and cancellation now require proof of
+  ownership: the matching `UserId` session for account-linked bookings, or
+  guest email for anonymous bookings.
+  Missing references and failed ownership checks return the same 404. Booking
+  detail lookup no longer includes guest contact information or
+  `AdditionalData`. The duplicate `GET /api/bookings/user/{userId}` checks the
+  session owner, matching the existing AuthController route.
+- Existing immediate booking confirmation remains unchanged. Admin booking
+  views pass the guest email to the protected lookup. Email verification is a
+  compatibility guard, not a high-entropy booking-management token; a stronger
+  random token would require persistent schema and email-flow work.
+- Validation: Docker .NET 10 Debug build of the web host completed with 0
+  errors (166 warnings, including NuGet audit advisory reports for ImageSharp
+  3.2.0 handled by the repository's narrowly scoped verifier). Live endpoint
+  verification is pending rebuild of the running container.

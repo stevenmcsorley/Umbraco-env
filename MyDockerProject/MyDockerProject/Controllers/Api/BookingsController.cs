@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 using MyDockerProject.Data;
 using MyDockerProject.Models;
 using MyDockerProject.Services;
@@ -527,11 +528,11 @@ public class BookingsController : ControllerBase
     }
 
     [HttpGet("{bookingReference}")]
-    public async Task<IActionResult> GetBooking(string bookingReference)
+    public async Task<IActionResult> GetBooking(string bookingReference, [FromQuery] string? email)
     {
         var booking = await _bookingService.GetBookingByReferenceAsync(bookingReference);
-        
-        if (booking == null)
+
+        if (!CanAccessBooking(booking, email))
         {
             return NotFound(new { error = "Booking not found" });
         }
@@ -545,25 +546,20 @@ public class BookingsController : ControllerBase
             checkIn = booking.CheckIn,
             checkOut = booking.CheckOut,
             quantity = booking.Quantity,
-            guestFirstName = booking.GuestFirstName,
-            guestLastName = booking.GuestLastName,
-            guestEmail = booking.GuestEmail,
-            guestPhone = booking.GuestPhone,
             totalPrice = booking.TotalPrice,
             currency = booking.Currency,
             status = booking.Status,
-            createdAt = booking.CreatedAt,
-            additionalData = booking.AdditionalData
+            createdAt = booking.CreatedAt
         });
     }
 
     [HttpPost("{bookingReference}/cancel")]
-    public async Task<IActionResult> CancelBooking(string bookingReference)
+    public async Task<IActionResult> CancelBooking(string bookingReference, [FromBody] CancelBookingRequest request)
     {
         try
         {
             var booking = await _bookingService.GetBookingByReferenceAsync(bookingReference);
-            if (booking == null)
+            if (!CanAccessBooking(booking, request.Email))
             {
                 return NotFound(new { error = "Booking not found" });
             }
@@ -591,6 +587,11 @@ public class BookingsController : ControllerBase
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetUserBookings(Guid userId)
     {
+        if (!TryGetSessionUserId(out var currentUserId) || currentUserId != userId)
+        {
+            return Unauthorized();
+        }
+
         var bookings = await _bookingService.GetBookingsByUserAsync(userId);
         
         return Ok(bookings.Select(b => new
@@ -608,6 +609,34 @@ public class BookingsController : ControllerBase
             createdAt = b.CreatedAt
         }));
     }
+
+    private bool CanAccessBooking(Booking? booking, string? email)
+    {
+        if (booking is null)
+        {
+            return false;
+        }
+
+        if (booking.UserId is Guid ownerId)
+        {
+            return TryGetSessionUserId(out var currentUserId) && currentUserId == ownerId;
+        }
+
+        // Anonymous reservations use the guest email supplied at checkout as
+        // an ownership check; never rely on the booking reference alone.
+        return !string.IsNullOrWhiteSpace(email) &&
+               string.Equals(booking.GuestEmail.Trim(), email.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool TryGetSessionUserId(out Guid userId)
+    {
+        return Guid.TryParse(HttpContext.Session.GetString("UserId"), out userId);
+    }
+}
+
+public sealed class CancelBookingRequest
+{
+    public string Email { get; set; } = string.Empty;
 }
 
 public class CreateBookingRequest

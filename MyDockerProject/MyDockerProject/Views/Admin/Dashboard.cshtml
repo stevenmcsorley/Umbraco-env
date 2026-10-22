@@ -71,7 +71,7 @@
                         }
                     </td>
                     <td>
-                        <a href="/api/bookings/@booking.BookingReference" target="_blank" class="btn btn-sm">View</a>
+                        <a href="/api/bookings/@booking.BookingReference?email=@Uri.EscapeDataString(booking.GuestEmail)" target="_blank" rel="noopener noreferrer" class="btn btn-sm">View</a>
                         @if (booking.Status != "Cancelled")
                         {
                             <form method="post" action="/admin/bookings/@booking.BookingReference/cancel" style="display:inline;">
