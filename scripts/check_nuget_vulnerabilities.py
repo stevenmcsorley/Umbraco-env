@@ -8,10 +8,14 @@ from pathlib import Path
 from typing import Any
 
 
-# Six Labors confirms these advisories were fixed in ImageSharp 3.2.0, but the
-# advisory database had not yet been corrected when this exception was added.
-# Keep the exception narrow: package ID, exact version, and exact advisory IDs.
-# Reference: https://sixlabors.com/posts/security-support-and-license-enforcement/
+# ImageSharp 3.2.0's signed release notes link PR #3208, "Backport v3 security
+# fixes and license enforcement". Six Labors says the five NuGet advisory
+# records below are awaiting correction. Keep this exception narrow to package
+# ID, exact version, and exact advisory IDs; tests guard each boundary.
+# References:
+# https://github.com/SixLabors/ImageSharp/releases/tag/v3.2.0
+# https://github.com/SixLabors/ImageSharp/pull/3208
+# https://sixlabors.com/posts/security-support-and-license-enforcement/
 PATCHED_IMAGESHARP_ADVISORIES = {
     "ghsa-gwg2-r3hj-4w44",
     "ghsa-j3p4-wp97-rph4",

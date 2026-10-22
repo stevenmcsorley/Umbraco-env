@@ -478,3 +478,20 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   rejects a nonnumeric value field, verifies the exported screen definition,
   checks chart markup and builds the independent application. The Studio view
   JavaScript passes `node --check`.
+
+## M0 ImageSharp advisory review (2026-10-22)
+
+- Umbraco 17.7.1 depends on ImageSharp; this project pins its resolved version
+  to 3.2.0. The signed ImageSharp 3.2.0 release notes include PR #3208,
+  "Backport v3 security fixes and license enforcement". Six Labors' security
+  support post says five NuGet advisory records are awaiting correction and
+  names the advisories.
+- CI suppresses only those five exact advisory IDs, only for
+  `SixLabors.ImageSharp` 3.2.0. New advisories, other packages, or another
+  version still fail the vulnerability gate. Regression tests cover each
+  boundary.
+- This does not remove the package's build-time license requirement. CI uses a
+  Release build only when `SIXLABORS_LICENSE_KEY` is configured; otherwise it
+  verifies the open-source Debug build. Production Release publishing needs a
+  valid key for the project's use case.
+- Sources: [ImageSharp 3.2.0 release notes](https://github.com/SixLabors/ImageSharp/releases/tag/v3.2.0), [PR #3208](https://github.com/SixLabors/ImageSharp/pull/3208), and [Six Labors security support notice](https://sixlabors.com/posts/security-support-and-license-enforcement/).
