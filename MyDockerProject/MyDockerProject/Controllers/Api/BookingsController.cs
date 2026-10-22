@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using System.Security.Cryptography;
 using MyDockerProject.Data;
 using MyDockerProject.Models;
 using MyDockerProject.Services;
@@ -25,6 +26,7 @@ public class BookingsController : ControllerBase
     private readonly IMediaService _mediaService;
     private readonly IPublishedContentQuery _publishedContentQuery;
     private readonly ILogger<BookingsController> _logger;
+    private readonly IConfiguration _configuration;
 
     public BookingsController(
         BookingService bookingService,
@@ -36,7 +38,8 @@ public class BookingsController : ControllerBase
         IContentService contentService,
         IMediaService mediaService,
         IPublishedContentQuery publishedContentQuery,
-        ILogger<BookingsController> logger)
+        ILogger<BookingsController> logger,
+        IConfiguration configuration)
     {
         _bookingService = bookingService;
         _inventoryService = inventoryService;
@@ -48,6 +51,7 @@ public class BookingsController : ControllerBase
         _mediaService = mediaService;
         _publishedContentQuery = publishedContentQuery;
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpPost]
@@ -89,6 +93,12 @@ public class BookingsController : ControllerBase
             else
             {
                 _logger.LogInformation("[BookingsController] No userId provided in request");
+            }
+
+            if (userId is Guid requestedUserId &&
+                (!TryGetSessionUserId(out var currentUserId) || currentUserId != requestedUserId))
+            {
+                return Unauthorized();
             }
 
             // If userId is provided but guest details are missing, fetch user details
@@ -208,19 +218,17 @@ public class BookingsController : ControllerBase
             // Log saved AdditionalData
             _logger.LogInformation("[BookingsController] Booking created with AdditionalData: {AdditionalData}", booking.AdditionalData ?? "NULL");
 
-            // Send confirmation email (fire and forget)
-            _ = Task.Run(async () =>
-            {
-                await _emailService.SendBookingConfirmationAsync(
-                    booking.GuestEmail,
-                    $"{booking.GuestFirstName} {booking.GuestLastName}",
-                    booking.BookingReference,
-                    booking.TotalPrice,
-                    booking.Currency,
-                    booking.CheckIn,
-                    booking.CheckOut
-                );
-            });
+            var managementUrl = CreateBookingManagementUrl(booking);
+            await _emailService.SendBookingConfirmationAsync(
+                booking.GuestEmail,
+                $"{booking.GuestFirstName} {booking.GuestLastName}",
+                booking.BookingReference,
+                booking.TotalPrice,
+                booking.Currency,
+                booking.CheckIn,
+                booking.CheckOut,
+                managementUrl
+            );
 
             // Fetch product (room/event) and hotel details for the response
             string? productName = null;
@@ -513,6 +521,8 @@ public class BookingsController : ControllerBase
                 status = booking.Status,
                 createdAt = booking.CreatedAt,
                 userId = booking.UserId,
+                managementToken = booking.ManagementToken,
+                managementUrl = managementUrl,
                 events = events ?? new List<object>(),
                 addOns = addOns ?? new List<object>()
             });
@@ -528,11 +538,11 @@ public class BookingsController : ControllerBase
     }
 
     [HttpGet("{bookingReference}")]
-    public async Task<IActionResult> GetBooking(string bookingReference, [FromQuery] string? email)
+    public async Task<IActionResult> GetBooking(string bookingReference, [FromHeader(Name = "Authorization")] string? authorization)
     {
         var booking = await _bookingService.GetBookingByReferenceAsync(bookingReference);
 
-        if (!CanAccessBooking(booking, email))
+        if (!CanAccessBooking(booking, authorization))
         {
             return NotFound(new { error = "Booking not found" });
         }
@@ -554,27 +564,23 @@ public class BookingsController : ControllerBase
     }
 
     [HttpPost("{bookingReference}/cancel")]
-    public async Task<IActionResult> CancelBooking(string bookingReference, [FromBody] CancelBookingRequest request)
+    public async Task<IActionResult> CancelBooking(string bookingReference, [FromHeader(Name = "Authorization")] string? authorization)
     {
         try
         {
             var booking = await _bookingService.GetBookingByReferenceAsync(bookingReference);
-            if (!CanAccessBooking(booking, request.Email))
+            if (!CanAccessBooking(booking, authorization))
             {
                 return NotFound(new { error = "Booking not found" });
             }
 
             await _bookingService.CancelBookingAsync(bookingReference);
 
-            // Send cancellation email (fire and forget)
-            _ = Task.Run(async () =>
-            {
-                await _emailService.SendBookingCancellationAsync(
-                    booking.GuestEmail,
-                    $"{booking.GuestFirstName} {booking.GuestLastName}",
-                    bookingReference
-                );
-            });
+            await _emailService.SendBookingCancellationAsync(
+                booking.GuestEmail,
+                $"{booking.GuestFirstName} {booking.GuestLastName}",
+                bookingReference
+            );
 
             return Ok(new { message = "Booking cancelled successfully" });
         }
@@ -610,7 +616,7 @@ public class BookingsController : ControllerBase
         }));
     }
 
-    private bool CanAccessBooking(Booking? booking, string? email)
+    private bool CanAccessBooking(Booking? booking, string? authorization)
     {
         if (booking is null)
         {
@@ -622,21 +628,62 @@ public class BookingsController : ControllerBase
             return TryGetSessionUserId(out var currentUserId) && currentUserId == ownerId;
         }
 
-        // Anonymous reservations use the guest email supplied at checkout as
-        // an ownership check; never rely on the booking reference alone.
-        return !string.IsNullOrWhiteSpace(email) &&
-               string.Equals(booking.GuestEmail.Trim(), email.Trim(), StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(authorization) || string.IsNullOrWhiteSpace(booking.ManagementTokenHash))
+        {
+            return false;
+        }
+
+        try
+        {
+            var schemeSeparator = authorization.IndexOf(' ');
+            if (schemeSeparator <= 0 || !authorization[..schemeSeparator].Equals("Bearer", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var token = authorization[(schemeSeparator + 1)..].Trim();
+            if (token.Length == 0)
+            {
+                return false;
+            }
+
+            var suppliedHash = Convert.FromHexString(Booking.HashManagementToken(token));
+            var storedHash = Convert.FromHexString(booking.ManagementTokenHash);
+            return CryptographicOperations.FixedTimeEquals(suppliedHash, storedHash);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    private string? CreateBookingManagementUrl(Booking booking)
+    {
+        if (booking.UserId.HasValue || string.IsNullOrWhiteSpace(booking.ManagementToken))
+        {
+            return null;
+        }
+
+        var publicBaseUrl = _configuration["SiteKit:PublicBaseUrl"];
+        if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var baseUri) ||
+            (baseUri.Scheme != Uri.UriSchemeHttps && !string.Equals(baseUri.Host, "localhost", StringComparison.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        var builder = new UriBuilder(baseUri)
+        {
+            Path = "/booking/manage",
+            Query = $"reference={Uri.EscapeDataString(booking.BookingReference)}",
+            Fragment = $"token={Uri.EscapeDataString(booking.ManagementToken)}"
+        };
+        return builder.Uri.ToString();
     }
 
     private bool TryGetSessionUserId(out Guid userId)
     {
         return Guid.TryParse(HttpContext.Session.GetString("UserId"), out userId);
     }
-}
-
-public sealed class CancelBookingRequest
-{
-    public string Email { get; set; } = string.Empty;
 }
 
 public class CreateBookingRequest

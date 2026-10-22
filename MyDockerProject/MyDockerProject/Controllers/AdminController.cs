@@ -87,6 +87,38 @@ public class AdminController : Controller
         return View(bookings);
     }
 
+    [HttpGet("/admin/bookings/{bookingReference}/details")]
+    public async Task<IActionResult> BookingDetails(string bookingReference)
+    {
+        var booking = await _context.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.BookingReference == bookingReference);
+        if (booking is null)
+        {
+            return NotFound();
+        }
+
+        return Json(new
+        {
+            bookingId = booking.Id,
+            bookingReference = booking.BookingReference,
+            productId = booking.ProductId,
+            productType = booking.ProductType,
+            checkIn = booking.CheckIn,
+            checkOut = booking.CheckOut,
+            quantity = booking.Quantity,
+            guestFirstName = booking.GuestFirstName,
+            guestLastName = booking.GuestLastName,
+            guestEmail = booking.GuestEmail,
+            guestPhone = booking.GuestPhone,
+            totalPrice = booking.TotalPrice,
+            currency = booking.Currency,
+            status = booking.Status,
+            createdAt = booking.CreatedAt,
+            additionalData = booking.AdditionalData
+        });
+    }
+
     [HttpGet("/admin/inventory")]
     public async Task<IActionResult> Inventory(Guid? productId = null)
     {

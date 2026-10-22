@@ -282,6 +282,25 @@ export const ConfirmationScreen = ({ className = '' }: ConfirmationScreenProps) 
         )}
       </div>
 
+      {confirmation.managementUrl && (
+        <a
+          href={confirmation.managementUrl}
+          rel="noreferrer"
+          style={{
+            ...buttonStyle,
+            display: 'block',
+            boxSizing: 'border-box',
+            textAlign: 'center',
+            textDecoration: 'none',
+            backgroundColor: '#ffffff',
+            color: '#111827',
+            border: '1px solid #d1d5db'
+          }}
+        >
+          Manage booking
+        </a>
+      )}
+
       {confirmation.events && Array.isArray(confirmation.events) && confirmation.events.length > 0 && (
         <div style={sectionStyle}>
           <div style={labelStyle}>Events</div>

@@ -11,6 +11,7 @@ umbraco-export-*/
 **/bin/
 **/obj/
 **/dist/
+output/sitekit-node-modules/
 __pycache__/
 generated-projects/
 *.sitekit-module.zip

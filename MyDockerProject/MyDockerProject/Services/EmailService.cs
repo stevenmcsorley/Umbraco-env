@@ -22,12 +22,13 @@ public class EmailService : IEmailService
         decimal totalPrice, 
         string currency, 
         DateTime checkIn, 
-        DateTime? checkOut)
+        DateTime? checkOut,
+        string? managementUrl = null)
     {
         try
         {
             var subject = $"Booking Confirmation - {bookingReference}";
-            var body = GenerateBookingConfirmationEmail(toName, bookingReference, totalPrice, currency, checkIn, checkOut);
+            var body = GenerateBookingConfirmationEmail(toName, bookingReference, totalPrice, currency, checkIn, checkOut, managementUrl);
 
             await SendEmailAsync(toEmail, toName, subject, body);
             _logger.LogInformation("Booking confirmation email sent to {Email} for booking {Reference}", toEmail, bookingReference);
@@ -62,8 +63,8 @@ public class EmailService : IEmailService
         var emailEnabled = _configuration.GetValue<bool>("Email:Enabled", false);
         if (!emailEnabled)
         {
-            _logger.LogInformation("Email sending is disabled. Would send to {Email}: {Subject}", toEmail, subject);
-            _logger.LogInformation("Email body:\n{Body}", body);
+            // Do not log message bodies; booking links can contain bearer credentials.
+            _logger.LogInformation("Email sending is disabled. Would send {Subject} to configured recipient", subject);
             return;
         }
 
@@ -103,7 +104,7 @@ public class EmailService : IEmailService
         await client.SendMailAsync(message);
     }
 
-    private string GenerateBookingConfirmationEmail(string name, string bookingReference, decimal totalPrice, string currency, DateTime checkIn, DateTime? checkOut)
+    private string GenerateBookingConfirmationEmail(string name, string bookingReference, decimal totalPrice, string currency, DateTime checkIn, DateTime? checkOut, string? managementUrl)
     {
         var checkOutText = checkOut.HasValue ? checkOut.Value.ToString("dd MMM yyyy") : "N/A";
         
@@ -136,6 +137,7 @@ public class EmailService : IEmailService
                 <p><strong>Total Amount:</strong> {currency} {totalPrice:F2}</p>
             </div>
             <p>Please keep this booking reference for your records. You will receive a reminder email closer to your check-in date.</p>
+            {(string.IsNullOrWhiteSpace(managementUrl) ? string.Empty : $"<p><a href=\"{WebUtility.HtmlEncode(managementUrl)}\">View or cancel your booking</a></p>")}
             <p>If you have any questions, please contact us.</p>
         </div>
         <div class=""footer"">

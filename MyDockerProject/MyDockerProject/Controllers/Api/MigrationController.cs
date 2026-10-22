@@ -37,6 +37,7 @@ public class MigrationController : ControllerBase
                         CREATE TABLE [dbo].[Bookings] (
                             [Id] uniqueidentifier NOT NULL PRIMARY KEY DEFAULT NEWID(),
                             [BookingReference] nvarchar(50) NOT NULL,
+                            [ManagementTokenHash] nvarchar(64) NULL,
                             [ProductId] uniqueidentifier NOT NULL,
                             [ProductType] nvarchar(50) NOT NULL,
                             [CheckIn] datetime2 NOT NULL,
@@ -68,6 +69,14 @@ public class MigrationController : ControllerBase
                     -- Add payment columns if table exists but columns don't
                     IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND type in (N'U'))
                     BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND name = 'ManagementTokenHash')
+                        BEGIN
+                            ALTER TABLE [dbo].[Bookings] ADD [ManagementTokenHash] nvarchar(64) NULL;
+                        END
+                        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND name = 'IX_Bookings_ManagementTokenHash')
+                        BEGIN
+                            EXEC(N'CREATE UNIQUE INDEX [IX_Bookings_ManagementTokenHash] ON [dbo].[Bookings] ([ManagementTokenHash]) WHERE [ManagementTokenHash] IS NOT NULL');
+                        END
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Bookings]') AND name = 'PaymentId')
                         BEGIN
                             ALTER TABLE [dbo].[Bookings] ADD [PaymentId] nvarchar(100) NULL;

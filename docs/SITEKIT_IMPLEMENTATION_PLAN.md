@@ -17,7 +17,7 @@ solution; each milestone records implementation and validation evidence here.
 | M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit account and project-role grants, SQL Server CRUD APIs and Studio record editor; SQL persistence now verifies and locks relationship targets during writes and prevents deleting referenced records inside serializable transactions; generated apps include model-driven screens, accessible grouped count/sum charts, SQLite-backed CRUD, direct and role-based grants and relationship protection; identity federation, schema migrations for SQL entities and live multi-entity SQL verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade, dependency-safe project removal preserving schemas and records, and registry-version deletion guarded by project pins; SemVer dependency ranges and dependent-upgrade checks; official Automate 17.5.1 plus scoped record-change trigger and permission-checked create/update/idempotent delete actions compile; executable workflow provisioning and live runtime verification remain |
 | M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; generated apps now render tables, search, kanban, calendars, entity-count dashboards and grouped count/sum charts over SQLite CRUD; complete CRM journey and live eligible ChatGPT verification remain |
-| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: license-aware CI build, NuGet vulnerability gate and 29 focused core tests; accessibility, performance, restore/backup and live deployment verification remain |
+| M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: license-aware CI build, NuGet vulnerability gate and 30 focused core tests; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
 
@@ -76,7 +76,7 @@ solution; each milestone records implementation and validation evidence here.
   exact package version. ImageSharp 3.2.0 requires a Six Labors key for
   Release builds. CI builds Release when `SIXLABORS_LICENSE_KEY` is configured
   and otherwise validates Debug, which does not require the key.
-- The SiteKit core contract and storage test suite currently passes 29 tests.
+- The SiteKit core contract and storage test suite currently passes 30 tests.
   Broader application journey tests remain planned below.
 - The previously committed database password is a test credential according to
   the repository owner; its historical Git object remains in history. Runtime
@@ -499,17 +499,34 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
 ## M0 booking endpoint ownership check (2026-10-22)
 
 - `GET /api/bookings/{reference}` and cancellation now require proof of
-  ownership: the matching `UserId` session for account-linked bookings, or
-  guest email for anonymous bookings.
+  ownership: the matching `UserId` session for account-linked bookings, or a
+  random booking-specific bearer credential for anonymous bookings. The host
+  stores only a SHA-256 hash in a nullable, uniquely indexed column and applies
+  the additive column/index migration at startup. Confirmation emails link to
+  a management screen using a fragment token, which the browser does not send
+  in its initial page request; the frontend then sends it in an Authorization
+  header.
   Missing references and failed ownership checks return the same 404. Booking
   detail lookup no longer includes guest contact information or
   `AdditionalData`. The duplicate `GET /api/bookings/user/{userId}` checks the
   session owner, matching the existing AuthController route.
-- Existing immediate booking confirmation remains unchanged. Admin booking
-  views pass the guest email to the protected lookup. Email verification is a
-  compatibility guard, not a high-entropy booking-management token; a stronger
-  random token would require persistent schema and email-flow work.
-- Validation: Docker .NET 10 Debug build of the web host completed with 0
-  errors (166 warnings, including NuGet audit advisory reports for ImageSharp
-  3.2.0 handled by the repository's narrowly scoped verifier). Live endpoint
-  verification is pending rebuild of the running container.
+- Existing immediate booking confirmation remains unchanged. New anonymous
+  booking responses include the management token and configured management
+  URL; the booking engine now carries that URL into the confirmation screen.
+  Admin booking views use an admin-filtered details route. Create requests can
+  no longer assign a booking to another account by supplying an arbitrary
+  `UserId`. Old anonymous bookings have no token and need support/admin
+  handling.
+- Validation for token implementation: the .NET 10 solution build and test run
+  passed 30/30, including the random-token and SHA-256 hashing contract test.
+  The Docker host started and applied the additive migration.
+  A disposable SQL-backed anonymous booking verified no-token 404, valid-token
+  detail 200 with guest PII excluded, secure management-page headers, valid
+  token cancellation, and inventory release. The disposable booking and
+  inventory rows were removed. Hotel API, booking-engine health, and HTTPS
+  backoffice stayed available. SMTP delivery was not exercised because local
+  email is disabled; the configured `SITEKIT_PUBLIC_BASE_URL` was set for the
+  Docker run. The booking-engine TypeScript production build also passes. A
+  browser snapshot confirmed the live booking management page title and
+  incomplete-link state; the credentialed API journey was verified directly
+  over HTTP without exposing the temporary credential in output.

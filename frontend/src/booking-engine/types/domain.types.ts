@@ -67,6 +67,7 @@ export interface BookingRequest {
 
 export interface BookingResponse {
   bookingId: string;
+  managementUrl?: string;
   productId: string;
   productName?: string;
   hotelName?: string;

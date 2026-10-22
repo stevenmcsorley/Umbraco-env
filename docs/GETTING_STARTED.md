@@ -76,6 +76,14 @@ the app intentionally does not trust arbitrary forwarded headers. Stop the
 services with the same Compose files and `down`. The certificate directory is
 ignored by Git.
 
+For anonymous guest booking management links in confirmation emails, configure
+`SITEKIT_PUBLIC_BASE_URL` in the private `.env` file (for local HTTPS, use
+`https://localhost:44373`). A confirmation email carries a random bearer
+credential in the URL fragment; the browser sends it in an Authorization
+header, and only its SHA-256 hash is stored with the booking. Existing bookings
+remain available to administrators but cannot be self-managed through the new
+guest endpoint because a credential cannot be safely reconstructed for them.
+
 ### 3. Access Services
 
 - **Umbraco Backoffice (sign-in)**: https://localhost:44373/umbraco (HTTPS overlay required)

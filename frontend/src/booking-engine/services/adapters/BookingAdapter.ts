@@ -25,6 +25,7 @@ export class BookingAdapter {
     
     const response = {
       bookingId: data.bookingId || data.bookingReference,
+      managementUrl: data.managementUrl,
       productId: data.productId,
       productName: data.productName,
       hotelName: data.hotelName,

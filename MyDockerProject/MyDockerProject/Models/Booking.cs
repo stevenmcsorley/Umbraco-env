@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using SiteKit.Core.Security;
 
 namespace MyDockerProject.Models;
 
@@ -12,6 +13,28 @@ public class Booking
     [Required]
     [MaxLength(50)]
     public string BookingReference { get; set; } = string.Empty;
+
+    [MaxLength(64)]
+    public string? ManagementTokenHash { get; set; }
+
+    [NotMapped]
+    public string? ManagementToken { get; private set; }
+
+    public static string CreateManagementToken()
+    {
+        return BookingManagementCredential.CreateToken();
+    }
+
+    public static string HashManagementToken(string token)
+    {
+        return BookingManagementCredential.HashToken(token);
+    }
+
+    public void SetManagementToken(string token)
+    {
+        ManagementToken = token;
+        ManagementTokenHash = HashManagementToken(token);
+    }
     
     [Required]
     public Guid ProductId { get; set; } // Room or Event ID

@@ -47,6 +47,7 @@ export interface BookingRequest {
 
 export interface BookingResponse {
   bookingId: string;
+  managementUrl?: string;
   productId: string;
   from: Date | string;
   to: Date | string;

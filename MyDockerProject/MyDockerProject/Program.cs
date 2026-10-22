@@ -121,6 +121,7 @@ if (!string.IsNullOrEmpty(connectionString))
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IUserService, UserService>();
     builder.Services.AddScoped<PasswordHasher<User>>();
+    builder.Services.AddHostedService<BookingManagementSchemaInitializer>();
     
     // Register payment service (can be swapped for real provider)
     var paymentProvider = builder.Configuration["Payment:Provider"] ?? "Mock";

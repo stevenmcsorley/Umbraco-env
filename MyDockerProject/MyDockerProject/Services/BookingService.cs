@@ -61,8 +61,13 @@ public class BookingService
             PaymentStatus = paymentStatus,
             PaymentDate = paymentDate
         };
+
+        if (userId is null)
+        {
+            booking.SetManagementToken(Booking.CreateManagementToken());
+        }
         
-        _logger.LogInformation("[BookingService] Creating booking with UserId: {UserId}, ProductId: {ProductId}, Reference: {Reference}", 
+        _logger.LogInformation("[BookingService] Creating booking with UserId: {UserId}, ProductId: {ProductId}, Reference: {Reference}",
             userId?.ToString() ?? "NULL", productId, bookingRef);
         
         _context.Bookings.Add(booking);

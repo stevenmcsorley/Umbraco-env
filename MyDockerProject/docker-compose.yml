@@ -32,6 +32,7 @@ services:
       - BOOKING_ENGINE_URL=http://booking_engine:3001
       - SiteKit__AdminEmails=${SITEKIT_ADMIN_EMAILS:-}
       - SiteKit__AdminRegistrationCode=${SITEKIT_ADMIN_REGISTRATION_CODE:-}
+      - SiteKit__PublicBaseUrl=${SITEKIT_PUBLIC_BASE_URL:-}
       - SiteKit__DataProtectionKeyPath=/app/umbraco/DataProtection-Keys
       - Umbraco__Automate__UseNamedConnectionString=umbracoDbDSN
     volumes:

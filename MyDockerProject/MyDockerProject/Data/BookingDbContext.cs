@@ -22,6 +22,7 @@ public class BookingDbContext : DbContext
         modelBuilder.Entity<Booking>(entity =>
         {
             entity.HasIndex(e => e.BookingReference).IsUnique();
+            entity.HasIndex(e => e.ManagementTokenHash).IsUnique().HasFilter("[ManagementTokenHash] IS NOT NULL");
             entity.HasIndex(e => new { e.ProductId, e.CheckIn, e.CheckOut });
             entity.HasIndex(e => e.GuestEmail);
             entity.HasIndex(e => e.CreatedAt);
