@@ -83,6 +83,7 @@ public sealed record SiteKitApplicationScreenDefinition
     public string[] Columns { get; init; } = [];
     public string[] FormFields { get; init; } = [];
     public string? GroupField { get; init; }
+    public string? ChartValueField { get; init; }
     public string[] Components { get; init; } = [];
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
 }
@@ -90,7 +91,7 @@ public sealed record SiteKitApplicationScreenDefinition
 public static class SiteKitScreenValidator
 {
     private static readonly HashSet<string> Types = new(StringComparer.Ordinal)
-        { "table", "detail", "form", "dashboard", "kanban", "calendar", "search", "approval" };
+        { "table", "detail", "form", "dashboard", "kanban", "calendar", "search", "approval", "chart" };
 
     public static IReadOnlyList<string> Validate(SiteKitApplicationScreenDefinition screen, SiteKitEntityDefinition? entity = null)
     {
@@ -101,7 +102,7 @@ public static class SiteKitScreenValidator
         if (string.IsNullOrWhiteSpace(screen.Name) || screen.Name.Length > 120) errors.Add("screen name is required and must be at most 120 characters.");
         if (!Types.Contains(screen.Type)) errors.Add("screen type is unsupported.");
         if (screen.EntityAlias is not null && !SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(screen.EntityAlias)) errors.Add("screen entityAlias is invalid.");
-        if (screen.Type is "table" or "detail" or "form" or "kanban" or "calendar" or "search" or "approval" && screen.EntityAlias is null) errors.Add($"{screen.Type} screens require an entityAlias.");
+        if (screen.Type is "table" or "detail" or "form" or "kanban" or "calendar" or "search" or "approval" or "chart" && screen.EntityAlias is null) errors.Add($"{screen.Type} screens require an entityAlias.");
         if (screen.Columns is null || screen.FormFields is null || screen.Components is null) errors.Add("screen columns, formFields and components are required arrays.");
         else
         {
@@ -111,12 +112,15 @@ public static class SiteKitScreenValidator
         }
         if (screen.GroupField is not null && !SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(screen.GroupField)) errors.Add("screen groupField is invalid.");
         if (screen.Type == "kanban" && screen.GroupField is null) errors.Add("kanban screens require a groupField.");
+        if (screen.Type == "chart" && screen.GroupField is null) errors.Add("chart screens require a groupField.");
+        if (screen.ChartValueField is not null && !SiteKit.Core.Projects.SiteKitProjectValidator.IsValidId(screen.ChartValueField)) errors.Add("screen chartValueField is invalid.");
         if (entity is not null && screen.Columns is not null && screen.FormFields is not null)
         {
             if (screen.EntityAlias != entity.Alias || screen.ProjectId != entity.ProjectId) errors.Add("screen entity must belong to the same project.");
             var fields = entity.Fields.Select(field => field.Alias).ToHashSet(StringComparer.Ordinal);
             if (screen.Columns.Concat(screen.FormFields).Any(field => !fields.Contains(field))) errors.Add("screen references a field that is not defined on its entity.");
             if (screen.GroupField is not null && !fields.Contains(screen.GroupField)) errors.Add("screen groupField is not defined on its entity.");
+            if (screen.ChartValueField is not null && !entity.Fields.Any(field => field.Alias == screen.ChartValueField && field.Type == "number")) errors.Add("screen chartValueField must reference a numeric field on its entity.");
         }
         return errors;
     }

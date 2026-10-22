@@ -14,9 +14,9 @@ solution; each milestone records implementation and validation evidence here.
 | M2 — Dynamic Component Studio | Schema based components, visual composition, preview, editing, import/export and developer SDK | Partial: runtime-authored schemas, C# definition builder, multi-property visual editor, composed/reorderable layout builder, accessible disclosure interactions, preview, safe renderer, and validated cross-registry export/import implemented; drag/drop canvas and compiled Razor/React SDK incomplete |
 | M3 — ChatGPT integration | Official SIWC flow and user controlled local Agent Host, typed tools and auditable orchestration | Implemented, live account verification pending |
 | M4 — Project generation and theming | Independent website scaffolding, theme and layout configuration | Partial: independent .NET 10 generator now projects shared validated component placements with per-project data and appearance; broader module projection and full production hosting configuration remain |
-| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit account and project-role grants, SQL Server CRUD APIs and Studio record editor; SQL persistence now verifies and locks relationship targets during writes and prevents deleting referenced records inside serializable transactions; generated apps include model-driven screens, SQLite-backed CRUD, direct and role-based grants and relationship protection; identity federation, schema migrations for SQL entities and live multi-entity SQL verification remain |
+| M5 — Application Studio | Operational entities, versioned migrations, permissions, screens and persistent CRUD | Partial: visual typed-field/entity editor, explicit account and project-role grants, SQL Server CRUD APIs and Studio record editor; SQL persistence now verifies and locks relationship targets during writes and prevents deleting referenced records inside serializable transactions; generated apps include model-driven screens, accessible grouped count/sum charts, SQLite-backed CRUD, direct and role-based grants and relationship protection; identity federation, schema migrations for SQL entities and live multi-entity SQL verification remain |
 | M6 — Workflows and modules | Integrate supported Umbraco automation and installable modules | Partial: verified declarative module builder/import/export/install/explicit upgrade, dependency-safe project removal preserving schemas and records, and registry-version deletion guarded by project pins; SemVer dependency ranges and dependent-upgrade checks; official Automate 17.5.1 plus scoped record-change trigger and permission-checked create/update/idempotent delete actions compile; executable workflow provisioning and live runtime verification remain |
-| M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; generated apps now render tables, search, kanban, calendars and entity-count dashboards over SQLite CRUD; complete CRM journey and live eligible ChatGPT verification remain |
+| M7 — AI application generation | Build and modify persistent applications through guarded SiteKit tools | Partial: local ChatGPT orchestrator can build/list project, entity, screen, component and module state; generated apps now render tables, search, kanban, calendars, entity-count dashboards and grouped count/sum charts over SQLite CRUD; complete CRM journey and live eligible ChatGPT verification remain |
 | M8 — Production readiness | Deployable references and security, accessibility, reliability and performance evidence | Partial: license-aware CI build, NuGet vulnerability gate and 29 focused core tests; accessibility, performance, restore/backup and live deployment verification remain |
 
 ## Existing feature ledger
@@ -37,7 +37,7 @@ solution; each milestone records implementation and validation evidence here.
 | Application data models / screen builder | Partial | SiteKit typed entity schemas, safe additive version rules, SQL Server record CRUD, audit columns, direct and project-role grants and a basic data model/record editor; serializable SQL record writes and deletes enforce relationship existence/reference checks; screen composition, SQL entity schema migrations and live multi-entity verification remain |
 | Workflows / reusable module packages | Partial | Verified versioned module packages can ship/install component, entity and screen definitions, upgrade with dependency checks, detach from projects without deleting data, and be deleted from the registry when no project pins the version; official Umbraco Automate provides a scoped SiteKit record-change trigger plus create/update/delete record actions with service-account grants; module workflow JSON remains inert |
 | ChatGPT plan sharing / Agent Host / MCP | Partial | Local Agent Host implements SIWC, Responses streaming, typed tools and local stdio MCP; live eligible account flow remains unverified |
-| Generated business application runtime | Partial | Project generator exports project and screen manifests with model-driven tables, forms, search, kanban, calendar, dashboard counts, SQLite CRUD, token principals, project-role membership, unioned direct/role operation grants, relationship validation and delete protection; production identity federation and live external database integration remain |
+| Generated business application runtime | Partial | Project generator exports project and screen manifests with model-driven tables, forms, search, kanban, calendar, dashboard counts, accessible grouped count/sum SVG charts with tabular values, SQLite CRUD, token principals, project-role membership, unioned direct/role operation grants, relationship validation and delete protection; production identity federation and live external database integration remain |
 
 ## Architecture decisions
 
@@ -467,3 +467,14 @@ Studio visual previews and their validation limits are documented in [SITEKIT_SC
   which browser URL or external proxy request produced the reported error. For
   local sign-in, start at `https://localhost:44373/umbraco`; do not bookmark or
   open the HTTP listener directly.
+
+## M5/M7 generated application charts (2026-10-22)
+
+- Added the `chart` screen type. Charts group records by a validated entity
+  field and either count records or sum a validated numeric field. Studio
+  previews and generated applications render the chart; generated output
+  includes an accessible SVG title and a semantic data table.
+- Validation: the generated-application integration test saves a CRM chart,
+  rejects a nonnumeric value field, verifies the exported screen definition,
+  checks chart markup and builds the independent application. The Studio view
+  JavaScript passes `node --check`.

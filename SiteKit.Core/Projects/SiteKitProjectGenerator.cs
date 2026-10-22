@@ -136,6 +136,7 @@ public sealed class SiteKitProjectGenerator
             .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem}
             .metrics article{display:grid;gap:.3rem;padding:1.25rem;border:1px solid #e6ebf2;border-radius:14px;background:linear-gradient(145deg,#fff,#f7fafc);box-shadow:0 8px 24px #172b4d08}
             .metrics strong{font-size:2rem;letter-spacing:-.05em}.metrics span{color:#69768a;font-size:.82rem}
+            .chart{margin:0;padding:1rem;border:1px solid #e6ebf2;border-radius:14px;background:#fff;overflow:auto}.chart svg{display:block;width:100%;min-width:360px;max-height:520px}.chart-label{font:12px system-ui,sans-serif;fill:#536176}.chart-value{font:12px system-ui,sans-serif;fill:#17212b}.chart-bar{fill:#087f73}.chart figcaption{color:#69768a;font-size:.82rem;margin:.4rem 0}.chart-data{margin-top:1rem}
             #token-form{display:flex;align-items:end;gap:.8rem;flex-wrap:wrap;padding:1.3rem;border:1px solid #e2e8f0;border-radius:14px;background:white;box-shadow:0 12px 32px #172b4d0a}
             @media(max-width:640px){.screen{padding:1rem}.form{align-items:stretch}.form label{flex:1 1 100%}.kanban{grid-auto-columns:minmax(82vw,1fr)}th,td{padding:.65rem .7rem}}
             """;
@@ -345,7 +346,7 @@ T Load<T>(string path, T fallback) => File.Exists(path) ? JsonSerializer.Deseria
 record Row(string Id, JsonElement Data, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
 record Entity(string Alias, string Name, SiteKitField[] Fields);
 record SiteKitField(string Alias, string Name, string Type, bool Required, bool Unique, int? MaximumLength, string? RelatedEntity);
-record Screen(string Alias, string Name, string Type, string? EntityAlias, string[] Columns, string[] FormFields, string? GroupField);
+record Screen(string Alias, string Name, string Type, string? EntityAlias, string[] Columns, string[] FormFields, string? GroupField, string? ChartValueField);
 """;
         return template.Replace("{{HTML}}", JsonSerializer.Serialize(html), StringComparison.Ordinal);
     }
@@ -387,6 +388,13 @@ record Screen(string Alias, string Name, string Type, string? EntityAlias, strin
           }else controls.push(`<label>${esc(field.name)}<input name="${esc(field.alias)}" type="${field.type==='number'?'number':field.type==='date'?'date':field.type==='email'?'email':'text'}" ${field.required?'required':''}></label>`);
         }
         const form=`<form class="form"><input type="hidden" name="recordId"><div class="form-fields">${controls.join('')}</div><button type="submit">Create</button><button type="button" data-cancel hidden>Cancel edit</button></form>`;
+        if(screen.type==='chart'&&screen.groupField){
+          const totals=new Map();for(const record of records){const label=String(record.data[screen.groupField]??'Unassigned');const value=screen.chartValueField?Number(record.data[screen.chartValueField]||0):1;totals.set(label,(totals.get(label)||0)+(Number.isFinite(value)?value:0))}
+          const rows=[...totals.entries()].sort((a,b)=>a[0].localeCompare(b[0])),max=Math.max(1,...rows.map(row=>row[1])),width=640,rowHeight=42,height=Math.max(110,rows.length*rowHeight+42);
+          const bars=rows.map(([label,value],index)=>{const y=12+index*rowHeight,barWidth=Math.max(0,Math.round((width-220)*value/max));return `<text x="0" y="${y+20}" class="chart-label">${esc(label)}</text><rect x="170" y="${y}" width="${barWidth}" height="26" rx="6" class="chart-bar"></rect><text x="${180+barWidth}" y="${y+19}" class="chart-value">${esc(value)}</text>`}).join('');
+          target.innerHTML=`<figure class="chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="chart-title-${esc(screen.alias)}" preserveAspectRatio="xMinYMin meet"><title id="chart-title-${esc(screen.alias)}">${esc(screen.name)} by ${esc(screen.groupField)}</title>${bars}</svg><figcaption>${screen.chartValueField?`Total ${esc(screen.chartValueField)} by ${esc(screen.groupField)}`:`Records by ${esc(screen.groupField)}`}</figcaption><table class="chart-data"><caption>Chart values</caption><thead><tr><th scope="col">${esc(screen.groupField)}</th><th scope="col">${screen.chartValueField?`Total ${esc(screen.chartValueField)}`:'Records'}</th></tr></thead><tbody>${rows.map(([label,value])=>`<tr><th scope="row">${esc(label)}</th><td>${esc(value)}</td></tr>`).join('')||'<tr><td colspan="2">No data</td></tr>'}</tbody></table></figure>`;
+          continue;
+        }
         if(screen.type==='kanban'&&screen.groupField){
           const lanes=[...new Set(records.map(record=>String(record.data[screen.groupField]||'Backlog')))];
           if(!lanes.length)lanes.push('Backlog');

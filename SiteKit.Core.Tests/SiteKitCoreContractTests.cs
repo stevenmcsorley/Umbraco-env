@@ -702,7 +702,7 @@ public sealed class SiteKitCoreContractTests
         var projects = new JsonSiteKitProjectRegistry(Path.Combine(root, "projects"));
         var entities = new JsonSiteKitEntityRegistry(Path.Combine(root, "entities"));
         var screens = new JsonSiteKitScreenRegistry(Path.Combine(root, "screens"));
-        var project = new SiteKitProjectManifest { Id = "sales-crm", Name = "Sales CRM", Description = "A clear view of your customer relationships and the opportunities ahead.", Category = "application", Entities = ["customer", "opportunity"], Screens = ["sales-overview", "customers", "opportunity-pipeline"] };
+        var project = new SiteKitProjectManifest { Id = "sales-crm", Name = "Sales CRM", Description = "A clear view of your customer relationships and the opportunities ahead.", Category = "application", Entities = ["customer", "opportunity"], Screens = ["sales-overview", "customers", "opportunity-pipeline", "pipeline-forecast"] };
         await projects.SaveAsync(project);
         await entities.SaveAsync(new SiteKitEntityDefinition
         {
@@ -712,7 +712,7 @@ public sealed class SiteKitCoreContractTests
         await entities.SaveAsync(new SiteKitEntityDefinition
         {
             ProjectId = project.Id, Alias = "opportunity", Name = "Opportunity",
-            Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "title", Name = "Title", Type = "text", Required = true }, new() { Alias = "stage", Name = "Stage", Type = "text", Required = true }, new() { Alias = "customer", Name = "Customer", Type = "relationship", RelatedEntity = "customer", Required = true }]
+            Fields = [new() { Alias = "id", Name = "Id", Type = "text", Required = true, Unique = true }, new() { Alias = "title", Name = "Title", Type = "text", Required = true }, new() { Alias = "stage", Name = "Stage", Type = "text", Required = true }, new() { Alias = "customer", Name = "Customer", Type = "relationship", RelatedEntity = "customer", Required = true }, new() { Alias = "value", Name = "Value", Type = "number" }]
         });
         await screens.SaveAsync(new SiteKitApplicationScreenDefinition
         {
@@ -730,6 +730,11 @@ public sealed class SiteKitCoreContractTests
             Columns = ["title", "stage"], FormFields = ["title", "stage"], GroupField = "stage"
         };
         await screens.SaveAsync(pipelineScreen);
+        var chartScreen = new SiteKitApplicationScreenDefinition { ProjectId = project.Id, Alias = "pipeline-forecast", Name = "Pipeline forecast", Type = "chart", EntityAlias = "opportunity", GroupField = "stage", ChartValueField = "value" };
+        await screens.SaveAsync(chartScreen);
+        var opportunityEntity = await entities.GetAsync(project.Id, "opportunity");
+        Assert.Empty(SiteKitScreenValidator.Validate(chartScreen, opportunityEntity));
+        Assert.Contains("chartValueField", string.Join(' ', SiteKitScreenValidator.Validate(chartScreen with { ChartValueField = "stage" }, opportunityEntity)));
         try
         {
             var generator = new SiteKitProjectGenerator(Path.Combine(root, "generated"), projects, screens, entities);
@@ -741,6 +746,10 @@ public sealed class SiteKitCoreContractTests
             var screenRuntime = await File.ReadAllTextAsync(Path.Combine(destination, "wwwroot", "sitekit-runtime.js"));
             Assert.Contains("screen.type==='kanban'", screenRuntime);
             Assert.Contains("screen.type==='dashboard'", screenRuntime);
+            Assert.Contains("screen.type==='chart'", screenRuntime);
+            Assert.Contains("screen.chartValueField", screenRuntime);
+            Assert.Contains("role=\"img\"", screenRuntime);
+            Assert.Contains("Chart values", screenRuntime);
             Assert.Contains("data-edit", screenRuntime);
             Assert.Contains("method:recordId?'PUT':'POST'", screenRuntime);
             Assert.Contains("Save changes", screenRuntime);
@@ -749,6 +758,7 @@ public sealed class SiteKitCoreContractTests
             Assert.True(File.Exists(Path.Combine(destination, "sitekit.screens.json")));
             var generatedScreenOrder = JsonSerializer.Deserialize<SiteKitApplicationScreenDefinition[]>(await File.ReadAllTextAsync(Path.Combine(destination, "sitekit.screens.json")), new JsonSerializerOptions(JsonSerializerDefaults.Web));
             Assert.Equal(project.Screens, generatedScreenOrder!.Select(screen => screen.Alias));
+            Assert.Equal("value", generatedScreenOrder!.Single(screen => screen.Alias == "pipeline-forecast").ChartValueField);
             Assert.True(File.Exists(Path.Combine(destination, "sitekit.entities.json")));
             using var build = Process.Start(new ProcessStartInfo("dotnet", $"build \"{project.Id}.csproj\" --configuration Release --nologo")
             {
